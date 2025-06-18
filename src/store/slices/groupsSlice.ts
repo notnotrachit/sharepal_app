@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiService } from '../../services/api';
-import { Group, CreateGroupRequest, Balance, Settlement, SimplifyResponse, User } from '../../types/api';
+import { Group, CreateGroupRequest, Balance, Settlement, SimplifyResponse, User, CreateSettlementRequest, CompleteSettlementRequest } from '../../types/api';
 
 interface GroupsState {
   groups: Group[];
@@ -148,8 +148,18 @@ export const fetchGroupSettlements = createAsyncThunk<Settlement[], string>(
   async (groupId: string, { rejectWithValue }) => {
     try {
       const response = await apiService.getGroupSettlements(groupId);
-      return response as Settlement[];
+      console.log('API response for group settlements:', response);
+      console.log('Is response an array?', Array.isArray(response));
+      
+      // Ensure we always return an array
+      if (Array.isArray(response)) {
+        return response;
+      } else {
+        console.warn('fetchGroupSettlements: API returned non-array response, returning empty array');
+        return [];
+      }
     } catch (error: any) {
+      console.log('Error fetching group settlements:', error);
       return rejectWithValue(error.message);
     }
   }
@@ -207,6 +217,89 @@ export const fetchGroupMembers = createAsyncThunk<User[], string>(
       }
     } catch (error: any) {
       console.log('Error fetching group members:', error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const createSettlement = createAsyncThunk<Settlement, CreateSettlementRequest>(
+  'groups/createSettlement',
+  async (settlementData: CreateSettlementRequest, { rejectWithValue }) => {
+    try {
+      const response = await apiService.createSettlement(settlementData);
+      console.log('API response for create settlement:', response);
+      console.log('Response type:', typeof response);
+      console.log('Response keys:', response ? Object.keys(response) : 'No response');
+      
+      // Handle different response structures
+      if (response && (response as any).id) {
+        return response as Settlement;
+      } else if (response && (response as any).data && (response as any).data.id) {
+        return (response as any).data as Settlement;
+      } else if (response && (response as any).settlement) {
+        return (response as any).settlement as Settlement;
+      } else {
+        console.error('createSettlement: API response does not contain settlement with ID');
+        return rejectWithValue('Failed to create settlement - invalid API response');
+      }
+    } catch (error: any) {
+      console.log('Error creating settlement:', error);
+      return rejectWithValue(error.message || 'Failed to create settlement');
+    }
+  }
+);
+
+export const completeSettlement = createAsyncThunk<Settlement, { id: string; data?: CompleteSettlementRequest }>(
+  'groups/completeSettlement',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await apiService.completeSettlement(id, data);
+      console.log('API response for complete settlement:', response);
+      console.log('Response type:', typeof response);
+      console.log('Response keys:', response ? Object.keys(response) : 'No response');
+      
+      if (!response) {
+        console.error('completeSettlement: API returned undefined response');
+        return rejectWithValue('Settlement completion failed - no response from server');
+      }
+      
+      // Handle different response structures
+      if (response && (response as any).id) {
+        return response as Settlement;
+      } else if (response && (response as any).data && (response as any).data.id) {
+        return (response as any).data as Settlement;
+      } else if (response && (response as any).settlement) {
+        return (response as any).settlement as Settlement;
+      } else {
+        console.error('completeSettlement: API response does not contain settlement with ID');
+        return rejectWithValue('Settlement completion failed - invalid response format');
+      }
+    } catch (error: any) {
+      console.log('Error completing settlement:', error);
+      return rejectWithValue(error.message || 'Failed to complete settlement');
+    }
+  }
+);
+
+export const fetchAllSettlements = createAsyncThunk<Settlement[], { status?: string }>(
+  'groups/fetchAllSettlements',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await apiService.getSettlements(params);
+      console.log('API response for all settlements:', response);
+      
+      // Handle different response structures
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && (response as any).settlements) {
+        return (response as any).settlements;
+      } else if (response && (response as any).data) {
+        return (response as any).data;
+      } else {
+        return [];
+      }
+    } catch (error: any) {
+      console.log('Error fetching all settlements:', error);
       return rejectWithValue(error.message);
     }
   }
@@ -281,7 +374,7 @@ const groupsSlice = createSlice({
       
       // Fetch group settlements
       .addCase(fetchGroupSettlements.fulfilled, (state, action) => {
-        state.groupSettlements = action.payload;
+        state.groupSettlements = Array.isArray(action.payload) ? action.payload : [];
       })
       
       // Fetch group simplify
@@ -304,6 +397,57 @@ const groupsSlice = createSlice({
         if (groupIndex !== -1) {
           state.groups[groupIndex].members = action.payload;
         }
+      })
+      
+      // Create settlement
+      .addCase(createSettlement.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createSettlement.fulfilled, (state, action) => {
+        state.isLoading = false;
+        console.log('createSettlement.fulfilled - Current groupSettlements:', state.groupSettlements);
+        console.log('createSettlement.fulfilled - Is array?', Array.isArray(state.groupSettlements));
+        console.log('createSettlement.fulfilled - Action payload:', action.payload);
+        
+        // Ensure groupSettlements is an array before pushing
+        if (!Array.isArray(state.groupSettlements)) {
+          console.warn('groupSettlements was not an array, resetting to empty array');
+          state.groupSettlements = [];
+        }
+        state.groupSettlements.push(action.payload);
+        state.error = null;
+      })
+      .addCase(createSettlement.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Complete settlement
+      .addCase(completeSettlement.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(completeSettlement.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Ensure groupSettlements is an array before finding index
+        if (!Array.isArray(state.groupSettlements)) {
+          state.groupSettlements = [];
+        }
+        const index = state.groupSettlements.findIndex(s => s.id === action.payload.id);
+        if (index !== -1) {
+          state.groupSettlements[index] = action.payload;
+        }
+        state.error = null;
+      })
+      .addCase(completeSettlement.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Fetch all settlements
+      .addCase(fetchAllSettlements.fulfilled, (state, action) => {
+        state.groupSettlements = Array.isArray(action.payload) ? action.payload : [];
       });
   },
 });

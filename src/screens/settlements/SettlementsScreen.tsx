@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,13 +6,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
-import { fetchGroupSettlements } from "../../store/slices/groupsSlice";
+import {
+  fetchGroupSettlements,
+  completeSettlement,
+  fetchAllSettlements,
+} from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { Settlement } from "../../types/api";
 
@@ -36,6 +41,9 @@ export default function SettlementsScreen({ navigation, route }: Props) {
   const { groupSettlements, isLoading } = useSelector(
     (state: RootState) => state.groups
   );
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadSettlements();
@@ -43,6 +51,68 @@ export default function SettlementsScreen({ navigation, route }: Props) {
 
   const loadSettlements = () => {
     dispatch(fetchGroupSettlements(groupId));
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    loadSettlements();
+    setRefreshing(false);
+  };
+
+  const handleCompleteSettlement = async (settlement: Settlement) => {
+    Alert.alert(
+      "Confirm Payment",
+      `Mark payment of ${formatCurrency(
+        settlement.amount,
+        settlement.currency
+      )} as completed?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Confirm",
+          onPress: async () => {
+            try {
+              await dispatch(
+                completeSettlement({
+                  id: settlement.id,
+                  data: {
+                    notes: `Payment completed on ${new Date().toLocaleDateString()}`,
+                  },
+                })
+              ).unwrap();
+
+              loadSettlements();
+
+              Alert.alert(
+                "Settlement Completed",
+                `Payment of ${formatCurrency(
+                  settlement.amount,
+                  settlement.currency
+                )} has been marked as completed.`,
+                [{ text: "OK" }]
+              );
+            } catch (error: any) {
+              console.log("Settlement completion error:", error);
+
+              let errorMessage =
+                "Failed to complete settlement. Please try again.";
+
+              if (error?.message) {
+                errorMessage = error.message;
+              } else if (typeof error === "string") {
+                errorMessage = error;
+              } else if (error?.error) {
+                errorMessage = error.error;
+              } else if (error?.data?.message) {
+                errorMessage = error.data.message;
+              }
+
+              Alert.alert("Error", errorMessage, [{ text: "OK" }]);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -88,7 +158,10 @@ export default function SettlementsScreen({ navigation, route }: Props) {
       {item.notes && <Text style={styles.notes}>{item.notes}</Text>}
 
       {item.status === "pending" && (
-        <TouchableOpacity style={styles.markCompleteButton}>
+        <TouchableOpacity
+          style={styles.markCompleteButton}
+          onPress={() => handleCompleteSettlement(item)}
+        >
           <Text style={styles.markCompleteText}>Mark as Complete</Text>
         </TouchableOpacity>
       )}
@@ -112,10 +185,7 @@ export default function SettlementsScreen({ navigation, route }: Props) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
           refreshControl={
-            <RefreshControl
-              refreshing={isLoading}
-              onRefresh={loadSettlements}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           showsVerticalScrollIndicator={false}
         />

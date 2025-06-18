@@ -34,7 +34,9 @@ export const API_ENDPOINTS = {
 
   // Settlements
   SETTLEMENTS: '/settlements',
+  SETTLEMENT: (id: string) => `/settlements/${id}`,
   SETTLEMENT_COMPLETE: (id: string) => `/settlements/${id}/complete`,
+  CREATE_SETTLEMENT: '/settlements',
 
   // Utility
   PING: '/ping',

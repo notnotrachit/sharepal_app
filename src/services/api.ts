@@ -232,7 +232,22 @@ class ApiService {
     return this.request('GET', API_ENDPOINTS.SETTLEMENTS, undefined, params);
   }
 
-  async completeSettlement(id: string, data?: any) {
+  async getSettlement(id: string) {
+    return this.request('GET', API_ENDPOINTS.SETTLEMENT(id));
+  }
+
+  async createSettlement(data: {
+    group_id: string;
+    payer_id: string;
+    payee_id: string;
+    amount: number;
+    currency: string;
+    notes?: string;
+  }) {
+    return this.request('POST', API_ENDPOINTS.CREATE_SETTLEMENT, data);
+  }
+
+  async completeSettlement(id: string, data?: { notes?: string }) {
     return this.request('POST', API_ENDPOINTS.SETTLEMENT_COMPLETE(id), data);
   }
 

@@ -117,6 +117,19 @@ export interface Settlement {
   settled_at?: string;
 }
 
+export interface CreateSettlementRequest {
+  group_id: string;
+  payer_id: string;
+  payee_id: string;
+  amount: number;
+  currency: string;
+  notes?: string;
+}
+
+export interface CompleteSettlementRequest {
+  notes?: string;
+}
+
 export interface SimplifyResponse {
   payer_id: string;
   payee_id: string;

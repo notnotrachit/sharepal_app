@@ -18,6 +18,10 @@ import {
   fetchGroupBalances,
   fetchGroupSimplify,
   fetchGroupMembers,
+  fetchGroupSettlements,
+  createSettlement,
+  completeSettlement,
+  fetchAllSettlements,
 } from "../../store/slices/groupsSlice";
 import { fetchGroupExpenses } from "../../store/slices/expensesSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
@@ -54,59 +58,12 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     loadGroupData();
   }, [groupId]);
 
-  useEffect(() => {
-    console.log("GroupExpenses state:", {
-      groupExpenses,
-      type: typeof groupExpenses,
-      isArray: Array.isArray(groupExpenses),
-    });
-  }, [groupExpenses]);
-
-  useEffect(() => {
-    console.log("All expenses state:", {
-      allExpenses: allExpensesState,
-    });
-  }, [allExpensesState]);
-
-  useEffect(() => {
-    console.log("GroupBalances state:", {
-      groupBalances,
-      type: typeof groupBalances,
-      isArray: Array.isArray(groupBalances),
-      length: Array.isArray(groupBalances) ? groupBalances.length : "N/A",
-      firstItem:
-        Array.isArray(groupBalances) && groupBalances.length > 0
-          ? groupBalances[0]
-          : null,
-    });
-  }, [groupBalances]);
-
-  useEffect(() => {
-    console.log("SimplifyData state:", {
-      simplifyData,
-      type: typeof simplifyData,
-      isArray: Array.isArray(simplifyData),
-      length: Array.isArray(simplifyData) ? simplifyData.length : "N/A",
-      firstItem:
-        Array.isArray(simplifyData) && simplifyData.length > 0
-          ? simplifyData[0]
-          : null,
-    });
-  }, [simplifyData]);
-
-  useEffect(() => {
-    console.log("CurrentGroup state:", {
-      currentGroup,
-      members: currentGroup?.members,
-      memberCount: currentGroup?.members?.length,
-    });
-  }, [currentGroup]);
-
   const loadGroupData = () => {
     dispatch(fetchGroup(groupId));
     dispatch(fetchGroupMembers(groupId));
     dispatch(fetchGroupBalances(groupId));
     dispatch(fetchGroupSimplify(groupId));
+    dispatch(fetchGroupSettlements(groupId));
     dispatch(fetchGroupExpenses({ groupId }));
   };
 
@@ -118,6 +75,206 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     navigation.navigate("Settlements", { groupId });
   };
 
+  // Utility function to extract error message from various error formats
+  const extractErrorMessage = (error: any, defaultMessage: string): string => {
+    console.log("Error object:", JSON.stringify(error, null, 2));
+
+    if (typeof error === "string") {
+      return error;
+    }
+
+    if (error?.message) {
+      return error.message;
+    }
+
+    if (error?.error) {
+      return error.error;
+    }
+
+    if (error?.data?.message) {
+      return error.data.message;
+    }
+
+    if (error?.response?.data?.message) {
+      return error.response.data.message;
+    }
+
+    return defaultMessage;
+  };
+
+  const handleCompleteSettlement = async (
+    settlementId: string,
+    amount: number,
+    currency: string,
+    payeeName: string
+  ) => {
+    try {
+      await dispatch(
+        completeSettlement({
+          id: settlementId,
+          data: {
+            notes: `Paid ${formatCurrency(amount, currency)} to ${payeeName}`,
+          },
+        })
+      ).unwrap();
+
+      // Reload the group data to get updated balances and settlements
+      loadGroupData();
+
+      Alert.alert(
+        "Settlement Completed",
+        `Payment of ${formatCurrency(
+          amount,
+          currency
+        )} to ${payeeName} has been marked as completed.`,
+        [{ text: "OK" }]
+      );
+    } catch (error: any) {
+      console.log("Complete settlement error:", error);
+
+      let errorMessage = "Failed to complete settlement. Please try again.";
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      } else if (error?.error) {
+        errorMessage = error.error;
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message;
+      }
+
+      Alert.alert("Error", errorMessage, [{ text: "OK" }]);
+    }
+  };
+
+  const handleMarkAsPaid = async (settlement: any) => {
+    if (!user?.id) return;
+
+    try {
+      // First create a settlement from the suggestion
+      const settlementResult = await dispatch(
+        createSettlement({
+          group_id: groupId,
+          payer_id: settlement.payer_id,
+          payee_id: settlement.payee_id,
+          amount: settlement.amount,
+          currency: settlement.currency,
+          notes: "Settlement from suggestion",
+        })
+      ).unwrap();
+
+      // Check if we got a valid settlement ID
+      if (!settlementResult || !settlementResult.id) {
+        // Fallback: just record that the payment was made
+        loadGroupData();
+        Alert.alert(
+          "Payment Recorded",
+          `Payment of ${formatCurrency(
+            settlement.amount,
+            settlement.currency
+          )} to ${settlement.payee_name || "recipient"} has been recorded.`,
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      // Then immediately mark it as completed
+      const completionResult = await dispatch(
+        completeSettlement({
+          id: settlementResult.id,
+          data: {
+            notes: `Paid ${formatCurrency(
+              settlement.amount,
+              settlement.currency
+            )} to ${settlement.payee_name || "recipient"}`,
+          },
+        })
+      ).unwrap();
+
+      // Reload the group data to get updated balances and settlements
+      loadGroupData();
+
+      Alert.alert(
+        "Payment Completed",
+        `Payment of ${formatCurrency(
+          settlement.amount,
+          settlement.currency
+        )} to ${
+          settlement.payee_name || "recipient"
+        } has been marked as completed.`,
+        [{ text: "OK" }]
+      );
+    } catch (error: any) {
+      let errorMessage = "Failed to complete payment. Please try again.";
+
+      // Try to extract meaningful error message
+      if (typeof error === "string") {
+        errorMessage = error;
+      } else if (error?.message && typeof error.message === "string") {
+        errorMessage = error.message;
+      } else if (
+        error?.data?.message &&
+        typeof error.data.message === "string"
+      ) {
+        errorMessage = error.data.message;
+      } else if (
+        error?.response?.data?.message &&
+        typeof error.response.data.message === "string"
+      ) {
+        errorMessage = error.response.data.message;
+      }
+
+      Alert.alert("Error", errorMessage, [{ text: "OK" }]);
+    }
+  };
+
+  const handleCreateCustomSettlement = async (
+    payeeId: string,
+    amount: number,
+    currency: string
+  ) => {
+    if (!user?.id) return;
+
+    try {
+      await dispatch(
+        createSettlement({
+          group_id: groupId,
+          payer_id: user.id,
+          payee_id: payeeId,
+          amount,
+          currency,
+          notes: "Custom settlement",
+        })
+      ).unwrap();
+
+      // Reload the group data
+      loadGroupData();
+
+      Alert.alert(
+        "Settlement Created",
+        `Settlement for ${formatCurrency(amount, currency)} has been created.`,
+        [{ text: "OK" }]
+      );
+    } catch (error: any) {
+      console.log("Create settlement error:", error);
+
+      let errorMessage = "Failed to create settlement. Please try again.";
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      } else if (error?.error) {
+        errorMessage = error.error;
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message;
+      }
+
+      Alert.alert("Error", errorMessage, [{ text: "OK" }]);
+    }
+  };
+
   const formatCurrency = (amount: number, currency: string) => {
     const safeAmount =
       typeof amount === "number" && !isNaN(amount) ? amount : 0;
@@ -125,14 +282,14 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   };
 
   const getBalanceColor = (balance: number) => {
-    if (balance > 0) return "#4CAF50"; // Green for positive
-    if (balance < 0) return "#F44336"; // Red for negative
+    if (balance < 0) return "#4CAF50"; // Green for negative (you are owed money)
+    if (balance > 0) return "#F44336"; // Red for positive (you owe money)
     return "#666"; // Gray for zero
   };
 
   const getBalanceText = (balance: number) => {
-    if (balance > 0) return `You are owed ${Math.abs(balance)}`;
-    if (balance < 0) return `You owe ${Math.abs(balance)}`;
+    if (balance < 0) return `You are owed ${Math.abs(balance)}`;
+    if (balance > 0) return `You owe ${Math.abs(balance)}`;
     return "You are settled up";
   };
 
@@ -173,40 +330,46 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     </View>
   );
 
-  const renderBalancesTab = () => (
-    <View style={styles.tabContent}>
-      {!groupBalances ||
-      !Array.isArray(groupBalances) ||
-      groupBalances.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="wallet-outline" size={48} color="#ccc" />
-          <Text style={styles.emptyTitle}>No balances</Text>
-          <Text style={styles.emptySubtitle}>Add expenses to see balances</Text>
-        </View>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {groupBalances.map((balance, index) => (
-            <View key={balance.user_id || index} style={styles.balanceItem}>
+  const renderBalancesTab = () => {
+    // Find the current user's balance from the backend data
+    const currentUserBalance = Array.isArray(groupBalances)
+      ? groupBalances.find((balance) => balance.user_id === user?.id)
+      : null;
+
+    return (
+      <View style={styles.tabContent}>
+        {!currentUserBalance || currentUserBalance.amount === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="wallet-outline" size={48} color="#ccc" />
+            <Text style={styles.emptyTitle}>You are settled up</Text>
+            <Text style={styles.emptySubtitle}>All expenses are balanced</Text>
+          </View>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.balanceItem}>
               <Text style={styles.balanceUser}>
-                {balance.user_name || `User ${index + 1}`}
+                {currentUserBalance.user_name || "You"}
               </Text>
               <Text
                 style={[
                   styles.balanceAmount,
-                  { color: getBalanceColor(balance.amount || 0) },
+                  { color: getBalanceColor(currentUserBalance.amount || 0) },
                 ]}
               >
-                {formatCurrency(balance.amount || 0, balance.currency || "INR")}
+                {formatCurrency(
+                  currentUserBalance.amount || 0,
+                  currentUserBalance.currency || "INR"
+                )}
               </Text>
               <Text style={styles.balanceDescription}>
-                {getBalanceText(balance.amount || 0)}
+                {getBalanceText(currentUserBalance.amount || 0)}
               </Text>
             </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
+          </ScrollView>
+        )}
+      </View>
+    );
+  };
 
   const renderSettleTab = () => {
     // Filter settlements to only show ones involving the current user
@@ -242,16 +405,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                 ? settlement.payee_name || "Someone"
                 : settlement.payer_name || "Someone";
 
-              console.log("Settlement debug:", {
-                isUserPayer,
-                isUserPayee,
-                userId: user?.id,
-                payerId: settlement.payer_id,
-                payeeId: settlement.payee_id,
-                otherUserName,
-                settlement,
-              });
-
               return (
                 <View
                   key={`${settlement.payer_id}-${settlement.payee_id}-${index}`}
@@ -268,7 +421,10 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                         )}{" "}
                         to {otherUserName}
                       </Text>
-                      <TouchableOpacity style={styles.settleButton}>
+                      <TouchableOpacity
+                        style={styles.settleButton}
+                        onPress={() => handleMarkAsPaid(settlement)}
+                      >
                         <Text style={styles.settleButtonText}>
                           Mark as Paid
                         </Text>
