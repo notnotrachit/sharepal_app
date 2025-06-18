@@ -120,8 +120,12 @@ export interface Settlement {
 export interface SimplifyResponse {
   payer_id: string;
   payee_id: string;
+  payer_name?: string;
+  payee_name?: string;
   amount: number;
   currency: string;
+  group_id?: string;
+  status?: string;
 }
 
 export interface FriendRequest {

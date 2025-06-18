@@ -196,10 +196,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                   { color: getBalanceColor(balance.amount || 0) },
                 ]}
               >
-                {formatCurrency(
-                  balance.amount || 0,
-                  balance.currency || "INR"
-                )}
+                {formatCurrency(balance.amount || 0, balance.currency || "INR")}
               </Text>
               <Text style={styles.balanceDescription}>
                 {getBalanceText(balance.amount || 0)}
@@ -211,40 +208,95 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     </View>
   );
 
-  const renderSettleTab = () => (
-    <View style={styles.tabContent}>
-      {!simplifyData ||
-      !Array.isArray(simplifyData) ||
-      simplifyData.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="checkmark-circle-outline" size={48} color="#4CAF50" />
-          <Text style={styles.emptyTitle}>All settled up!</Text>
-          <Text style={styles.emptySubtitle}>No payments needed</Text>
-        </View>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={styles.settleHeader}>Suggested settlements:</Text>
-          {simplifyData.map((settlement, index) => (
-            <View
-              key={`${settlement.payer_id}-${settlement.payee_id}-${index}`}
-              style={styles.settlementItem}
-            >
-              <Text style={styles.settlementText}>
-                Pay{" "}
-                {formatCurrency(
-                  settlement.amount || 0,
-                  settlement.currency || "INR"
-                )}
-              </Text>
-              <TouchableOpacity style={styles.settleButton}>
-                <Text style={styles.settleButtonText}>Mark as Paid</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
+  const renderSettleTab = () => {
+    // Filter settlements to only show ones involving the current user
+    const userSettlements = simplifyData.filter(
+      (settlement) =>
+        settlement.payer_id === user?.id || settlement.payee_id === user?.id
+    );
+
+    return (
+      <View style={styles.tabContent}>
+        {!simplifyData ||
+        !Array.isArray(simplifyData) ||
+        simplifyData.length === 0 ||
+        userSettlements.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={48}
+              color="#4CAF50"
+            />
+            <Text style={styles.emptyTitle}>All settled up!</Text>
+            <Text style={styles.emptySubtitle}>No payments needed</Text>
+          </View>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={styles.settleHeader}>Settlements:</Text>
+            {userSettlements.map((settlement, index) => {
+              const isUserPayer = settlement.payer_id === user?.id;
+              const isUserPayee = settlement.payee_id === user?.id;
+
+              // Use the names provided in the settlement object
+              const otherUserName = isUserPayer
+                ? settlement.payee_name || "Someone"
+                : settlement.payer_name || "Someone";
+
+              console.log("Settlement debug:", {
+                isUserPayer,
+                isUserPayee,
+                userId: user?.id,
+                payerId: settlement.payer_id,
+                payeeId: settlement.payee_id,
+                otherUserName,
+                settlement,
+              });
+
+              return (
+                <View
+                  key={`${settlement.payer_id}-${settlement.payee_id}-${index}`}
+                  style={styles.settlementItem}
+                >
+                  {isUserPayer ? (
+                    // Current user owes money
+                    <>
+                      <Text style={styles.settlementText}>
+                        Pay{" "}
+                        {formatCurrency(
+                          settlement.amount || 0,
+                          settlement.currency || "INR"
+                        )}{" "}
+                        to {otherUserName}
+                      </Text>
+                      <TouchableOpacity style={styles.settleButton}>
+                        <Text style={styles.settleButtonText}>
+                          Mark as Paid
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    // Current user is owed money
+                    <Text
+                      style={[
+                        styles.settlementText,
+                        { color: "#4CAF50", fontWeight: "bold" },
+                      ]}
+                    >
+                      {otherUserName} owes you{" "}
+                      {formatCurrency(
+                        settlement.amount || 0,
+                        settlement.currency || "INR"
+                      )}
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
+          </ScrollView>
+        )}
+      </View>
+    );
+  };
 
   if (!currentGroup) {
     return (
