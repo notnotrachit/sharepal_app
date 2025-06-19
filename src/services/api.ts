@@ -235,7 +235,12 @@ class ApiService {
   }
 
   async completeTransaction(transactionId: string, data?: any) {
-    return this.request('POST', API_ENDPOINTS.COMPLETE_TRANSACTION(transactionId), data);
+    console.log('🔄 API: Completing transaction', transactionId, 'with data:', data);
+    const endpoint = API_ENDPOINTS.COMPLETE_TRANSACTION(transactionId);
+    console.log('🔄 API: Complete transaction endpoint:', endpoint);
+    const result = await this.request('POST', endpoint, data);
+    console.log('✅ API: Complete transaction result:', result);
+    return result;
   }
 
   // Enhanced Group Methods

@@ -484,6 +484,8 @@ const groupsSlice = createSlice({
         const groupId = action.meta.arg;
         console.log('fetchGroupMembers fulfilled for group:', groupId, 'members:', action.payload);
         
+        state.groupMembers = action.payload;
+        
         // Update currentGroup if it matches
         if (state.currentGroup && state.currentGroup.id === groupId) {
           state.currentGroup.members = action.payload;

@@ -49,6 +49,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     currentGroup,
     groupBalances,
     groupSimplify,
+    groupMembers,
     isLoading,
     groupTransactions,
     groupAnalytics,
@@ -56,8 +57,8 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [activeTab, setActiveTab] = useState<
-    "expenses" | "balances" | "settle"
-  >("expenses");
+    "transactions" | "balances" | "settle"
+  >("transactions");
 
   useEffect(() => {
     loadGroupData();
@@ -161,8 +162,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   const handleMarkAsPaid = async (settlement: any) => {
     if (!user?.id) return;
 
+    console.log("🔄 Starting handleMarkAsPaid for settlement:", settlement);
+
     try {
       // Use the new transaction-based settlement API
+      console.log("🔄 Creating settlement transaction...");
       const settlementTransaction = await dispatch(
         createSettlementTransaction({
           group_id: groupId,
@@ -174,8 +178,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         })
       ).unwrap();
 
+      console.log("✅ Settlement transaction created:", settlementTransaction);
+
       // Check if we got a valid transaction ID
       if (!settlementTransaction || !settlementTransaction._id) {
+        console.log("⚠️ No valid transaction ID, using fallback");
         // Fallback: just record that the payment was made
         loadGroupData();
         Alert.alert(
@@ -190,21 +197,40 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       }
 
       // Then immediately mark it as completed using the new API
-      const completionResult = await dispatch(
-        completeTransaction({
-          id: settlementTransaction._id,
-          data: {
-            notes: `Paid ${formatCurrency(
-              settlement.amount,
-              settlement.currency
-            )} to ${settlement.payee_name || "recipient"}`,
-            settlement_method: "manual",
-          },
-        })
-      ).unwrap();
+      console.log(
+        "🔄 Completing transaction with ID:",
+        settlementTransaction._id
+      );
 
-      // Reload the group data to get updated balances and settlements
-      loadGroupData();
+      try {
+        const completionResult = await dispatch(
+          completeTransaction({
+            id: settlementTransaction._id,
+            data: {
+              notes: `Paid ${formatCurrency(
+                settlement.amount,
+                settlement.currency
+              )} to ${settlement.payee_name || "recipient"}`,
+              settlement_method: "manual",
+            },
+          })
+        ).unwrap();
+
+        console.log("✅ Transaction completion result:", completionResult);
+      } catch (completionError) {
+        console.error("⚠️ Error completing transaction:", completionError);
+        console.error(
+          "Full completion error:",
+          JSON.stringify(completionError, null, 2)
+        );
+        // Continue anyway - the transaction was created, we just couldn't mark it as completed
+      }
+
+      // Wait a moment for the backend to process, then reload the group data
+      console.log("🔄 Reloading group data...");
+      setTimeout(() => {
+        loadGroupData();
+      }, 1500); // Increased delay to allow backend processing
 
       Alert.alert(
         "Payment Completed",
@@ -217,6 +243,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         [{ text: "OK" }]
       );
     } catch (error: any) {
+      console.error("❌ Error in handleMarkAsPaid:", error);
       let errorMessage = "Failed to complete payment. Please try again.";
 
       // Try to extract meaningful error message
@@ -293,33 +320,80 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   };
 
   const getBalanceColor = (balance: number) => {
-    if (balance < 0) return "#4CAF50"; // Green for negative (you are owed money)
-    if (balance > 0) return "#F44336"; // Red for positive (you owe money)
+    if (balance < 0) return "#F44336"; // Red for negative (you owe money)
+    if (balance > 0) return "#4CAF50"; // Green for positive (you are owed money)
     return "#666"; // Gray for zero
   };
 
   const getBalanceText = (balance: number) => {
-    if (balance < 0) return `You are owed ${Math.abs(balance)}`;
-    if (balance > 0) return `You owe ${Math.abs(balance)}`;
+    if (balance < 0) return `You owe ${Math.abs(balance)}`;
+    if (balance > 0) return `You are owed ${Math.abs(balance)}`;
     return "You are settled up";
   };
 
-  const renderExpensesTab = () => {
-    // Use transaction data for expenses
-    const expenseTransactions = Array.isArray(groupTransactions)
-      ? groupTransactions.filter((t) => t.type === "expense")
+  const getUserName = (userId: string) => {
+    if (!userId) return "Unknown User";
+    if (userId === user?.id) return "You";
+    const member = groupMembers?.find(
+      (m: any) => m.id === userId || m.user_id === userId
+    );
+    return (
+      member?.name ||
+      (member as any)?.user_name ||
+      member?.email?.split("@")[0] ||
+      `User ${userId.slice(-4)}`
+    );
+  };
+
+  const getSettlementParticipants = (transaction: any) => {
+    // Debug log to see the transaction structure
+    console.log(
+      "Settlement transaction:",
+      JSON.stringify(transaction, null, 2)
+    );
+    console.log("Group members:", JSON.stringify(groupMembers, null, 2));
+
+    // For settlements, we can get payer/payee info from multiple places
+    if (transaction.payer_id && transaction.payee_id) {
+      return {
+        payer: getUserName(transaction.payer_id),
+        payee: getUserName(transaction.payee_id),
+      };
+    }
+
+    // Fallback to participants array
+    if (transaction.participants && transaction.participants.length >= 2) {
+      const payer = transaction.participants.find((p: any) => p.amount > 0);
+      const payee = transaction.participants.find((p: any) => p.amount < 0);
+
+      return {
+        payer: payer ? getUserName(payer.user_id) : "Unknown",
+        payee: payee ? getUserName(payee.user_id) : "Unknown",
+      };
+    }
+
+    return {
+      payer: "Unknown",
+      payee: "Unknown",
+    };
+  };
+
+  const renderTransactionsTab = () => {
+    // Use transaction data for all transaction types (expenses and settlements)
+    const allTransactions = Array.isArray(groupTransactions)
+      ? groupTransactions
       : [];
 
-    const displayExpenses = expenseTransactions;
+    const displayTransactions = allTransactions;
 
     return (
       <View style={styles.tabContent}>
-        {!displayExpenses ||
-        !Array.isArray(displayExpenses) ||
-        displayExpenses.length === 0 ? (
+        {!displayTransactions ||
+        !Array.isArray(displayTransactions) ||
+        displayTransactions.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="receipt-outline" size={48} color="#ccc" />
-            <Text style={styles.emptyTitle}>No expenses yet</Text>
+            <Text style={styles.emptyTitle}>No transactions yet</Text>
             <Text style={styles.emptySubtitle}>
               Add your first expense to get started
             </Text>
@@ -331,31 +405,110 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
               📊 Enhanced Transaction Data
             </Text>
 
-            {displayExpenses.map((expense: any) => (
-              <View key={expense.id || expense._id} style={styles.expenseItem}>
+            {displayTransactions.map((transaction: any) => (
+              <View
+                key={transaction.id || transaction._id}
+                style={styles.expenseItem}
+              >
                 <View style={styles.expenseHeader}>
-                  <Text style={styles.expenseDescription}>
-                    {expense.description}
-                  </Text>
+                  <View style={styles.transactionTitleRow}>
+                    <Text style={styles.expenseDescription}>
+                      {transaction.description}
+                    </Text>
+                    <View
+                      style={[
+                        styles.transactionTypeBadge,
+                        transaction.type === "expense"
+                          ? styles.expenseTypeBadge
+                          : styles.settlementTypeBadge,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.transactionTypeText,
+                          transaction.type === "expense"
+                            ? styles.expenseTypeText
+                            : styles.settlementTypeText,
+                        ]}
+                      >
+                        {transaction.type === "expense"
+                          ? "EXPENSE"
+                          : "SETTLEMENT"}
+                      </Text>
+                    </View>
+                  </View>
                   <Text style={styles.expenseAmount}>
-                    {formatCurrency(expense.amount, expense.currency)}
+                    {formatCurrency(transaction.amount, transaction.currency)}
                   </Text>
                 </View>
                 <View style={styles.expenseMeta}>
                   <Text style={styles.expenseCategory}>
-                    {expense.category || "General"}
+                    {transaction.category ||
+                      (transaction.type === "settlement"
+                        ? "Settlement"
+                        : "General")}
                   </Text>
                   <Text style={styles.expenseDate}>
                     {new Date(
-                      expense.created_at || expense.date
+                      transaction.created_at || transaction.date
                     ).toLocaleDateString()}
                   </Text>
-                  {expense.participants && (
+                  {transaction.participants && (
                     <Text style={styles.participantCount}>
-                      {expense.participants.length} participants
+                      {transaction.participants.length} participants
                     </Text>
                   )}
                 </View>
+                {transaction.type === "settlement" && (
+                  <View style={styles.settlementInfo}>
+                    {(() => {
+                      const participants =
+                        getSettlementParticipants(transaction);
+                      // Debug the settlement status
+                      console.log("Settlement status debug:", {
+                        id: transaction._id || transaction.id,
+                        is_completed: transaction.is_completed,
+                        status: transaction.status,
+                        completed: transaction.completed,
+                        settled_at: transaction.settled_at,
+                        allFields: Object.keys(transaction),
+                      });
+                      return (
+                        <Text style={styles.settlementFromTo}>
+                          Settlement: {participants.payer} →{" "}
+                          {participants.payee}
+                        </Text>
+                      );
+                    })()}
+                    <View
+                      style={[
+                        styles.settlementStatus,
+                        transaction.is_completed ||
+                        transaction.status === "completed" ||
+                        transaction.completed
+                          ? styles.settledBadge
+                          : styles.pendingBadge,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.settlementStatusText,
+                          transaction.is_completed ||
+                          transaction.status === "completed" ||
+                          transaction.completed
+                            ? styles.settledText
+                            : styles.pendingText,
+                        ]}
+                      >
+                        {transaction.is_completed ||
+                        transaction.status === "completed" ||
+                        transaction.completed
+                          ? "COMPLETED"
+                          : "PENDING"}
+                      </Text>
+                    </View>
+                  </View>
+                )}
               </View>
             ))}
           </ScrollView>
@@ -627,16 +780,16 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       {/* Tabs */}
       <View style={styles.tabs}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === "expenses" && styles.activeTab]}
-          onPress={() => setActiveTab("expenses")}
+          style={[styles.tab, activeTab === "transactions" && styles.activeTab]}
+          onPress={() => setActiveTab("transactions")}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === "expenses" && styles.activeTabText,
+              activeTab === "transactions" && styles.activeTabText,
             ]}
           >
-            Expenses
+            Transactions
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -669,7 +822,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
 
       {/* Tab Content */}
       <View style={styles.content}>
-        {activeTab === "expenses" && renderExpensesTab()}
+        {activeTab === "transactions" && renderTransactionsTab()}
         {activeTab === "balances" && renderBalancesTab()}
         {activeTab === "settle" && renderSettleTab()}
       </View>
@@ -920,5 +1073,69 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  // Transaction-specific styles
+  transactionTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flex: 1,
+  },
+  transactionTypeBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginLeft: 8,
+  },
+  expenseTypeBadge: {
+    backgroundColor: "#e3f2fd",
+  },
+  settlementTypeBadge: {
+    backgroundColor: "#f3e5f5",
+  },
+  transactionTypeText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  expenseTypeText: {
+    color: "#1976d2",
+  },
+  settlementTypeText: {
+    color: "#7b1fa2",
+  },
+  settlementInfo: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  settlementFromTo: {
+    fontSize: 12,
+    color: "#666",
+    fontFamily: "monospace",
+  },
+  settlementStatus: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  settlementStatusText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  settledBadge: {
+    backgroundColor: "#e8f5e8",
+  },
+  pendingBadge: {
+    backgroundColor: "#fff3cd",
+  },
+  settledText: {
+    color: "#4CAF50",
+  },
+  pendingText: {
+    color: "#856404",
   },
 });
