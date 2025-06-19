@@ -12,7 +12,10 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
-import { fetchExpense, deleteExpense } from "../../store/slices/expensesSlice";
+import {
+  fetchTransaction,
+  deleteTransaction,
+} from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 
 type ExpenseDetailsScreenNavigationProp = StackNavigationProp<
@@ -32,24 +35,27 @@ interface Props {
 export default function ExpenseDetailsScreen({ navigation, route }: Props) {
   const { expenseId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
-  const { currentExpense, isLoading } = useSelector(
-    (state: RootState) => state.expenses
+  const { currentTransaction, isLoading } = useSelector(
+    (state: RootState) => state.groups
   );
   const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    console.log("ExpenseDetailsScreen: Fetching expense with ID:", expenseId);
-    dispatch(fetchExpense(expenseId));
+    console.log(
+      "ExpenseDetailsScreen: Fetching transaction with ID:",
+      expenseId
+    );
+    dispatch(fetchTransaction(expenseId));
   }, [expenseId]);
 
   useEffect(() => {
-    console.log("ExpenseDetailsScreen: currentExpense state changed:", {
-      currentExpense,
-      type: typeof currentExpense,
-      keys: currentExpense ? Object.keys(currentExpense) : null,
+    console.log("ExpenseDetailsScreen: currentTransaction state changed:", {
+      currentTransaction,
+      type: typeof currentTransaction,
+      keys: currentTransaction ? Object.keys(currentTransaction) : null,
       isLoading,
     });
-  }, [currentExpense, isLoading]);
+  }, [currentTransaction, isLoading]);
 
   const handleDeleteExpense = () => {
     Alert.alert(
@@ -62,7 +68,7 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
           style: "destructive",
           onPress: async () => {
             try {
-              await dispatch(deleteExpense(expenseId)).unwrap();
+              await dispatch(deleteTransaction(expenseId)).unwrap();
               navigation.goBack();
             } catch (error: any) {
               Alert.alert("Error", error);
@@ -80,7 +86,7 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
     return `${currency} ${amount.toFixed(2)}`;
   };
 
-  if (isLoading || !currentExpense) {
+  if (isLoading || !currentTransaction) {
     return (
       <View style={styles.loadingContainer}>
         <Text>Loading...</Text>
@@ -88,23 +94,23 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
     );
   }
 
-  // Handle nested expense structure
-  const expense = (currentExpense as any)?.expense || currentExpense;
+  // Use the transaction directly since it's already in the correct format
+  const expense = currentTransaction;
 
   if (!expense) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Expense not found</Text>
+        <Text>Transaction not found</Text>
       </View>
     );
   }
 
   const getUserShare = () => {
-    if (!expense || !user || !expense.splits) return 0;
-    const userSplit = expense.splits.find(
-      (split: any) => split.user_id === user.id
+    if (!expense || !user || !expense.participants) return 0;
+    const userParticipant = expense.participants.find(
+      (participant) => participant.user_id === user.id
     );
-    return userSplit?.amount || 0;
+    return userParticipant?.amount || 0;
   };
 
   return (
@@ -148,16 +154,16 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
           <View
             style={[
               styles.statusBadge,
-              expense.is_settled ? styles.settledBadge : styles.pendingBadge,
+              expense.is_completed ? styles.settledBadge : styles.pendingBadge,
             ]}
           >
             <Text
               style={[
                 styles.statusText,
-                expense.is_settled ? styles.settledText : styles.pendingText,
+                expense.is_completed ? styles.settledText : styles.pendingText,
               ]}
             >
-              {expense.is_settled ? "Settled" : "Pending"}
+              {expense.is_completed ? "Completed" : "Pending"}
             </Text>
           </View>
         </View>
@@ -177,29 +183,32 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
             {formatCurrency(getUserShare(), expense.currency || "USD")}
           </Text>
           <Text style={styles.shareLabel}>
-            You {expense.paid_by === user?.id ? "paid" : "owe"}
+            You {expense.created_by === user?.id ? "paid" : "owe"}
           </Text>
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Split Breakdown</Text>
-        {expense.splits && expense.splits.length > 0 ? (
-          expense.splits.map((split: any, index: number) => (
+        {expense.participants && expense.participants.length > 0 ? (
+          expense.participants.map((participant, index: number) => (
             <View key={index} style={styles.splitRow}>
               <Text style={styles.splitUser}>
-                {split.user_id === user?.id
+                {participant.user_id === user?.id
                   ? "You"
-                  : `User ${split.user_id.slice(-4)}`}
+                  : `User ${participant.user_id.slice(-4)}`}
               </Text>
               <Text style={styles.splitAmount}>
-                {formatCurrency(split.amount || 0, expense.currency || "USD")}
+                {formatCurrency(
+                  participant.amount || 0,
+                  expense.currency || "USD"
+                )}
               </Text>
             </View>
           ))
         ) : (
           <Text style={styles.noSplitsText}>
-            No split information available
+            No participant information available
           </Text>
         )}
       </View>

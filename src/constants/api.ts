@@ -23,20 +23,22 @@ export const API_ENDPOINTS = {
   GROUP: (id: string) => `/groups/${id}`,
   GROUP_MEMBERS: (id: string) => `/groups/${id}/members`,
   GROUP_MEMBER: (id: string, memberId: string) => `/groups/${id}/members/${memberId}`,
-  GROUP_EXPENSES: (id: string) => `/groups/${id}/expenses`,
+  GROUP_TRANSACTIONS: (id: string) => `/groups/${id}/transactions`,
   GROUP_BALANCES: (id: string) => `/groups/${id}/balances`,
   GROUP_SIMPLIFY: (id: string) => `/groups/${id}/simplify`,
-  GROUP_SETTLEMENTS: (id: string) => `/groups/${id}/settlements`,
+  GROUP_ANALYTICS: (id: string) => `/groups/${id}/analytics`,
 
-  // Expenses
-  EXPENSES: '/expenses',
-  EXPENSE: (id: string) => `/expenses/${id}`,
+  // Transactions
+  TRANSACTIONS: '/transactions',
+  TRANSACTION: (id: string) => `/transactions/${id}`,
+  TRANSACTION_EXPENSE: '/transactions/expense',
+  TRANSACTION_SETTLEMENT: '/transactions/settlement',
+  COMPLETE_TRANSACTION: (id: string) => `/transactions/${id}/complete`,
 
-  // Settlements
-  SETTLEMENTS: '/settlements',
-  SETTLEMENT: (id: string) => `/settlements/${id}`,
-  SETTLEMENT_COMPLETE: (id: string) => `/settlements/${id}/complete`,
-  CREATE_SETTLEMENT: '/settlements',
+  // User
+  USER_TRANSACTIONS: '/users/me/transactions',
+  USER_BALANCES: '/users/me/balances',
+  USER_ANALYTICS: '/users/me/analytics',
 
   // Utility
   PING: '/ping',

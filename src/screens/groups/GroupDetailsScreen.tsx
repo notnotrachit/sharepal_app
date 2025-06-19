@@ -18,12 +18,14 @@ import {
   fetchGroupBalances,
   fetchGroupSimplify,
   fetchGroupMembers,
-  fetchGroupSettlements,
-  createSettlement,
-  completeSettlement,
-  fetchAllSettlements,
+  fetchGroupTransactions,
+  createSettlementTransaction,
+  completeTransaction,
+  fetchGroupAnalytics,
+  createExpenseTransaction,
+  setCurrentGroup,
+  clearGroupData,
 } from "../../store/slices/groupsSlice";
-import { fetchGroupExpenses } from "../../store/slices/expensesSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 
 type GroupDetailsScreenNavigationProp = StackNavigationProp<
@@ -43,12 +45,15 @@ interface Props {
 export default function GroupDetailsScreen({ navigation, route }: Props) {
   const { groupId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
-  const { currentGroup, groupBalances, simplifyData, isLoading } = useSelector(
-    (state: RootState) => state.groups
-  );
-  const { groupExpenses } = useSelector((state: RootState) => state.expenses);
+  const {
+    currentGroup,
+    groupBalances,
+    groupSimplify,
+    isLoading,
+    groupTransactions,
+    groupAnalytics,
+  } = useSelector((state: RootState) => state.groups);
   const { user } = useSelector((state: RootState) => state.auth);
-  const allExpensesState = useSelector((state: RootState) => state.expenses);
 
   const [activeTab, setActiveTab] = useState<
     "expenses" | "balances" | "settle"
@@ -63,8 +68,13 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     dispatch(fetchGroupMembers(groupId));
     dispatch(fetchGroupBalances(groupId));
     dispatch(fetchGroupSimplify(groupId));
-    dispatch(fetchGroupSettlements(groupId));
-    dispatch(fetchGroupExpenses({ groupId }));
+    dispatch(
+      fetchGroupTransactions({
+        groupId,
+        params: { limit: 50 },
+      })
+    );
+    dispatch(fetchGroupAnalytics(groupId));
   };
 
   const handleAddExpense = () => {
@@ -110,7 +120,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   ) => {
     try {
       await dispatch(
-        completeSettlement({
+        completeTransaction({
           id: settlementId,
           data: {
             notes: `Paid ${formatCurrency(amount, currency)} to ${payeeName}`,
@@ -152,9 +162,9 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     if (!user?.id) return;
 
     try {
-      // First create a settlement from the suggestion
-      const settlementResult = await dispatch(
-        createSettlement({
+      // Use the new transaction-based settlement API
+      const settlementTransaction = await dispatch(
+        createSettlementTransaction({
           group_id: groupId,
           payer_id: settlement.payer_id,
           payee_id: settlement.payee_id,
@@ -164,8 +174,8 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         })
       ).unwrap();
 
-      // Check if we got a valid settlement ID
-      if (!settlementResult || !settlementResult.id) {
+      // Check if we got a valid transaction ID
+      if (!settlementTransaction || !settlementTransaction._id) {
         // Fallback: just record that the payment was made
         loadGroupData();
         Alert.alert(
@@ -179,15 +189,16 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         return;
       }
 
-      // Then immediately mark it as completed
+      // Then immediately mark it as completed using the new API
       const completionResult = await dispatch(
-        completeSettlement({
-          id: settlementResult.id,
+        completeTransaction({
+          id: settlementTransaction._id,
           data: {
             notes: `Paid ${formatCurrency(
               settlement.amount,
               settlement.currency
             )} to ${settlement.payee_name || "recipient"}`,
+            settlement_method: "manual",
           },
         })
       ).unwrap();
@@ -238,7 +249,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
 
     try {
       await dispatch(
-        createSettlement({
+        createSettlementTransaction({
           group_id: groupId,
           payer_id: user.id,
           payee_id: payeeId,
@@ -293,52 +304,108 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     return "You are settled up";
   };
 
-  const renderExpensesTab = () => (
-    <View style={styles.tabContent}>
-      {!groupExpenses ||
-      !Array.isArray(groupExpenses) ||
-      groupExpenses.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="receipt-outline" size={48} color="#ccc" />
-          <Text style={styles.emptyTitle}>No expenses yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Add your first expense to get started
-          </Text>
-        </View>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {groupExpenses.map((expense) => (
-            <View key={expense.id} style={styles.expenseItem}>
-              <View style={styles.expenseHeader}>
-                <Text style={styles.expenseDescription}>
-                  {expense.description}
-                </Text>
-                <Text style={styles.expenseAmount}>
-                  {formatCurrency(expense.amount, expense.currency)}
-                </Text>
-              </View>
-              <View style={styles.expenseMeta}>
-                <Text style={styles.expenseCategory}>{expense.category}</Text>
-                <Text style={styles.expenseDate}>
-                  {new Date(expense.created_at).toLocaleDateString()}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
+  const renderExpensesTab = () => {
+    // Use transaction data for expenses
+    const expenseTransactions = Array.isArray(groupTransactions)
+      ? groupTransactions.filter((t) => t.type === "expense")
+      : [];
 
-  const renderBalancesTab = () => {
-    // Find the current user's balance from the backend data
-    const currentUserBalance = Array.isArray(groupBalances)
-      ? groupBalances.find((balance) => balance.user_id === user?.id)
-      : null;
+    const displayExpenses = expenseTransactions;
 
     return (
       <View style={styles.tabContent}>
-        {!currentUserBalance || currentUserBalance.amount === 0 ? (
+        {!displayExpenses ||
+        !Array.isArray(displayExpenses) ||
+        displayExpenses.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="receipt-outline" size={48} color="#ccc" />
+            <Text style={styles.emptyTitle}>No expenses yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Add your first expense to get started
+            </Text>
+          </View>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Header to show data source */}
+            <Text style={styles.dataSourceHeader}>
+              📊 Enhanced Transaction Data
+            </Text>
+
+            {displayExpenses.map((expense: any) => (
+              <View key={expense.id || expense._id} style={styles.expenseItem}>
+                <View style={styles.expenseHeader}>
+                  <Text style={styles.expenseDescription}>
+                    {expense.description}
+                  </Text>
+                  <Text style={styles.expenseAmount}>
+                    {formatCurrency(expense.amount, expense.currency)}
+                  </Text>
+                </View>
+                <View style={styles.expenseMeta}>
+                  <Text style={styles.expenseCategory}>
+                    {expense.category || "General"}
+                  </Text>
+                  <Text style={styles.expenseDate}>
+                    {new Date(
+                      expense.created_at || expense.date
+                    ).toLocaleDateString()}
+                  </Text>
+                  {expense.participants && (
+                    <Text style={styles.participantCount}>
+                      {expense.participants.length} participants
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    );
+  };
+
+  const renderBalancesTab = () => {
+    // Use enhanced balance data
+    const currentUserBalance = Array.isArray(groupBalances)
+      ? groupBalances.find((balance: any) => balance.user_id === user?.id)
+      : null;
+
+    // Use simplify data
+    const settlementData = Array.isArray(groupSimplify) ? groupSimplify : [];
+
+    // Get detailed breakdown from settlements
+    const userSettlements = Array.isArray(settlementData)
+      ? settlementData.filter(
+          (settlement) =>
+            settlement.payer_id === user?.id || settlement.payee_id === user?.id
+        )
+      : [];
+
+    // Create detailed balance breakdown
+    const detailedBalances = userSettlements.map((settlement) => {
+      const isUserPayer = settlement.payer_id === user?.id;
+      const otherUserName = isUserPayer
+        ? settlement.payee_name || "Someone"
+        : settlement.payer_name || "Someone";
+
+      return {
+        otherUser: otherUserName,
+        amount: settlement.amount || 0,
+        currency: settlement.currency || "INR",
+        isDebt: isUserPayer, // true if user owes money, false if user is owed money
+      };
+    });
+
+    // Helper function to get balance amount from either type
+    const getBalanceAmount = (balance: any) => {
+      return balance?.balance !== undefined
+        ? balance.balance
+        : balance?.amount || 0;
+    };
+
+    return (
+      <View style={styles.tabContent}>
+        {!currentUserBalance || getBalanceAmount(currentUserBalance) === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="wallet-outline" size={48} color="#ccc" />
             <Text style={styles.emptyTitle}>You are settled up</Text>
@@ -346,25 +413,98 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Summary Balance */}
             <View style={styles.balanceItem}>
-              <Text style={styles.balanceUser}>
-                {currentUserBalance.user_name || "You"}
-              </Text>
+              <Text style={styles.balanceUser}>Overall Balance</Text>
               <Text
                 style={[
                   styles.balanceAmount,
-                  { color: getBalanceColor(currentUserBalance.amount || 0) },
+                  {
+                    color: getBalanceColor(
+                      getBalanceAmount(currentUserBalance)
+                    ),
+                  },
                 ]}
               >
                 {formatCurrency(
-                  currentUserBalance.amount || 0,
+                  getBalanceAmount(currentUserBalance),
                   currentUserBalance.currency || "INR"
                 )}
               </Text>
               <Text style={styles.balanceDescription}>
-                {getBalanceText(currentUserBalance.amount || 0)}
+                {getBalanceText(getBalanceAmount(currentUserBalance))}
               </Text>
+
+              {/* Show enhanced balance details */}
+              {currentUserBalance && (
+                <View style={styles.enhancedBalanceInfo}>
+                  <Text style={styles.enhancedBalanceText}>
+                    Total Paid:{" "}
+                    {formatCurrency(
+                      currentUserBalance.total_paid,
+                      currentUserBalance.currency
+                    )}
+                  </Text>
+                  <Text style={styles.enhancedBalanceText}>
+                    Total Owed:{" "}
+                    {formatCurrency(
+                      currentUserBalance.total_owed,
+                      currentUserBalance.currency
+                    )}
+                  </Text>
+                </View>
+              )}
             </View>
+
+            {/* Detailed Breakdown */}
+            {detailedBalances.length > 0 && (
+              <>
+                <Text style={styles.detailHeader}>
+                  <Ionicons name="list-outline" size={16} color="#333" />{" "}
+                  Breakdown:
+                </Text>
+                {detailedBalances.map((detail, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.detailItem,
+                      {
+                        borderLeftColor: detail.isDebt ? "#FF6B35" : "#4CAF50",
+                      },
+                    ]}
+                  >
+                    <Text style={styles.detailText}>
+                      {detail.isDebt ? (
+                        <>
+                          You owe{" "}
+                          <Text
+                            style={[styles.detailAmount, { color: "#FF6B35" }]}
+                          >
+                            {formatCurrency(detail.amount, detail.currency)}
+                          </Text>{" "}
+                          to{" "}
+                          <Text style={styles.detailUser}>
+                            {detail.otherUser}
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={styles.detailUser}>
+                            {detail.otherUser}
+                          </Text>{" "}
+                          owes you{" "}
+                          <Text
+                            style={[styles.detailAmount, { color: "#4CAF50" }]}
+                          >
+                            {formatCurrency(detail.amount, detail.currency)}
+                          </Text>
+                        </>
+                      )}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            )}
           </ScrollView>
         )}
       </View>
@@ -372,17 +512,24 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   };
 
   const renderSettleTab = () => {
+    // Use simplify data
+    const activeSettlementData = Array.isArray(groupSimplify)
+      ? groupSimplify
+      : [];
+
     // Filter settlements to only show ones involving the current user
-    const userSettlements = simplifyData.filter(
-      (settlement) =>
-        settlement.payer_id === user?.id || settlement.payee_id === user?.id
-    );
+    const userSettlements = Array.isArray(activeSettlementData)
+      ? activeSettlementData.filter(
+          (settlement) =>
+            settlement.payer_id === user?.id || settlement.payee_id === user?.id
+        )
+      : [];
 
     return (
       <View style={styles.tabContent}>
-        {!simplifyData ||
-        !Array.isArray(simplifyData) ||
-        simplifyData.length === 0 ||
+        {!activeSettlementData ||
+        !Array.isArray(activeSettlementData) ||
+        activeSettlementData.length === 0 ||
         userSettlements.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons
@@ -467,9 +614,9 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.groupInfo}>
-          <Text style={styles.groupName}>{currentGroup.name}</Text>
+          <Text style={styles.groupName}>{currentGroup?.name}</Text>
           <Text style={styles.memberCount}>
-            {currentGroup.members?.length || 0} members
+            {currentGroup?.members?.length || 0} members
           </Text>
         </View>
         <TouchableOpacity style={styles.addButton} onPress={handleAddExpense}>
@@ -682,6 +829,61 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginTop: 4,
+  },
+  detailHeader: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginTop: 16,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  detailItem: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#007AFF",
+  },
+  detailText: {
+    fontSize: 14,
+    color: "#333",
+    lineHeight: 20,
+  },
+  detailAmount: {
+    fontWeight: "600",
+    color: "#007AFF",
+  },
+  detailUser: {
+    fontWeight: "600",
+    color: "#333",
+  },
+  enhancedBalanceInfo: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+  },
+  enhancedBalanceText: {
+    fontSize: 12,
+    color: "#666",
+    marginVertical: 2,
+  },
+  dataSourceHeader: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#007AFF",
+    textAlign: "center",
+    marginBottom: 12,
+    paddingVertical: 8,
+    backgroundColor: "#f0f8ff",
+    borderRadius: 6,
+  },
+  participantCount: {
+    fontSize: 10,
+    color: "#999",
+    fontStyle: "italic",
   },
   settleHeader: {
     fontSize: 16,

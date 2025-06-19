@@ -40,7 +40,7 @@ export default function GroupsScreen({ navigation }: Props) {
   }, [groups, isLoading, error]);
 
   const loadGroups = () => {
-    dispatch(fetchGroups({}));
+    dispatch(fetchGroups());
   };
 
   const handleGroupPress = (group: Group) => {

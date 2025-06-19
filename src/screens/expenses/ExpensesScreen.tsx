@@ -11,9 +11,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
-import { fetchExpenses } from "../../store/slices/expensesSlice";
+import { fetchUserTransactions } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
-import { Expense } from "../../types/api";
+import { Transaction } from "../../types/api";
 
 type ExpensesScreenNavigationProp = StackNavigationProp<
   ExpensesStackParamList,
@@ -26,13 +26,19 @@ interface Props {
 
 export default function ExpensesScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
-  const { expenses, isLoading } = useSelector(
-    (state: RootState) => state.expenses
+  const { userTransactions, isLoading } = useSelector(
+    (state: RootState) => state.groups
+  );
+
+  // Filter transactions to only include expense types
+  const expenses = userTransactions.filter(
+    (transaction) => transaction.type === "expense"
   );
 
   useEffect(() => {
     console.log("ExpensesScreen: Component mounted");
-    console.log("ExpensesScreen: Current expenses state:", {
+    console.log("ExpensesScreen: Current user transactions state:", {
+      userTransactions,
       expenses,
       count: expenses?.length || 0,
       isArray: Array.isArray(expenses),
@@ -41,26 +47,27 @@ export default function ExpensesScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    console.log("ExpensesScreen: Expenses state changed:", {
+    console.log("ExpensesScreen: User transactions state changed:", {
+      userTransactions,
       expenses,
       count: expenses?.length || 0,
       isArray: Array.isArray(expenses),
       isLoading,
     });
-  }, [expenses, isLoading]);
+  }, [userTransactions, expenses, isLoading]);
 
   useEffect(() => {
-    console.log("ExpensesScreen: Loading user expenses...");
+    console.log("ExpensesScreen: Loading user transactions...");
     loadExpenses();
   }, []);
 
   const loadExpenses = () => {
-    console.log("ExpensesScreen: Dispatching fetchExpenses...");
-    dispatch(fetchExpenses({}));
+    console.log("ExpensesScreen: Dispatching fetchUserTransactions...");
+    dispatch(fetchUserTransactions({ params: { type: "expense" } }));
   };
 
-  const handleExpensePress = (expense: Expense) => {
-    navigation.navigate("ExpenseDetails", { expenseId: expense.id });
+  const handleExpensePress = (expense: Transaction) => {
+    navigation.navigate("ExpenseDetails", { expenseId: expense._id });
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -70,7 +77,7 @@ export default function ExpensesScreen({ navigation }: Props) {
     return `${currency || "USD"} ${amount.toFixed(2)}`;
   };
 
-  const renderExpenseItem = ({ item }: { item: Expense }) => {
+  const renderExpenseItem = ({ item }: { item: Transaction }) => {
     // Force extract values to variables
     console.log("Rendering expense item:", item);
     const description = item?.description || "No description";
@@ -79,7 +86,7 @@ export default function ExpensesScreen({ navigation }: Props) {
     const category = item?.category || "Unknown";
     const createdAt = item?.created_at;
     const splitType = item?.split_type || "Unknown";
-    const isSettled = item?.is_settled || false;
+    const isSettled = item?.is_completed || false;
 
     return (
       <TouchableOpacity
@@ -153,7 +160,7 @@ export default function ExpensesScreen({ navigation }: Props) {
           key={`expenses-${expenses.length}-${Date.now()}`}
           data={expenses}
           renderItem={renderExpenseItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl refreshing={isLoading} onRefresh={loadExpenses} />

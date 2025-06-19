@@ -1,14 +1,28 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiService } from '../../services/api';
-import { Group, CreateGroupRequest, Balance, Settlement, SimplifyResponse, User, CreateSettlementRequest, CompleteSettlementRequest } from '../../types/api';
+import { 
+  Group, 
+  CreateGroupRequest, 
+  User, 
+  Transaction,
+  EnhancedBalance,
+  SimplifyResponse,
+  CreateExpenseTransactionRequest,
+  CreateSettlementTransactionRequest,
+  CompleteTransactionRequest,
+  GroupAnalytics
+} from '../../types/api';
 
 interface GroupsState {
   groups: Group[];
   currentGroup: Group | null;
   groupMembers: User[];
-  groupBalances: Balance[];
-  groupSettlements: Settlement[];
-  simplifyData: SimplifyResponse[];
+  groupTransactions: Transaction[];
+  userTransactions: Transaction[];
+  currentTransaction: Transaction | null;
+  groupBalances: EnhancedBalance[];
+  groupSimplify: SimplifyResponse[];
+  groupAnalytics: GroupAnalytics | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -17,48 +31,40 @@ const initialState: GroupsState = {
   groups: [],
   currentGroup: null,
   groupMembers: [],
+  groupTransactions: [],
+  userTransactions: [],
+  currentTransaction: null,
   groupBalances: [],
-  groupSettlements: [],
-  simplifyData: [],
+  groupSimplify: [],
+  groupAnalytics: null,
   isLoading: false,
   error: null,
 };
 
-// Async thunks
-export const fetchGroups = createAsyncThunk<Group[], any>(
+// ===========================================
+// ASYNC THUNKS
+// ===========================================
+
+export const fetchGroups = createAsyncThunk<Group[]>(
   'groups/fetchGroups',
-  async (params: any = {}, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await apiService.getGroups(params);
-      console.log('API response for groups:', response);
+      const response = await apiService.getGroups() as any;
+      console.log('Raw groups API response:', response);
       
       // Handle different response structures
       if (Array.isArray(response)) {
-        return response;
-      } else if (response && (response as any).groups) {
-        // The actual structure from your API
-        return (response as any).groups;
-      } else if (response && (response as any).items) {
-        return (response as any).items;
-      } else if (response && Array.isArray((response as any).data)) {
-        return (response as any).data;
+        return response as Group[];
+      } else if (response?.groups && Array.isArray(response.groups)) {
+        return response.groups as Group[];
+      } else if (response?.data?.groups && Array.isArray(response.data.groups)) {
+        return response.data.groups as Group[];
       } else {
+        console.warn('fetchGroups: Unexpected response structure, returning empty array');
         return [];
       }
     } catch (error: any) {
-      console.log('Error fetching groups:', error);
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const createGroup = createAsyncThunk<Group, CreateGroupRequest>(
-  'groups/createGroup',
-  async (groupData: CreateGroupRequest, { rejectWithValue }) => {
-    try {
-      const response = await apiService.createGroup(groupData);
-      return response as Group;
-    } catch (error: any) {
+      console.error('fetchGroups error:', error);
       return rejectWithValue(error.message);
     }
   }
@@ -68,11 +74,47 @@ export const fetchGroup = createAsyncThunk<Group, string>(
   'groups/fetchGroup',
   async (groupId: string, { rejectWithValue }) => {
     try {
-      const response = await apiService.getGroup(groupId);
-      console.log('API response for single group:', response);
-      return response as Group;
+      const response = await apiService.getGroup(groupId) as any;
+      console.log('Raw group API response:', response);
+      
+      // Handle different response structures
+      if (response?.group) {
+        return response.group as Group;
+      } else if (response?.data?.group) {
+        return response.data.group as Group;
+      } else if (response?.id || response?._id) {
+        return response as Group;
+      } else {
+        console.error('fetchGroup: Invalid response structure');
+        return rejectWithValue('Invalid group data received');
+      }
     } catch (error: any) {
-      console.log('Error fetching group:', error);
+      console.error('fetchGroup error:', error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const createGroup = createAsyncThunk<Group, CreateGroupRequest>(
+  'groups/createGroup',
+  async (groupData: CreateGroupRequest, { rejectWithValue }) => {
+    try {
+      const response = await apiService.createGroup(groupData) as any;
+      console.log('Raw create group API response:', response);
+      
+      // Handle different response structures
+      if (response?.group) {
+        return response.group as Group;
+      } else if (response?.data?.group) {
+        return response.data.group as Group;
+      } else if (response?.id || response?._id) {
+        return response as Group;
+      } else {
+        console.error('createGroup: Invalid response structure');
+        return rejectWithValue('Invalid group data received');
+      }
+    } catch (error: any) {
+      console.error('createGroup error:', error);
       return rejectWithValue(error.message);
     }
   }
@@ -114,88 +156,6 @@ export const removeGroupMember = createAsyncThunk(
   }
 );
 
-export const fetchGroupBalances = createAsyncThunk<Balance[], string>(
-  'groups/fetchGroupBalances',
-  async (groupId: string, { rejectWithValue }) => {
-    try {
-      const response = await apiService.getGroupBalances(groupId);
-      console.log('API response for group balances:', response);
-      
-      // Handle different response structures
-      if (Array.isArray(response)) {
-        return response;
-      } else if (response && (response as any).balances && (response as any).balances.balances) {
-        // Handle nested structure: response.balances.balances
-        return (response as any).balances.balances;
-      } else if (response && (response as any).balances) {
-        return (response as any).balances;
-      } else if (response && (response as any).items) {
-        return (response as any).items;
-      } else if (response && Array.isArray((response as any).data)) {
-        return (response as any).data;
-      } else {
-        return [];
-      }
-    } catch (error: any) {
-      console.log('Error fetching group balances:', error);
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const fetchGroupSettlements = createAsyncThunk<Settlement[], string>(
-  'groups/fetchGroupSettlements',
-  async (groupId: string, { rejectWithValue }) => {
-    try {
-      const response = await apiService.getGroupSettlements(groupId);
-      console.log('API response for group settlements:', response);
-      console.log('Is response an array?', Array.isArray(response));
-      
-      // Ensure we always return an array
-      if (Array.isArray(response)) {
-        return response;
-      } else {
-        console.warn('fetchGroupSettlements: API returned non-array response, returning empty array');
-        return [];
-      }
-    } catch (error: any) {
-      console.log('Error fetching group settlements:', error);
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const fetchGroupSimplify = createAsyncThunk<SimplifyResponse[], string>(
-  'groups/fetchGroupSimplify',
-  async (groupId: string, { rejectWithValue }) => {
-    try {
-      const response = await apiService.getGroupSimplify(groupId);
-      console.log('API response for group simplify:', response);
-      
-      // Handle different response structures
-      if (Array.isArray(response)) {
-        return response;
-      } else if (response && (response as any).suggested_settlements) {
-        // Handle API structure: response.suggested_settlements
-        return (response as any).suggested_settlements;
-      } else if (response && (response as any).settlements) {
-        return (response as any).settlements;
-      } else if (response && (response as any).simplify) {
-        return (response as any).simplify;
-      } else if (response && (response as any).items) {
-        return (response as any).items;
-      } else if (response && Array.isArray((response as any).data)) {
-        return (response as any).data;
-      } else {
-        return [];
-      }
-    } catch (error: any) {
-      console.log('Error fetching group simplify:', error);
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
 export const fetchGroupMembers = createAsyncThunk<User[], string>(
   'groups/fetchGroupMembers',
   async (groupId: string, { rejectWithValue }) => {
@@ -203,7 +163,6 @@ export const fetchGroupMembers = createAsyncThunk<User[], string>(
       const response = await apiService.getGroupMembers(groupId);
       console.log('API response for group members:', response);
       
-      // Handle different response structures
       if (Array.isArray(response)) {
         return response;
       } else if (response && (response as any).members) {
@@ -222,89 +181,239 @@ export const fetchGroupMembers = createAsyncThunk<User[], string>(
   }
 );
 
-export const createSettlement = createAsyncThunk<Settlement, CreateSettlementRequest>(
-  'groups/createSettlement',
-  async (settlementData: CreateSettlementRequest, { rejectWithValue }) => {
+// ===========================================
+// TRANSACTION-BASED ASYNC THUNKS
+// ===========================================
+
+export const createExpenseTransaction = createAsyncThunk<Transaction, CreateExpenseTransactionRequest>(
+  'groups/createExpenseTransaction',
+  async (data, { rejectWithValue }) => {
     try {
-      const response = await apiService.createSettlement(settlementData);
-      console.log('API response for create settlement:', response);
-      console.log('Response type:', typeof response);
-      console.log('Response keys:', response ? Object.keys(response) : 'No response');
+      const response = await apiService.createExpenseTransaction(data) as any;
+      console.log('API response for create expense transaction:', response);
       
-      // Handle different response structures
-      if (response && (response as any).id) {
-        return response as Settlement;
-      } else if (response && (response as any).data && (response as any).data.id) {
-        return (response as any).data as Settlement;
-      } else if (response && (response as any).settlement) {
-        return (response as any).settlement as Settlement;
+      if (response?.data?.transaction) {
+        return response.data.transaction;
+      } else if (response?.transaction) {
+        return response.transaction;
+      } else if (response?._id) {
+        return response;
       } else {
-        console.error('createSettlement: API response does not contain settlement with ID');
-        return rejectWithValue('Failed to create settlement - invalid API response');
+        return rejectWithValue('Invalid response format for expense transaction');
       }
     } catch (error: any) {
-      console.log('Error creating settlement:', error);
-      return rejectWithValue(error.message || 'Failed to create settlement');
+      console.log('Error creating expense transaction:', error);
+      return rejectWithValue(error.message || 'Failed to create expense transaction');
     }
   }
 );
 
-export const completeSettlement = createAsyncThunk<Settlement, { id: string; data?: CompleteSettlementRequest }>(
-  'groups/completeSettlement',
+export const createSettlementTransaction = createAsyncThunk<Transaction, CreateSettlementTransactionRequest>(
+  'groups/createSettlementTransaction', 
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await apiService.createSettlementTransaction(data) as any;
+      console.log('API response for create settlement transaction:', response);
+      
+      if (response?.data?.transaction) {
+        return response.data.transaction;
+      } else if (response?.transaction) {
+        return response.transaction;
+      } else if (response?._id) {
+        return response;
+      } else {
+        return rejectWithValue('Invalid response format for settlement transaction');
+      }
+    } catch (error: any) {
+      console.log('Error creating settlement transaction:', error);
+      return rejectWithValue(error.message || 'Failed to create settlement transaction');
+    }
+  }
+);
+
+export const completeTransaction = createAsyncThunk<Transaction, { id: string; data?: CompleteTransactionRequest }>(
+  'groups/completeTransaction',
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await apiService.completeSettlement(id, data);
-      console.log('API response for complete settlement:', response);
-      console.log('Response type:', typeof response);
-      console.log('Response keys:', response ? Object.keys(response) : 'No response');
+      const response = await apiService.completeTransaction(id, data) as any;
+      console.log('API response for complete transaction:', response);
       
-      if (!response) {
-        console.error('completeSettlement: API returned undefined response');
-        return rejectWithValue('Settlement completion failed - no response from server');
-      }
-      
-      // Handle different response structures
-      if (response && (response as any).id) {
-        return response as Settlement;
-      } else if (response && (response as any).data && (response as any).data.id) {
-        return (response as any).data as Settlement;
-      } else if (response && (response as any).settlement) {
-        return (response as any).settlement as Settlement;
+      if (response?.data?.transaction) {
+        return response.data.transaction;
+      } else if (response?.transaction) {
+        return response.transaction;
+      } else if (response?._id) {
+        return response;
       } else {
-        console.error('completeSettlement: API response does not contain settlement with ID');
-        return rejectWithValue('Settlement completion failed - invalid response format');
+        return rejectWithValue('Invalid response format for transaction completion');
       }
     } catch (error: any) {
-      console.log('Error completing settlement:', error);
-      return rejectWithValue(error.message || 'Failed to complete settlement');
+      console.log('Error completing transaction:', error);
+      return rejectWithValue(error.message || 'Failed to complete transaction');
     }
   }
 );
 
-export const fetchAllSettlements = createAsyncThunk<Settlement[], { status?: string }>(
-  'groups/fetchAllSettlements',
-  async (params = {}, { rejectWithValue }) => {
+export const fetchGroupTransactions = createAsyncThunk<Transaction[], { groupId: string; params?: any }>(
+  'groups/fetchGroupTransactions',
+  async ({ groupId, params }, { rejectWithValue }) => {
     try {
-      const response = await apiService.getSettlements(params);
-      console.log('API response for all settlements:', response);
+      const response = await apiService.getGroupTransactions(groupId, params) as any;
+      console.log('API response for group transactions:', response);
       
-      // Handle different response structures
       if (Array.isArray(response)) {
         return response;
-      } else if (response && (response as any).settlements) {
-        return (response as any).settlements;
-      } else if (response && (response as any).data) {
-        return (response as any).data;
+      } else if (response?.data?.transactions && Array.isArray(response.data.transactions)) {
+        return response.data.transactions;
+      } else if (response?.transactions && Array.isArray(response.transactions)) {
+        return response.transactions;
       } else {
         return [];
       }
     } catch (error: any) {
-      console.log('Error fetching all settlements:', error);
-      return rejectWithValue(error.message);
+      console.log('Error fetching group transactions:', error);
+      return rejectWithValue(error.message || 'Failed to fetch group transactions');
     }
   }
 );
 
+export const fetchGroupBalances = createAsyncThunk<EnhancedBalance[], string>(
+  'groups/fetchGroupBalances',
+  async (groupId: string, { rejectWithValue }) => {
+    try {
+      const response = await apiService.getGroupBalances(groupId) as any;
+      console.log('API response for group balances:', response);
+      
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response?.data?.balances && Array.isArray(response.data.balances)) {
+        return response.data.balances;
+      } else if (response?.balances && Array.isArray(response.balances)) {
+        return response.balances;
+      } else {
+        return [];
+      }
+    } catch (error: any) {
+      console.log('Error fetching group balances:', error);
+      return rejectWithValue(error.message || 'Failed to fetch group balances');
+    }
+  }
+);
+
+export const fetchGroupSimplify = createAsyncThunk<SimplifyResponse[], string>(
+  'groups/fetchGroupSimplify',
+  async (groupId: string, { rejectWithValue }) => {
+    try {
+      const response = await apiService.getGroupSimplify(groupId) as any;
+      console.log('API response for group simplify:', response);
+      
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response?.data?.suggested_settlements && Array.isArray(response.data.suggested_settlements)) {
+        return response.data.suggested_settlements;
+      } else if (response?.suggested_settlements && Array.isArray(response.suggested_settlements)) {
+        return response.suggested_settlements;
+      } else {
+        return [];
+      }
+    } catch (error: any) {
+      console.log('Error fetching group simplify:', error);
+      return rejectWithValue(error.message || 'Failed to fetch settlement suggestions');
+    }
+  }
+);
+
+export const fetchGroupAnalytics = createAsyncThunk<GroupAnalytics, string>(
+  'groups/fetchGroupAnalytics',
+  async (groupId: string, { rejectWithValue }) => {
+    try {
+      const response = await apiService.getGroupAnalytics(groupId) as any;
+      console.log('API response for group analytics:', response);
+      
+      if (response?.data?.analytics) {
+        return response.data.analytics;
+      } else if (response?.analytics) {
+        return response.analytics;
+      } else if (response?.group_id) {
+        return response;
+      } else {
+        return rejectWithValue('Invalid response format for group analytics');
+      }
+    } catch (error: any) {
+      console.log('Error fetching group analytics:', error);
+      return rejectWithValue(error.message || 'Failed to fetch group analytics');
+    }
+  }
+);
+
+export const fetchUserTransactions = createAsyncThunk<Transaction[], { params?: any }>(
+  'groups/fetchUserTransactions',
+  async ({ params }, { rejectWithValue }) => {
+    try {
+      console.log('🔍 Fetching user transactions with params:', params);
+      const response = await apiService.getUserTransactions(params) as any;
+      console.log('🔍 User transactions API response:', response);
+      
+      if (response?.data?.transactions) {
+        return response.data.transactions;
+      } else if (response?.transactions) {
+        return response.transactions;
+      } else if (Array.isArray(response?.data)) {
+        return response.data;
+      } else if (Array.isArray(response)) {
+        return response;
+      } else {
+        console.warn('Unexpected user transactions response format:', response);
+        return [];
+      }
+    } catch (error: any) {
+      console.log('Error fetching user transactions:', error);
+      return rejectWithValue(error.message || 'Failed to fetch user transactions');
+    }
+  }
+);
+
+export const fetchTransaction = createAsyncThunk<Transaction, string>(
+  'groups/fetchTransaction',
+  async (transactionId, { rejectWithValue }) => {
+    try {
+      console.log('🔍 Fetching transaction with ID:', transactionId);
+      const response = await apiService.getTransaction(transactionId) as any;
+      console.log('🔍 Transaction API response:', response);
+      
+      if (response?.data?.transaction) {
+        return response.data.transaction;
+      } else if (response?.transaction) {
+        return response.transaction;
+      } else if (response?.data) {
+        return response.data;
+      } else {
+        return response;
+      }
+    } catch (error: any) {
+      console.log('Error fetching transaction:', error);
+      return rejectWithValue(error.message || 'Failed to fetch transaction');
+    }
+  }
+);
+
+export const deleteTransaction = createAsyncThunk<string, string>(
+  'groups/deleteTransaction',
+  async (transactionId, { rejectWithValue }) => {
+    try {
+      console.log('🗑️ Deleting transaction with ID:', transactionId);
+      await apiService.deleteTransaction(transactionId);
+      return transactionId;
+    } catch (error: any) {
+      console.log('Error deleting transaction:', error);
+      return rejectWithValue(error.message || 'Failed to delete transaction');
+    }
+  }
+);
+
+// ===========================================
+// SLICE DEFINITION
+// ===========================================
 const groupsSlice = createSlice({
   name: 'groups',
   initialState,
@@ -318,8 +427,11 @@ const groupsSlice = createSlice({
     clearGroupData: (state) => {
       state.currentGroup = null;
       state.groupBalances = [];
-      state.groupSettlements = [];
-      state.simplifyData = [];
+      state.groupSimplify = [];
+      state.groupTransactions = [];
+      state.userTransactions = [];
+      state.currentTransaction = null;
+      state.groupAnalytics = null;
     },
   },
   extraReducers: (builder) => {
@@ -367,21 +479,6 @@ const groupsSlice = createSlice({
         }
       })
       
-      // Fetch group balances
-      .addCase(fetchGroupBalances.fulfilled, (state, action) => {
-        state.groupBalances = action.payload;
-      })
-      
-      // Fetch group settlements
-      .addCase(fetchGroupSettlements.fulfilled, (state, action) => {
-        state.groupSettlements = Array.isArray(action.payload) ? action.payload : [];
-      })
-      
-      // Fetch group simplify
-      .addCase(fetchGroupSimplify.fulfilled, (state, action) => {
-        state.simplifyData = action.payload;
-      })
-      
       // Fetch group members
       .addCase(fetchGroupMembers.fulfilled, (state, action) => {
         const groupId = action.meta.arg;
@@ -399,55 +496,151 @@ const groupsSlice = createSlice({
         }
       })
       
-      // Create settlement
-      .addCase(createSettlement.pending, (state) => {
+      // Create expense transaction
+      .addCase(createExpenseTransaction.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(createSettlement.fulfilled, (state, action) => {
+      .addCase(createExpenseTransaction.fulfilled, (state, action) => {
         state.isLoading = false;
-        console.log('createSettlement.fulfilled - Current groupSettlements:', state.groupSettlements);
-        console.log('createSettlement.fulfilled - Is array?', Array.isArray(state.groupSettlements));
-        console.log('createSettlement.fulfilled - Action payload:', action.payload);
-        
-        // Ensure groupSettlements is an array before pushing
-        if (!Array.isArray(state.groupSettlements)) {
-          console.warn('groupSettlements was not an array, resetting to empty array');
-          state.groupSettlements = [];
-        }
-        state.groupSettlements.push(action.payload);
+        state.groupTransactions.unshift(action.payload);
         state.error = null;
       })
-      .addCase(createSettlement.rejected, (state, action) => {
+      .addCase(createExpenseTransaction.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
       
-      // Complete settlement
-      .addCase(completeSettlement.pending, (state) => {
+      // Create settlement transaction
+      .addCase(createSettlementTransaction.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(completeSettlement.fulfilled, (state, action) => {
+      .addCase(createSettlementTransaction.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Ensure groupSettlements is an array before finding index
-        if (!Array.isArray(state.groupSettlements)) {
-          state.groupSettlements = [];
-        }
-        const index = state.groupSettlements.findIndex(s => s.id === action.payload.id);
-        if (index !== -1) {
-          state.groupSettlements[index] = action.payload;
-        }
+        state.groupTransactions.unshift(action.payload);
         state.error = null;
       })
-      .addCase(completeSettlement.rejected, (state, action) => {
+      .addCase(createSettlementTransaction.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
       
-      // Fetch all settlements
-      .addCase(fetchAllSettlements.fulfilled, (state, action) => {
-        state.groupSettlements = Array.isArray(action.payload) ? action.payload : [];
+      // Complete transaction
+      .addCase(completeTransaction.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(completeTransaction.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const transactionIndex = state.groupTransactions.findIndex(t => t._id === action.payload._id);
+        if (transactionIndex !== -1) {
+          state.groupTransactions[transactionIndex] = action.payload;
+        }
+        state.error = null;
+      })
+      .addCase(completeTransaction.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Fetch group transactions
+      .addCase(fetchGroupTransactions.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchGroupTransactions.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.groupTransactions = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchGroupTransactions.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Fetch group balances
+      .addCase(fetchGroupBalances.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchGroupBalances.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.groupBalances = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchGroupBalances.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Fetch group simplify
+      .addCase(fetchGroupSimplify.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchGroupSimplify.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.groupSimplify = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchGroupSimplify.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Fetch group analytics
+      .addCase(fetchGroupAnalytics.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchGroupAnalytics.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.groupAnalytics = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchGroupAnalytics.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Fetch user transactions
+      .addCase(fetchUserTransactions.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserTransactions.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.userTransactions = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchUserTransactions.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Fetch transaction
+      .addCase(fetchTransaction.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTransaction.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.currentTransaction = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchTransaction.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Delete transaction
+      .addCase(deleteTransaction.fulfilled, (state, action) => {
+        state.userTransactions = state.userTransactions.filter(transaction => transaction._id !== action.payload);
+        state.groupTransactions = state.groupTransactions.filter(transaction => transaction._id !== action.payload);
+        if (state.currentTransaction?._id === action.payload) {
+          state.currentTransaction = null;
+        }
       });
   },
 });

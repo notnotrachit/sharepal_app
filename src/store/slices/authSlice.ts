@@ -23,7 +23,7 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials: LoginRequest, { rejectWithValue }) => {
     try {
-      const response: AuthResponse = await apiService.login(credentials);
+      const response = await apiService.login(credentials) as AuthResponse;
       console.log(response);
       
       // Store tokens securely
@@ -42,7 +42,7 @@ export const register = createAsyncThunk(
   'auth/register',
   async (userData: RegisterRequest, { rejectWithValue }) => {
     try {
-      const response: AuthResponse = await apiService.register(userData);
+      const response = await apiService.register(userData) as AuthResponse;
       
       // Store tokens securely
       await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.token.access.token);
@@ -60,7 +60,7 @@ export const getCurrentUser = createAsyncThunk(
   'auth/getCurrentUser',
   async (_, { rejectWithValue }) => {
     try {
-      const user: User = await apiService.getCurrentUser();
+      const user = await apiService.getCurrentUser() as User;
       await secureStorage.setItem(STORAGE_KEYS.USER, user);
       return user;
     } catch (error: any) {

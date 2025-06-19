@@ -16,10 +16,9 @@ import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
 import {
-  createExpense,
-  fetchGroupExpenses,
-  fetchExpenses,
-} from "../../store/slices/expensesSlice";
+  createExpenseTransaction,
+  fetchGroupTransactions,
+} from "../../store/slices/groupsSlice";
 import { fetchGroups, fetchGroupMembers } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "../../constants/api";
@@ -44,10 +43,15 @@ interface Split {
   amount: number;
 }
 
+interface Payer {
+  user_id: string;
+  amount: number;
+}
+
 export default function CreateExpenseScreen({ navigation, route }: Props) {
   const { groupId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading } = useSelector((state: RootState) => state.expenses);
+  const { isLoading } = useSelector((state: RootState) => state.groups);
   const { groups } = useSelector((state: RootState) => state.groups);
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -62,12 +66,13 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [splits, setSplits] = useState<Split[]>([]);
+  const [payers, setPayers] = useState<Payer[]>([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSplitTypeModal, setShowSplitTypeModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchGroups({}));
+    dispatch(fetchGroups());
   }, []);
 
   useEffect(() => {
@@ -124,6 +129,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     );
 
     const initialSplits: Split[] = [];
+    const initialPayers: Payer[] = [];
     const addedUserIds = new Set<string>();
 
     // Add all group members to splits, avoiding duplicates
@@ -149,8 +155,18 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       }
     }
 
+    // Initialize payers - by default, current user pays the full amount
+    if (user?.id) {
+      initialPayers.push({
+        user_id: user.id,
+        amount: 0, // Will be set when amount is entered
+      });
+    }
+
     console.log("Initialized splits:", initialSplits);
+    console.log("Initialized payers:", initialPayers);
     setSplits(initialSplits);
+    setPayers(initialPayers);
   };
 
   const calculateEqualSplit = () => {
@@ -186,8 +202,16 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       amount: amountPerPerson,
     }));
 
+    // Update payers - set current user as the sole payer for the full amount
+    const newPayers = payers.map((payer) => ({
+      ...payer,
+      amount: payer.user_id === user?.id ? totalAmount : 0,
+    }));
+
     console.log("New splits after equal calculation:", newSplits);
+    console.log("New payers after calculation:", newPayers);
     setSplits(newSplits);
+    setPayers(newPayers);
   };
 
   const updateSplitAmount = (userId: string, amount: number) => {
@@ -198,29 +222,49 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     );
   };
 
-  const validateSplits = () => {
+  const updatePayerAmount = (userId: string, amount: number) => {
+    setPayers((prev) =>
+      prev.map((payer) =>
+        payer.user_id === userId ? { ...payer, amount } : payer
+      )
+    );
+  };
+
+  const validatePayersAndSplits = () => {
     const totalAmount = parseFloat(formData.amount);
     const splitTotal = splits.reduce((sum, split) => sum + split.amount, 0);
+    const payerTotal = payers.reduce((sum, payer) => sum + payer.amount, 0);
 
-    console.log("Validating splits:");
+    console.log("Validating payers and splits:");
     console.log("- Total amount:", totalAmount);
     console.log("- Split total:", splitTotal);
+    console.log("- Payer total:", payerTotal);
     console.log("- Split type:", formData.split_type);
     console.log("- Splits array:", splits);
+    console.log("- Payers array:", payers);
 
+    // Validate that payer total equals the expense amount
+    if (Math.abs(totalAmount - payerTotal) > 0.01) {
+      console.log(
+        "- PAYER validation failed: payer total doesn't match expense amount"
+      );
+      return false;
+    }
+
+    // Validate splits based on split type
     if (formData.split_type === SPLIT_TYPES.EXACT) {
       const isValid = Math.abs(totalAmount - splitTotal) < 0.01;
-      console.log("- EXACT validation result:", isValid);
+      console.log("- EXACT split validation result:", isValid);
       return isValid;
     }
 
     if (formData.split_type === SPLIT_TYPES.PERCENTAGE) {
       const isValid = Math.abs(splitTotal - 100) < 0.01;
-      console.log("- PERCENTAGE validation result:", isValid);
+      console.log("- PERCENTAGE split validation result:", isValid);
       return isValid;
     }
 
-    console.log("- EQUAL validation: always true");
+    console.log("- EQUAL split validation: always true");
     return true;
   };
 
@@ -248,8 +292,8 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       return;
     }
 
-    if (!validateSplits()) {
-      console.log("Validation failed: Invalid splits");
+    if (!validatePayersAndSplits()) {
+      console.log("Validation failed: Invalid splits or payers");
       Alert.alert(
         "Error",
         "Split amounts do not match the total expense amount"
@@ -261,27 +305,27 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
     try {
       const newExpense = await dispatch(
-        createExpense({
+        createExpenseTransaction({
           group_id: formData.group_id,
           description: formData.description.trim(),
           amount: parseFloat(formData.amount),
           currency: selectedGroup?.currency || "USD",
           category: formData.category,
           split_type: formData.split_type as any,
+          payers: payers,
           splits: splits,
           notes: formData.notes.trim() || undefined,
         })
       ).unwrap();
 
-      console.log("Expense created successfully:", newExpense);
+      console.log("Expense transaction created successfully:", newExpense);
 
-      // Refresh both group expenses and main expenses list
-      dispatch(fetchGroupExpenses({ groupId: formData.group_id }));
-      dispatch(fetchExpenses({}));
+      // Refresh group transactions
+      dispatch(fetchGroupTransactions({ groupId: formData.group_id }));
 
       navigation.goBack();
     } catch (error: any) {
-      console.log("Failed to create expense:", error);
+      console.log("Failed to create expense transaction:", error);
       Alert.alert("Error", error);
     }
   };
@@ -344,6 +388,21 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     }
     return "Unknown User";
   };
+
+  useEffect(() => {
+    // Update payer amount when total amount changes (for single payer scenario)
+    if (formData.amount && payers.length > 0) {
+      const totalAmount = parseFloat(formData.amount);
+      if (!isNaN(totalAmount) && totalAmount > 0) {
+        // Update the current user's payer amount to match the total
+        const newPayers = payers.map((payer) => ({
+          ...payer,
+          amount: payer.user_id === user?.id ? totalAmount : payer.amount,
+        }));
+        setPayers(newPayers);
+      }
+    }
+  }, [formData.amount, user?.id]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

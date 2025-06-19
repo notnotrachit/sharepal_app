@@ -180,80 +180,108 @@ class ApiService {
 
   async getGroupExpenses(id: string, params?: any) {
     console.log('🔍 Fetching group expenses for groupId:', id, 'with params:', params);
-    console.log('🔍 API endpoint:', API_ENDPOINTS.GROUP_EXPENSES(id));
-    const result = await this.request('GET', API_ENDPOINTS.GROUP_EXPENSES(id), undefined, params);
+    console.log('🔍 API endpoint:', API_ENDPOINTS.GROUP_TRANSACTIONS(id));
+    // Use transactions endpoint with type filter for expenses
+    const transactionParams = { ...params, type: 'expense' };
+    const result = await this.request('GET', API_ENDPOINTS.GROUP_TRANSACTIONS(id), undefined, transactionParams);
     console.log('🔍 Group expenses API result:', result);
     return result;
   }
 
-  async getGroupBalances(id: string) {
-    return this.request('GET', API_ENDPOINTS.GROUP_BALANCES(id));
-  }
-
-  async getGroupSimplify(id: string) {
-    return this.request('GET', API_ENDPOINTS.GROUP_SIMPLIFY(id));
-  }
-
-  async getGroupSettlements(id: string) {
-    return this.request('GET', API_ENDPOINTS.GROUP_SETTLEMENTS(id));
-  }
-
-  // Expenses methods
-  async getExpenses(params?: any) {
-    console.log('🔍 Getting user expenses with params:', params);
-    console.log('🔍 API endpoint:', API_ENDPOINTS.EXPENSES);
-    const result = await this.request('GET', API_ENDPOINTS.EXPENSES, undefined, params);
-    console.log('🔍 Get expenses API result:', result);
+  async getGroupBalances(groupId: string) {
+    console.log('🔍 Getting group balances for group:', groupId);
+    const result = await this.request('GET', API_ENDPOINTS.GROUP_BALANCES(groupId));
+    console.log('🔍 Group balances API result:', result);
     return result;
   }
 
-  async createExpense(data: any) {
-    console.log('🔍 Creating expense with data:', JSON.stringify(data, null, 2));
-    console.log('🔍 API endpoint:', API_ENDPOINTS.EXPENSES);
-    const result = await this.request('POST', API_ENDPOINTS.EXPENSES, data);
-    console.log('🔍 Create expense API result:', result);
+  async getGroupSimplify(groupId: string) {
+    console.log('🔍 Getting group simplify for group:', groupId);
+    const result = await this.request('GET', API_ENDPOINTS.GROUP_SIMPLIFY(groupId));
+    console.log('🔍 Group simplify API result:', result);
     return result;
-  }
-
-  async getExpense(id: string) {
-    return this.request('GET', API_ENDPOINTS.EXPENSE(id));
-  }
-
-  async updateExpense(id: string, data: any) {
-    return this.request('PUT', API_ENDPOINTS.EXPENSE(id), data);
-  }
-
-  async deleteExpense(id: string) {
-    return this.request('DELETE', API_ENDPOINTS.EXPENSE(id));
-  }
-
-  // Settlements methods
-  async getSettlements(params?: any) {
-    return this.request('GET', API_ENDPOINTS.SETTLEMENTS, undefined, params);
-  }
-
-  async getSettlement(id: string) {
-    return this.request('GET', API_ENDPOINTS.SETTLEMENT(id));
-  }
-
-  async createSettlement(data: {
-    group_id: string;
-    payer_id: string;
-    payee_id: string;
-    amount: number;
-    currency: string;
-    notes?: string;
-  }) {
-    return this.request('POST', API_ENDPOINTS.CREATE_SETTLEMENT, data);
-  }
-
-  async completeSettlement(id: string, data?: { notes?: string }) {
-    return this.request('POST', API_ENDPOINTS.SETTLEMENT_COMPLETE(id), data);
   }
 
   // Utility methods
   async ping() {
     return this.request('GET', API_ENDPOINTS.PING);
+  }
+  
+  // Transaction Management
+  async createExpenseTransaction(data: any) {
+    console.log('🔍 Creating expense transaction with data:', JSON.stringify(data, null, 2));
+    const result = await this.request('POST', API_ENDPOINTS.TRANSACTION_EXPENSE, data);
+    console.log('🔍 Create expense transaction API result:', result);
+    return result;
+  }
+
+  async createSettlementTransaction(data: any) {
+    console.log('🔍 Creating settlement transaction with data:', JSON.stringify(data, null, 2));
+    const result = await this.request('POST', API_ENDPOINTS.TRANSACTION_SETTLEMENT, data);
+    console.log('🔍 Create settlement transaction API result:', result);
+    return result;
+  }
+
+  async getTransaction(transactionId: string) {
+    return this.request('GET', API_ENDPOINTS.TRANSACTION(transactionId));
+  }
+
+  async updateTransaction(transactionId: string, data: any) {
+    return this.request('PUT', API_ENDPOINTS.TRANSACTION(transactionId), data);
+  }
+
+  async deleteTransaction(transactionId: string) {
+    return this.request('DELETE', API_ENDPOINTS.TRANSACTION(transactionId));
+  }
+
+  async completeTransaction(transactionId: string, data?: any) {
+    return this.request('POST', API_ENDPOINTS.COMPLETE_TRANSACTION(transactionId), data);
+  }
+
+  // Enhanced Group Methods
+  async getGroupTransactions(groupId: string, params?: any) {
+    console.log('🔍 Getting group transactions for group:', groupId, 'with params:', params);
+    const result = await this.request('GET', API_ENDPOINTS.GROUP_TRANSACTIONS(groupId), undefined, params);
+    console.log('🔍 Group transactions API result:', result);
+    return result;
+  }
+
+  async getGroupExpenseTransactions(groupId: string, params?: any) {
+    return this.request('GET', `/groups/${groupId}/transactions/expenses`, undefined, params);
+  }
+
+  async getGroupSettlementTransactions(groupId: string, params?: any) {
+    return this.request('GET', `/groups/${groupId}/transactions/settlements`, undefined, params);
+  }
+
+  async getGroupBalanceHistory(groupId: string, params?: any) {
+    return this.request('GET', `/groups/${groupId}/balance-history`, undefined, params);
+  }
+
+  async getGroupAnalytics(groupId: string) {
+    return this.request('GET', API_ENDPOINTS.GROUP_ANALYTICS(groupId));
+  }
+
+  async recalculateGroupBalances(groupId: string) {
+    return this.request('POST', `/groups/${groupId}/recalculate-balances`);
+  }
+
+  // Bulk Operations
+  async createBulkSettlements(groupId: string, data: any) {
+    return this.request('POST', `/groups/${groupId}/bulk-settlements`, data);
+  }
+
+  // User-specific Methods
+  async getUserTransactions(params?: any) {
+    return this.request('GET', API_ENDPOINTS.USER_TRANSACTIONS, undefined, params);
+  }
+
+  async getUserBalances() {
+    return this.request('GET', API_ENDPOINTS.USER_BALANCES);
+  }
+
+  async getUserAnalytics() {
+    return this.request('GET', API_ENDPOINTS.USER_ANALYTICS);
   }
 }
 

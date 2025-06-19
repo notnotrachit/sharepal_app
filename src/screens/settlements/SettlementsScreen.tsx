@@ -14,12 +14,11 @@ import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
 import {
-  fetchGroupSettlements,
-  completeSettlement,
-  fetchAllSettlements,
+  fetchGroupTransactions,
+  completeTransaction,
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
-import { Settlement } from "../../types/api";
+import { Transaction } from "../../types/api";
 
 type SettlementsScreenNavigationProp = StackNavigationProp<
   GroupsStackParamList,
@@ -38,19 +37,26 @@ interface Props {
 export default function SettlementsScreen({ navigation, route }: Props) {
   const { groupId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
-  const { groupSettlements, isLoading } = useSelector(
+  const { groupTransactions, isLoading } = useSelector(
     (state: RootState) => state.groups
   );
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [refreshing, setRefreshing] = useState(false);
 
+  // Filter transactions to only show settlement types
+  const settlementTransactions = groupTransactions.filter(
+    (transaction) => transaction.type === "settlement"
+  );
+
   useEffect(() => {
     loadSettlements();
   }, [groupId]);
 
   const loadSettlements = () => {
-    dispatch(fetchGroupSettlements(groupId));
+    dispatch(
+      fetchGroupTransactions({ groupId, params: { type: "settlement" } })
+    );
   };
 
   const onRefresh = async () => {
@@ -59,7 +65,7 @@ export default function SettlementsScreen({ navigation, route }: Props) {
     setRefreshing(false);
   };
 
-  const handleCompleteSettlement = async (settlement: Settlement) => {
+  const handleCompleteSettlement = async (settlement: Transaction) => {
     Alert.alert(
       "Confirm Payment",
       `Mark payment of ${formatCurrency(
@@ -73,8 +79,8 @@ export default function SettlementsScreen({ navigation, route }: Props) {
           onPress: async () => {
             try {
               await dispatch(
-                completeSettlement({
-                  id: settlement.id,
+                completeTransaction({
+                  id: settlement._id,
                   data: {
                     notes: `Payment completed on ${new Date().toLocaleDateString()}`,
                   },
@@ -132,7 +138,7 @@ export default function SettlementsScreen({ navigation, route }: Props) {
     }
   };
 
-  const renderSettlementItem = ({ item }: { item: Settlement }) => (
+  const renderSettlementItem = ({ item }: { item: Transaction }) => (
     <View style={styles.settlementItem}>
       <View style={styles.settlementHeader}>
         <Text style={styles.amount}>
@@ -141,10 +147,16 @@ export default function SettlementsScreen({ navigation, route }: Props) {
         <View
           style={[
             styles.statusBadge,
-            { backgroundColor: getStatusColor(item.status) },
+            {
+              backgroundColor: getStatusColor(
+                item.is_completed ? "completed" : "pending"
+              ),
+            },
           ]}
         >
-          <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+          <Text style={styles.statusText}>
+            {(item.is_completed ? "completed" : "pending").toUpperCase()}
+          </Text>
         </View>
       </View>
 
@@ -157,7 +169,7 @@ export default function SettlementsScreen({ navigation, route }: Props) {
 
       {item.notes && <Text style={styles.notes}>{item.notes}</Text>}
 
-      {item.status === "pending" && (
+      {!item.is_completed && (
         <TouchableOpacity
           style={styles.markCompleteButton}
           onPress={() => handleCompleteSettlement(item)}
@@ -170,7 +182,7 @@ export default function SettlementsScreen({ navigation, route }: Props) {
 
   return (
     <View style={styles.container}>
-      {groupSettlements.length === 0 && !isLoading ? (
+      {settlementTransactions.length === 0 && !isLoading ? (
         <View style={styles.emptyState}>
           <Ionicons name="checkmark-circle-outline" size={64} color="#4CAF50" />
           <Text style={styles.emptyTitle}>No Settlements</Text>
@@ -180,9 +192,9 @@ export default function SettlementsScreen({ navigation, route }: Props) {
         </View>
       ) : (
         <FlatList
-          data={groupSettlements}
+          data={settlementTransactions}
           renderItem={renderSettlementItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
