@@ -46,36 +46,11 @@ export default function FriendsScreen({ navigation }: Props) {
   const [email, setEmail] = React.useState("");
 
   useEffect(() => {
-    console.log("FriendsScreen: Component mounted");
     loadFriendsData();
   }, []);
 
-  useEffect(() => {
-    console.log("FriendsScreen: State changed:", {
-      friends: friends?.length || 0,
-      receivedRequests: receivedRequests?.length || 0,
-      sentRequests: sentRequests?.length || 0,
-      isLoading,
-    });
-    console.log("FriendsScreen: Friends data:", friends);
-    console.log("FriendsScreen: Received requests data:", receivedRequests);
-    console.log("FriendsScreen: Sent requests data:", sentRequests);
-  }, [friends, receivedRequests, sentRequests, isLoading]);
-
-  useEffect(() => {
-    console.log("FriendsScreen: Friends state changed:", {
-      friends,
-      receivedRequests,
-      sentRequests,
-      friendsCount: friends?.length || 0,
-      receivedCount: receivedRequests?.length || 0,
-      sentCount: sentRequests?.length || 0,
-      isLoading,
-    });
-  }, [friends, receivedRequests, sentRequests, isLoading]);
 
   const loadFriendsData = () => {
-    console.log("FriendsScreen: Loading friends data...");
     dispatch(fetchFriends());
     dispatch(fetchReceivedRequests());
     dispatch(fetchSentRequests());
@@ -126,7 +101,6 @@ export default function FriendsScreen({ navigation }: Props) {
   };
 
   const renderFriendItem = ({ item }: { item: User }) => {
-    console.log("🔍 Rendering friend item:", JSON.stringify(item, null, 2));
     return (
       <View style={styles.friendItem}>
         <View style={styles.friendInfo}>
@@ -144,10 +118,6 @@ export default function FriendsScreen({ navigation }: Props) {
   };
 
   const renderReceivedRequestItem = ({ item }: { item: FriendRequest }) => {
-    console.log(
-      "🔍 Rendering received request item:",
-      JSON.stringify(item, null, 2)
-    );
     return (
       <View style={styles.requestItem}>
         <View style={styles.requestInfo}>
@@ -177,10 +147,6 @@ export default function FriendsScreen({ navigation }: Props) {
   };
 
   const renderSentRequestItem = ({ item }: { item: FriendRequest }) => {
-    console.log(
-      "🔍 Rendering sent request item:",
-      JSON.stringify(item, null, 2)
-    );
     return (
       <View style={styles.requestItem}>
         <View style={styles.requestInfo}>

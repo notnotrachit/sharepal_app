@@ -88,7 +88,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
 
   // Utility function to extract error message from various error formats
   const extractErrorMessage = (error: any, defaultMessage: string): string => {
-    console.log("Error object:", JSON.stringify(error, null, 2));
 
     if (typeof error === "string") {
       return error;
@@ -141,7 +140,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         [{ text: "OK" }]
       );
     } catch (error: any) {
-      console.log("Complete settlement error:", error);
 
       let errorMessage = "Failed to complete settlement. Please try again.";
 
@@ -162,11 +160,9 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   const handleMarkAsPaid = async (settlement: any) => {
     if (!user?.id) return;
 
-    console.log("🔄 Starting handleMarkAsPaid for settlement:", settlement);
 
     try {
       // Use the new transaction-based settlement API
-      console.log("🔄 Creating settlement transaction...");
       const settlementTransaction = await dispatch(
         createSettlementTransaction({
           group_id: groupId,
@@ -179,10 +175,8 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         })
       ).unwrap();
 
-      console.log("✅ Settlement transaction created:", settlementTransaction);
 
       // Reload the group data to get updated balances and settlements
-      console.log("🔄 Reloading group data...");
       setTimeout(() => {
         loadGroupData();
       }, 1000);
@@ -250,7 +244,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         [{ text: "OK" }]
       );
     } catch (error: any) {
-      console.log("Create settlement error:", error);
 
       let errorMessage = "Failed to create settlement. Please try again.";
 
@@ -301,12 +294,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   };
 
   const getSettlementParticipants = (transaction: any) => {
-    // Debug log to see the transaction structure
-    console.log(
-      "Settlement transaction:",
-      JSON.stringify(transaction, null, 2)
-    );
-    console.log("Group members:", JSON.stringify(groupMembers, null, 2));
 
     // For settlements, we can get payer/payee info from multiple places
     if (transaction.payer_id && transaction.payee_id) {
@@ -419,15 +406,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                     {(() => {
                       const participants =
                         getSettlementParticipants(transaction);
-                      // Debug the settlement status
-                      console.log("Settlement status debug:", {
-                        id: transaction._id || transaction.id,
-                        is_completed: transaction.is_completed,
-                        status: transaction.status,
-                        completed: transaction.completed,
-                        settled_at: transaction.settled_at,
-                        allFields: Object.keys(transaction),
-                      });
                       return (
                         <Text style={styles.settlementFromTo}>
                           Settlement: {participants.payer} →{" "}

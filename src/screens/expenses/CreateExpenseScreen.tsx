@@ -79,12 +79,10 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     if (formData.group_id) {
       const group = groups.find((g) => g.id === formData.group_id);
       if (group) {
-        console.log("Group selected:", group.name, "members:", group.members);
         setSelectedGroup(group);
 
         // Fetch complete group members if not already loaded
         if (!group.members || group.members.length === 0) {
-          console.log("Fetching group members for group:", formData.group_id);
           dispatch(fetchGroupMembers(formData.group_id));
         } else {
           initializeSplits(group);
@@ -103,7 +101,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         updatedGroup.members.length > 0 &&
         (!selectedGroup.members || selectedGroup.members.length === 0)
       ) {
-        console.log("Group members updated:", updatedGroup.members);
         setSelectedGroup(updatedGroup);
         initializeSplits(updatedGroup);
       }
@@ -121,13 +118,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
   }, [formData.amount, formData.split_type, splits.length]);
 
   const initializeSplits = (group: Group) => {
-    console.log(
-      "Initializing splits for group:",
-      group.name,
-      "with members:",
-      group.members
-    );
-
     const initialSplits: Split[] = [];
     const initialPayers: Payer[] = [];
     const addedUserIds = new Set<string>();
@@ -145,7 +135,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       });
     } else {
       // Fallback: add just current user if members are not properly loaded
-      console.log("Group members not loaded properly, using current user only");
       if (user?.id && !addedUserIds.has(user.id)) {
         initialSplits.push({
           user_id: user.id,
@@ -163,39 +152,22 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       });
     }
 
-    console.log("Initialized splits:", initialSplits);
-    console.log("Initialized payers:", initialPayers);
     setSplits(initialSplits);
     setPayers(initialPayers);
   };
 
   const calculateEqualSplit = () => {
     if (!formData.amount || splits.length === 0) {
-      console.log(
-        "Cannot calculate equal split - amount:",
-        formData.amount,
-        "splits length:",
-        splits.length
-      );
       return;
     }
 
     const totalAmount = parseFloat(formData.amount);
     if (isNaN(totalAmount) || totalAmount <= 0) {
-      console.log("Invalid amount for equal split:", formData.amount);
       return;
     }
 
     const amountPerPerson = totalAmount / splits.length;
 
-    console.log(
-      "Calculating equal split - total:",
-      totalAmount,
-      "per person:",
-      amountPerPerson,
-      "people:",
-      splits.length
-    );
 
     const newSplits = splits.map((split) => ({
       ...split,
@@ -208,8 +180,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       amount: payer.user_id === user?.id ? totalAmount : 0,
     }));
 
-    console.log("New splits after equal calculation:", newSplits);
-    console.log("New payers after calculation:", newPayers);
     setSplits(newSplits);
     setPayers(newPayers);
   };
@@ -235,65 +205,44 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     const splitTotal = splits.reduce((sum, split) => sum + split.amount, 0);
     const payerTotal = payers.reduce((sum, payer) => sum + payer.amount, 0);
 
-    console.log("Validating payers and splits:");
-    console.log("- Total amount:", totalAmount);
-    console.log("- Split total:", splitTotal);
-    console.log("- Payer total:", payerTotal);
-    console.log("- Split type:", formData.split_type);
-    console.log("- Splits array:", splits);
-    console.log("- Payers array:", payers);
 
     // Validate that payer total equals the expense amount
     if (Math.abs(totalAmount - payerTotal) > 0.01) {
-      console.log(
-        "- PAYER validation failed: payer total doesn't match expense amount"
-      );
       return false;
     }
 
     // Validate splits based on split type
     if (formData.split_type === SPLIT_TYPES.EXACT) {
       const isValid = Math.abs(totalAmount - splitTotal) < 0.01;
-      console.log("- EXACT split validation result:", isValid);
       return isValid;
     }
 
     if (formData.split_type === SPLIT_TYPES.PERCENTAGE) {
       const isValid = Math.abs(splitTotal - 100) < 0.01;
-      console.log("- PERCENTAGE split validation result:", isValid);
       return isValid;
     }
 
-    console.log("- EQUAL split validation: always true");
     return true;
   };
 
   const handleCreateExpense = async () => {
-    console.log("=== Starting expense creation ===");
-    console.log("Form data:", formData);
-    console.log("Splits:", splits);
-    console.log("Selected group:", selectedGroup);
 
     if (!formData.description.trim()) {
-      console.log("Validation failed: No description");
       Alert.alert("Error", "Please enter a description");
       return;
     }
 
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      console.log("Validation failed: Invalid amount");
       Alert.alert("Error", "Please enter a valid amount");
       return;
     }
 
     if (!formData.group_id) {
-      console.log("Validation failed: No group selected");
       Alert.alert("Error", "Please select a group");
       return;
     }
 
     if (!validatePayersAndSplits()) {
-      console.log("Validation failed: Invalid splits or payers");
       Alert.alert(
         "Error",
         "Split amounts do not match the total expense amount"
@@ -301,7 +250,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       return;
     }
 
-    console.log("All validations passed, creating expense...");
 
     try {
       const newExpense = await dispatch(
@@ -318,14 +266,12 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         })
       ).unwrap();
 
-      console.log("Expense transaction created successfully:", newExpense);
 
       // Refresh group transactions
       dispatch(fetchGroupTransactions({ groupId: formData.group_id }));
 
       navigation.goBack();
     } catch (error: any) {
-      console.log("Failed to create expense transaction:", error);
       Alert.alert("Error", error);
     }
   };

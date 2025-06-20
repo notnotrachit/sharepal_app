@@ -41,20 +41,10 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
   const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    console.log(
-      "ExpenseDetailsScreen: Fetching transaction with ID:",
-      expenseId
-    );
     dispatch(fetchTransaction(expenseId));
   }, [expenseId]);
 
   useEffect(() => {
-    console.log("ExpenseDetailsScreen: currentTransaction state changed:", {
-      currentTransaction,
-      type: typeof currentTransaction,
-      keys: currentTransaction ? Object.keys(currentTransaction) : null,
-      isLoading,
-    });
   }, [currentTransaction, isLoading]);
 
   const handleDeleteExpense = () => {

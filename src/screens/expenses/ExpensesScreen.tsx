@@ -35,34 +35,12 @@ export default function ExpensesScreen({ navigation }: Props) {
     (transaction) => transaction.type === "expense"
   );
 
-  useEffect(() => {
-    console.log("ExpensesScreen: Component mounted");
-    console.log("ExpensesScreen: Current user transactions state:", {
-      userTransactions,
-      expenses,
-      count: expenses?.length || 0,
-      isArray: Array.isArray(expenses),
-      isLoading,
-    });
-  }, []);
 
   useEffect(() => {
-    console.log("ExpensesScreen: User transactions state changed:", {
-      userTransactions,
-      expenses,
-      count: expenses?.length || 0,
-      isArray: Array.isArray(expenses),
-      isLoading,
-    });
-  }, [userTransactions, expenses, isLoading]);
-
-  useEffect(() => {
-    console.log("ExpensesScreen: Loading user transactions...");
     loadExpenses();
   }, []);
 
   const loadExpenses = () => {
-    console.log("ExpensesScreen: Dispatching fetchUserTransactions...");
     dispatch(fetchUserTransactions({ params: { type: "expense" } }));
   };
 
@@ -79,7 +57,6 @@ export default function ExpensesScreen({ navigation }: Props) {
 
   const renderExpenseItem = ({ item }: { item: Transaction }) => {
     // Force extract values to variables
-    console.log("Rendering expense item:", item);
     const description = item?.description || "No description";
     const amount = item?.amount || 0;
     const currency = item?.currency || "USD";

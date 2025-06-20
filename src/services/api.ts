@@ -179,26 +179,19 @@ class ApiService {
   }
 
   async getGroupExpenses(id: string, params?: any) {
-    console.log('🔍 Fetching group expenses for groupId:', id, 'with params:', params);
-    console.log('🔍 API endpoint:', API_ENDPOINTS.GROUP_TRANSACTIONS(id));
     // Use transactions endpoint with type filter for expenses
     const transactionParams = { ...params, type: 'expense' };
     const result = await this.request('GET', API_ENDPOINTS.GROUP_TRANSACTIONS(id), undefined, transactionParams);
-    console.log('🔍 Group expenses API result:', result);
     return result;
   }
 
   async getGroupBalances(groupId: string) {
-    console.log('🔍 Getting group balances for group:', groupId);
     const result = await this.request('GET', API_ENDPOINTS.GROUP_BALANCES(groupId));
-    console.log('🔍 Group balances API result:', result);
     return result;
   }
 
   async getGroupSimplify(groupId: string) {
-    console.log('🔍 Getting group simplify for group:', groupId);
     const result = await this.request('GET', API_ENDPOINTS.GROUP_SIMPLIFY(groupId));
-    console.log('🔍 Group simplify API result:', result);
     return result;
   }
 
@@ -209,29 +202,23 @@ class ApiService {
   
   // Transaction Management
   async createExpenseTransaction(data: any) {
-    console.log('🔍 Creating expense transaction with data:', JSON.stringify(data, null, 2));
     // Expenses should be marked as completed since they represent money already spent
     const expenseData = {
       ...data,
       is_completed: true
     };
-    console.log('🔍 Enhanced expense data with is_completed:', JSON.stringify(expenseData, null, 2));
     const result = await this.request('POST', API_ENDPOINTS.TRANSACTION_EXPENSE, expenseData);
-    console.log('🔍 Create expense transaction API result:', result);
     return result;
   }
 
   async createSettlementTransaction(data: any) {
-    console.log('🔍 Creating settlement transaction with data:', JSON.stringify(data, null, 2));
     // If this settlement is being created as a payment (has settlement_method), mark it as completed
     const settlementData = {
       ...data,
       // If it's a payment being made, mark as completed
       is_completed: data.settlement_method ? true : false
     };
-    console.log('🔍 Enhanced settlement data:', JSON.stringify(settlementData, null, 2));
     const result = await this.request('POST', API_ENDPOINTS.TRANSACTION_SETTLEMENT, settlementData);
-    console.log('🔍 Create settlement transaction API result:', result);
     return result;
   }
 
@@ -248,19 +235,14 @@ class ApiService {
   }
 
   async completeTransaction(transactionId: string, data?: any) {
-    console.log('🔄 API: Completing transaction', transactionId, 'with data:', data);
     const endpoint = API_ENDPOINTS.COMPLETE_TRANSACTION(transactionId);
-    console.log('🔄 API: Complete transaction endpoint:', endpoint);
     const result = await this.request('POST', endpoint, data);
-    console.log('✅ API: Complete transaction result:', result);
     return result;
   }
 
   // Enhanced Group Methods
   async getGroupTransactions(groupId: string, params?: any) {
-    console.log('🔍 Getting group transactions for group:', groupId, 'with params:', params);
     const result = await this.request('GET', API_ENDPOINTS.GROUP_TRANSACTIONS(groupId), undefined, params);
-    console.log('🔍 Group transactions API result:', result);
     return result;
   }
 

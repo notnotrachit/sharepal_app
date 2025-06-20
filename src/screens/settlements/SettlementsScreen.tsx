@@ -98,7 +98,6 @@ export default function SettlementsScreen({ navigation, route }: Props) {
                 [{ text: "OK" }]
               );
             } catch (error: any) {
-              console.log("Settlement completion error:", error);
 
               let errorMessage =
                 "Failed to complete settlement. Please try again.";

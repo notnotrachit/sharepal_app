@@ -24,7 +24,6 @@ export const login = createAsyncThunk(
   async (credentials: LoginRequest, { rejectWithValue }) => {
     try {
       const response = await apiService.login(credentials) as AuthResponse;
-      console.log(response);
       
       // Store tokens securely
       await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.token.access.token);

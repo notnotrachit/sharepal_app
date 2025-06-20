@@ -50,7 +50,6 @@ export const fetchGroups = createAsyncThunk<Group[]>(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiService.getGroups() as any;
-      console.log('Raw groups API response:', response);
       
       // Handle different response structures
       if (Array.isArray(response)) {
@@ -75,7 +74,6 @@ export const fetchGroup = createAsyncThunk<Group, string>(
   async (groupId: string, { rejectWithValue }) => {
     try {
       const response = await apiService.getGroup(groupId) as any;
-      console.log('Raw group API response:', response);
       
       // Handle different response structures
       if (response?.group) {
@@ -100,7 +98,6 @@ export const createGroup = createAsyncThunk<Group, CreateGroupRequest>(
   async (groupData: CreateGroupRequest, { rejectWithValue }) => {
     try {
       const response = await apiService.createGroup(groupData) as any;
-      console.log('Raw create group API response:', response);
       
       // Handle different response structures
       if (response?.group) {
@@ -161,7 +158,6 @@ export const fetchGroupMembers = createAsyncThunk<User[], string>(
   async (groupId: string, { rejectWithValue }) => {
     try {
       const response = await apiService.getGroupMembers(groupId);
-      console.log('API response for group members:', response);
       
       if (Array.isArray(response)) {
         return response;
@@ -175,7 +171,6 @@ export const fetchGroupMembers = createAsyncThunk<User[], string>(
         return [];
       }
     } catch (error: any) {
-      console.log('Error fetching group members:', error);
       return rejectWithValue(error.message);
     }
   }
@@ -190,7 +185,6 @@ export const createExpenseTransaction = createAsyncThunk<Transaction, CreateExpe
   async (data, { rejectWithValue }) => {
     try {
       const response = await apiService.createExpenseTransaction(data) as any;
-      console.log('API response for create expense transaction:', response);
       
       if (response?.data?.transaction) {
         return response.data.transaction;
@@ -202,7 +196,6 @@ export const createExpenseTransaction = createAsyncThunk<Transaction, CreateExpe
         return rejectWithValue('Invalid response format for expense transaction');
       }
     } catch (error: any) {
-      console.log('Error creating expense transaction:', error);
       return rejectWithValue(error.message || 'Failed to create expense transaction');
     }
   }
@@ -213,7 +206,6 @@ export const createSettlementTransaction = createAsyncThunk<Transaction, CreateS
   async (data, { rejectWithValue }) => {
     try {
       const response = await apiService.createSettlementTransaction(data) as any;
-      console.log('API response for create settlement transaction:', response);
       
       if (response?.data?.transaction) {
         return response.data.transaction;
@@ -225,7 +217,6 @@ export const createSettlementTransaction = createAsyncThunk<Transaction, CreateS
         return rejectWithValue('Invalid response format for settlement transaction');
       }
     } catch (error: any) {
-      console.log('Error creating settlement transaction:', error);
       return rejectWithValue(error.message || 'Failed to create settlement transaction');
     }
   }
@@ -236,7 +227,6 @@ export const completeTransaction = createAsyncThunk<Transaction, { id: string; d
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await apiService.completeTransaction(id, data) as any;
-      console.log('API response for complete transaction:', response);
       
       if (response?.data?.transaction) {
         return response.data.transaction;
@@ -248,7 +238,6 @@ export const completeTransaction = createAsyncThunk<Transaction, { id: string; d
         return rejectWithValue('Invalid response format for transaction completion');
       }
     } catch (error: any) {
-      console.log('Error completing transaction:', error);
       return rejectWithValue(error.message || 'Failed to complete transaction');
     }
   }
@@ -259,7 +248,6 @@ export const fetchGroupTransactions = createAsyncThunk<Transaction[], { groupId:
   async ({ groupId, params }, { rejectWithValue }) => {
     try {
       const response = await apiService.getGroupTransactions(groupId, params) as any;
-      console.log('API response for group transactions:', response);
       
       if (Array.isArray(response)) {
         return response;
@@ -271,7 +259,6 @@ export const fetchGroupTransactions = createAsyncThunk<Transaction[], { groupId:
         return [];
       }
     } catch (error: any) {
-      console.log('Error fetching group transactions:', error);
       return rejectWithValue(error.message || 'Failed to fetch group transactions');
     }
   }
@@ -282,7 +269,6 @@ export const fetchGroupBalances = createAsyncThunk<EnhancedBalance[], string>(
   async (groupId: string, { rejectWithValue }) => {
     try {
       const response = await apiService.getGroupBalances(groupId) as any;
-      console.log('API response for group balances:', response);
       
       if (Array.isArray(response)) {
         return response;
@@ -294,7 +280,6 @@ export const fetchGroupBalances = createAsyncThunk<EnhancedBalance[], string>(
         return [];
       }
     } catch (error: any) {
-      console.log('Error fetching group balances:', error);
       return rejectWithValue(error.message || 'Failed to fetch group balances');
     }
   }
@@ -305,7 +290,6 @@ export const fetchGroupSimplify = createAsyncThunk<SimplifyResponse[], string>(
   async (groupId: string, { rejectWithValue }) => {
     try {
       const response = await apiService.getGroupSimplify(groupId) as any;
-      console.log('API response for group simplify:', response);
       
       if (Array.isArray(response)) {
         return response;
@@ -317,7 +301,6 @@ export const fetchGroupSimplify = createAsyncThunk<SimplifyResponse[], string>(
         return [];
       }
     } catch (error: any) {
-      console.log('Error fetching group simplify:', error);
       return rejectWithValue(error.message || 'Failed to fetch settlement suggestions');
     }
   }
@@ -328,7 +311,6 @@ export const fetchGroupAnalytics = createAsyncThunk<GroupAnalytics, string>(
   async (groupId: string, { rejectWithValue }) => {
     try {
       const response = await apiService.getGroupAnalytics(groupId) as any;
-      console.log('API response for group analytics:', response);
       
       if (response?.data?.analytics) {
         return response.data.analytics;
@@ -340,7 +322,6 @@ export const fetchGroupAnalytics = createAsyncThunk<GroupAnalytics, string>(
         return rejectWithValue('Invalid response format for group analytics');
       }
     } catch (error: any) {
-      console.log('Error fetching group analytics:', error);
       return rejectWithValue(error.message || 'Failed to fetch group analytics');
     }
   }
@@ -350,9 +331,7 @@ export const fetchUserTransactions = createAsyncThunk<Transaction[], { params?: 
   'groups/fetchUserTransactions',
   async ({ params }, { rejectWithValue }) => {
     try {
-      console.log('🔍 Fetching user transactions with params:', params);
       const response = await apiService.getUserTransactions(params) as any;
-      console.log('🔍 User transactions API response:', response);
       
       if (response?.data?.transactions) {
         return response.data.transactions;
@@ -367,7 +346,6 @@ export const fetchUserTransactions = createAsyncThunk<Transaction[], { params?: 
         return [];
       }
     } catch (error: any) {
-      console.log('Error fetching user transactions:', error);
       return rejectWithValue(error.message || 'Failed to fetch user transactions');
     }
   }
@@ -377,9 +355,7 @@ export const fetchTransaction = createAsyncThunk<Transaction, string>(
   'groups/fetchTransaction',
   async (transactionId, { rejectWithValue }) => {
     try {
-      console.log('🔍 Fetching transaction with ID:', transactionId);
       const response = await apiService.getTransaction(transactionId) as any;
-      console.log('🔍 Transaction API response:', response);
       
       if (response?.data?.transaction) {
         return response.data.transaction;
@@ -391,7 +367,6 @@ export const fetchTransaction = createAsyncThunk<Transaction, string>(
         return response;
       }
     } catch (error: any) {
-      console.log('Error fetching transaction:', error);
       return rejectWithValue(error.message || 'Failed to fetch transaction');
     }
   }
@@ -401,11 +376,9 @@ export const deleteTransaction = createAsyncThunk<string, string>(
   'groups/deleteTransaction',
   async (transactionId, { rejectWithValue }) => {
     try {
-      console.log('🗑️ Deleting transaction with ID:', transactionId);
       await apiService.deleteTransaction(transactionId);
       return transactionId;
     } catch (error: any) {
-      console.log('Error deleting transaction:', error);
       return rejectWithValue(error.message || 'Failed to delete transaction');
     }
   }
@@ -482,7 +455,6 @@ const groupsSlice = createSlice({
       // Fetch group members
       .addCase(fetchGroupMembers.fulfilled, (state, action) => {
         const groupId = action.meta.arg;
-        console.log('fetchGroupMembers fulfilled for group:', groupId, 'members:', action.payload);
         
         state.groupMembers = action.payload;
         

@@ -36,7 +36,6 @@ export default function GroupsScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    console.log("Groups state:", { groups, isLoading, error });
   }, [groups, isLoading, error]);
 
   const loadGroups = () => {
