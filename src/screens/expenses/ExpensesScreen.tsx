@@ -44,7 +44,13 @@ export default function ExpensesScreen({ navigation }: Props) {
   };
 
   const handleExpensePress = (expense: Transaction) => {
-    navigation.navigate("ExpenseDetails", { expenseId: expense._id });
+    // Handle both _id and id fields since different endpoints might return different field names
+    const transactionId = (expense as any)._id || (expense as any).id;
+    if (!transactionId) {
+      console.error("Transaction ID is missing:", expense);
+      return;
+    }
+    navigation.navigate("ExpenseDetails", { expenseId: transactionId });
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -124,10 +130,11 @@ export default function ExpensesScreen({ navigation }: Props) {
         </View>
       ) : (
         <FlatList
-          key={`expenses-${expenses.length}-${Date.now()}`}
           data={expenses}
           renderItem={renderExpenseItem}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) =>
+            (item as any)._id || (item as any).id || `expense-${Math.random()}`
+          }
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl refreshing={isLoading} onRefresh={loadExpenses} />

@@ -14,6 +14,7 @@ import CreateGroupScreen from "../screens/groups/CreateGroupScreen";
 import ExpensesScreen from "../screens/expenses/ExpensesScreen";
 import CreateExpenseScreen from "../screens/expenses/CreateExpenseScreen";
 import ExpenseDetailsScreen from "../screens/expenses/ExpenseDetailsScreen";
+import TransactionDetailsScreen from "../screens/transactions/TransactionDetailsScreen";
 import FriendsScreen from "../screens/friends/FriendsScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
 import SettlementsScreen from "../screens/settlements/SettlementsScreen";
@@ -43,6 +44,7 @@ export type GroupsStackParamList = {
   CreateGroup: undefined;
   CreateExpense: { groupId?: string };
   Settlements: { groupId: string };
+  TransactionDetails: { transactionId: string };
 };
 
 export type ExpensesStackParamList = {
@@ -103,6 +105,11 @@ function GroupsNavigator() {
         name="Settlements"
         component={SettlementsScreen}
         options={{ title: "Settlements" }}
+      />
+      <GroupsStack.Screen
+        name="TransactionDetails"
+        component={TransactionDetailsScreen}
+        options={{ title: "Transaction Details" }}
       />
     </GroupsStack.Navigator>
   );

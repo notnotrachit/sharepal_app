@@ -314,6 +314,10 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     };
   };
 
+  const handleTransactionPress = (transactionId: string) => {
+    navigation.navigate("TransactionDetails", { transactionId });
+  };
+
   const renderTransactionsTab = () => {
     // Use transaction data for all transaction types (expenses and settlements)
     const allTransactions = Array.isArray(groupTransactions)
@@ -342,9 +346,12 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
             </Text>
 
             {displayTransactions.map((transaction: any) => (
-              <View
+              <TouchableOpacity
                 key={transaction.id || transaction._id}
                 style={styles.expenseItem}
+                onPress={() =>
+                  handleTransactionPress(transaction.id || transaction._id)
+                }
               >
                 <View style={styles.expenseHeader}>
                   <View style={styles.transactionTitleRow}>
@@ -409,7 +416,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                     })()}
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         )}
@@ -626,9 +633,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
             {currentGroup?.members?.length || 0} members
           </Text>
         </View>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddExpense}>
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       {/* Tabs */}
@@ -666,6 +670,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         {activeTab === "transactions" && renderTransactionsTab()}
         {activeTab === "balances" && renderBalancesTab()}
       </View>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity style={styles.fab} onPress={handleAddExpense}>
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -683,9 +692,6 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#fff",
     padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
@@ -702,13 +708,24 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 4,
   },
-  addButton: {
+  fab: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
     backgroundColor: "#007AFF",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 28,
+    width: 56,
+    height: 56,
     justifyContent: "center",
     alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
   },
   tabs: {
     flexDirection: "row",

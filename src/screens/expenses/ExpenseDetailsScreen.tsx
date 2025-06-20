@@ -15,6 +15,7 @@ import { AppDispatch, RootState } from "../../store";
 import {
   fetchTransaction,
   deleteTransaction,
+  clearCurrentTransaction,
 } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 
@@ -41,10 +42,24 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
   const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
+    // Only clear if we have a different transaction loaded
+    if (
+      currentTransaction &&
+      currentTransaction._id !== expenseId &&
+      (currentTransaction as any).id !== expenseId
+    ) {
+      dispatch(clearCurrentTransaction());
+    }
+    // Fetch the transaction
     dispatch(fetchTransaction(expenseId));
   }, [expenseId]);
 
-  useEffect(() => {}, [currentTransaction, isLoading]);
+  useEffect(() => {
+    // Cleanup function to clear transaction when component unmounts
+    return () => {
+      dispatch(clearCurrentTransaction());
+    };
+  }, []);
 
   const handleDeleteExpense = () => {
     Alert.alert(
@@ -75,10 +90,31 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
     return `${currency} ${amount.toFixed(2)}`;
   };
 
-  if (isLoading || !currentTransaction) {
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!currentTransaction) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Transaction not found</Text>
+      </View>
+    );
+  }
+
+  // Check if we have the right transaction (handle both _id and id fields)
+  const transactionMatches =
+    currentTransaction._id === expenseId ||
+    (currentTransaction as any).id === expenseId;
+
+  if (!transactionMatches) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Loading transaction...</Text>
       </View>
     );
   }
@@ -95,11 +131,49 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
   }
 
   const getUserShare = () => {
-    if (!expense || !user || !expense.participants) return 0;
-    const userParticipant = expense.participants.find(
-      (participant) => participant.user_id === user.id
-    );
-    return userParticipant?.amount || 0;
+    if (!expense || !user) return 0;
+
+    // Try splits array first (cleaner representation)
+    if ((expense as any).splits) {
+      const userSplit = (expense as any).splits.find(
+        (split: any) => split.user_id === user.id
+      );
+      if (userSplit) return userSplit.amount || 0;
+    }
+
+    // Fallback to participants array
+    if (expense.participants) {
+      const userParticipant = expense.participants.find(
+        (participant) => participant.user_id === user.id
+      );
+      return Math.abs(userParticipant?.amount || 0);
+    }
+
+    return 0;
+  };
+
+  const getUserPaidAmount = () => {
+    if (!expense || !user) return 0;
+
+    // Try payers array first (cleaner representation)
+    if ((expense as any).payers) {
+      const userPayer = (expense as any).payers.find(
+        (payer: any) => payer.user_id === user.id
+      );
+      if (userPayer) return userPayer.amount || 0;
+    }
+
+    // Fallback to participants array
+    if (expense.participants) {
+      const userParticipant = expense.participants.find(
+        (participant) => participant.user_id === user.id
+      );
+      // If amount is positive, they paid; if negative, they owe
+      const amount = userParticipant?.amount || 0;
+      return amount > 0 ? amount : 0;
+    }
+
+    return 0;
   };
 
   return (
@@ -154,24 +228,60 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
             {formatCurrency(getUserShare(), expense.currency || "USD")}
           </Text>
           <Text style={styles.shareLabel}>
-            You {expense.created_by === user?.id ? "paid" : "owe"}
+            You {getUserPaidAmount() > 0 ? "paid" : "owe"}
           </Text>
         </View>
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Who Paid</Text>
+        {(expense as any).payers && (expense as any).payers.length > 0 ? (
+          (expense as any).payers.map((payer: any, index: number) => (
+            <View key={index} style={styles.splitRow}>
+              <Text style={styles.splitUser}>
+                {payer.user_id === user?.id
+                  ? "You"
+                  : payer.user_name || `User ${payer.user_id.slice(-4)}`}
+              </Text>
+              <Text style={styles.splitAmount}>
+                {formatCurrency(payer.amount || 0, expense.currency || "USD")}
+              </Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noSplitsText}>
+            No payer information available
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Split Breakdown</Text>
-        {expense.participants && expense.participants.length > 0 ? (
+        {(expense as any).splits && (expense as any).splits.length > 0 ? (
+          (expense as any).splits.map((split: any, index: number) => (
+            <View key={index} style={styles.splitRow}>
+              <Text style={styles.splitUser}>
+                {split.user_id === user?.id
+                  ? "You"
+                  : split.user_name || `User ${split.user_id.slice(-4)}`}
+              </Text>
+              <Text style={styles.splitAmount}>
+                {formatCurrency(split.amount || 0, expense.currency || "USD")}
+              </Text>
+            </View>
+          ))
+        ) : expense.participants && expense.participants.length > 0 ? (
           expense.participants.map((participant, index: number) => (
             <View key={index} style={styles.splitRow}>
               <Text style={styles.splitUser}>
                 {participant.user_id === user?.id
                   ? "You"
-                  : `User ${participant.user_id.slice(-4)}`}
+                  : (participant as any).user_name ||
+                    `User ${participant.user_id.slice(-4)}`}
               </Text>
               <Text style={styles.splitAmount}>
                 {formatCurrency(
-                  participant.amount || 0,
+                  Math.abs(participant.amount || 0),
                   expense.currency || "USD"
                 )}
               </Text>
@@ -179,7 +289,7 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
           ))
         ) : (
           <Text style={styles.noSplitsText}>
-            No participant information available
+            No split information available
           </Text>
         )}
       </View>

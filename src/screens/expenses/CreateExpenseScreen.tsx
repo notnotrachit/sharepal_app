@@ -168,7 +168,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
     const amountPerPerson = totalAmount / splits.length;
 
-
     const newSplits = splits.map((split) => ({
       ...split,
       amount: amountPerPerson,
@@ -192,6 +191,33 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     );
   };
 
+  const updateSplitPercentage = (userId: string, percentage: number) => {
+    setSplits((prev) =>
+      prev.map((split) =>
+        split.user_id === userId ? { ...split, amount: percentage } : split
+      )
+    );
+  };
+
+  const calculatePercentageSplit = () => {
+    if (!formData.amount || splits.length === 0) {
+      return;
+    }
+
+    const totalAmount = parseFloat(formData.amount);
+    if (isNaN(totalAmount) || totalAmount <= 0) {
+      return;
+    }
+
+    // Convert percentages to actual amounts
+    const newSplits = splits.map((split) => ({
+      ...split,
+      amount: (split.amount / 100) * totalAmount,
+    }));
+
+    setSplits(newSplits);
+  };
+
   const updatePayerAmount = (userId: string, amount: number) => {
     setPayers((prev) =>
       prev.map((payer) =>
@@ -202,9 +228,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
   const validatePayersAndSplits = () => {
     const totalAmount = parseFloat(formData.amount);
-    const splitTotal = splits.reduce((sum, split) => sum + split.amount, 0);
     const payerTotal = payers.reduce((sum, payer) => sum + payer.amount, 0);
-
 
     // Validate that payer total equals the expense amount
     if (Math.abs(totalAmount - payerTotal) > 0.01) {
@@ -213,12 +237,19 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
     // Validate splits based on split type
     if (formData.split_type === SPLIT_TYPES.EXACT) {
+      const splitTotal = splits.reduce((sum, split) => sum + split.amount, 0);
       const isValid = Math.abs(totalAmount - splitTotal) < 0.01;
       return isValid;
     }
 
     if (formData.split_type === SPLIT_TYPES.PERCENTAGE) {
-      const isValid = Math.abs(splitTotal - 100) < 0.01;
+      // For percentage validation, we need to check the original percentages
+      // But first, let's calculate the actual split amounts for submission
+      const percentageTotal = splits.reduce((sum, split) => {
+        // During percentage input, split.amount stores the percentage
+        return sum + split.amount;
+      }, 0);
+      const isValid = Math.abs(percentageTotal - 100) < 0.01;
       return isValid;
     }
 
@@ -226,7 +257,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
   };
 
   const handleCreateExpense = async () => {
-
     if (!formData.description.trim()) {
       Alert.alert("Error", "Please enter a description");
       return;
@@ -243,15 +273,27 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     }
 
     if (!validatePayersAndSplits()) {
-      Alert.alert(
-        "Error",
-        "Split amounts do not match the total expense amount"
-      );
+      let errorMessage = "Split amounts do not match the total expense amount";
+      if (formData.split_type === SPLIT_TYPES.PERCENTAGE) {
+        errorMessage = "Split percentages do not add up to 100%";
+      }
+      Alert.alert("Error", errorMessage);
       return;
     }
 
-
     try {
+      // Prepare splits for submission
+      let finalSplits = splits;
+
+      // For percentage splits, convert percentages to actual amounts
+      if (formData.split_type === SPLIT_TYPES.PERCENTAGE) {
+        const totalAmount = parseFloat(formData.amount);
+        finalSplits = splits.map((split) => ({
+          ...split,
+          amount: (split.amount / 100) * totalAmount,
+        }));
+      }
+
       const newExpense = await dispatch(
         createExpenseTransaction({
           group_id: formData.group_id,
@@ -261,11 +303,10 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
           category: formData.category,
           split_type: formData.split_type as any,
           payers: payers,
-          splits: splits,
+          splits: finalSplits,
           notes: formData.notes.trim() || undefined,
         })
       ).unwrap();
-
 
       // Refresh group transactions
       dispatch(fetchGroupTransactions({ groupId: formData.group_id }));
@@ -299,6 +340,21 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         setShowSplitTypeModal(false);
         if (item === SPLIT_TYPES.EQUAL) {
           calculateEqualSplit();
+        } else if (item === SPLIT_TYPES.PERCENTAGE) {
+          // Initialize percentage splits with equal percentages
+          const equalPercentage = 100 / splits.length;
+          const newSplits = splits.map((split) => ({
+            ...split,
+            amount: equalPercentage,
+          }));
+          setSplits(newSplits);
+        } else if (item === SPLIT_TYPES.EXACT) {
+          // Reset to zero amounts for exact input
+          const newSplits = splits.map((split) => ({
+            ...split,
+            amount: 0,
+          }));
+          setSplits(newSplits);
         }
       }}
     >
@@ -373,9 +429,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
             value={formData.amount}
             onChangeText={(value) => {
               setFormData((prev) => ({ ...prev, amount: value }));
-              if (formData.split_type === SPLIT_TYPES.EQUAL) {
-                setTimeout(calculateEqualSplit, 100);
-              }
             }}
             keyboardType="decimal-pad"
           />
@@ -427,7 +480,38 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
                 <Text style={styles.splitUser}>
                   {getUserName(split.user_id)}
                 </Text>
-                {formData.split_type !== SPLIT_TYPES.EQUAL ? (
+                {formData.split_type === SPLIT_TYPES.EQUAL ? (
+                  <Text style={styles.splitAmount}>
+                    {selectedGroup?.currency} {split.amount.toFixed(2)}
+                  </Text>
+                ) : formData.split_type === SPLIT_TYPES.PERCENTAGE ? (
+                  <View style={styles.percentageInputContainer}>
+                    <View style={styles.percentageInput}>
+                      <TextInput
+                        style={styles.splitInput}
+                        value={split.amount.toString()}
+                        onChangeText={(value) =>
+                          updateSplitPercentage(
+                            split.user_id,
+                            parseFloat(value) || 0
+                          )
+                        }
+                        keyboardType="decimal-pad"
+                        placeholder="0"
+                      />
+                      <Text style={styles.percentageSymbol}>%</Text>
+                    </View>
+                    {formData.amount && parseFloat(formData.amount) > 0 && (
+                      <Text style={styles.calculatedAmount}>
+                        {selectedGroup?.currency}{" "}
+                        {(
+                          (split.amount / 100) *
+                          parseFloat(formData.amount)
+                        ).toFixed(2)}
+                      </Text>
+                    )}
+                  </View>
+                ) : (
                   <TextInput
                     style={styles.splitInput}
                     value={split.amount.toString()}
@@ -437,13 +521,20 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
                     keyboardType="decimal-pad"
                     placeholder="0"
                   />
-                ) : (
-                  <Text style={styles.splitAmount}>
-                    {selectedGroup?.currency} {split.amount.toFixed(2)}
-                  </Text>
                 )}
               </View>
             ))}
+            {formData.split_type === SPLIT_TYPES.PERCENTAGE && (
+              <View style={styles.percentageTotal}>
+                <Text style={styles.percentageTotalText}>
+                  Total:{" "}
+                  {splits
+                    .reduce((sum, split) => sum + split.amount, 0)
+                    .toFixed(1)}
+                  %
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -610,6 +701,38 @@ const styles = StyleSheet.create({
   splitAmount: {
     fontSize: 16,
     color: "#007AFF",
+    fontWeight: "600",
+  },
+  percentageInputContainer: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  percentageInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  percentageSymbol: {
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "600",
+  },
+  calculatedAmount: {
+    fontSize: 12,
+    color: "#666",
+    fontStyle: "italic",
+  },
+  percentageTotal: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  percentageTotalText: {
+    fontSize: 14,
+    color: "#666",
     fontWeight: "600",
   },
   createButton: {

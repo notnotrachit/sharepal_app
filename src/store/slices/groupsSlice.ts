@@ -356,10 +356,10 @@ export const fetchTransaction = createAsyncThunk<Transaction, string>(
   async (transactionId, { rejectWithValue }) => {
     try {
       const response = await apiService.getTransaction(transactionId) as any;
-      
       if (response?.data?.transaction) {
         return response.data.transaction;
       } else if (response?.transaction) {
+        console.log('fetchTransaction response:', response.transaction.splits);
         return response.transaction;
       } else if (response?.data) {
         return response.data;
@@ -396,6 +396,9 @@ const groupsSlice = createSlice({
     },
     setCurrentGroup: (state, action: PayloadAction<Group | null>) => {
       state.currentGroup = action.payload;
+    },
+    clearCurrentTransaction: (state) => {
+      state.currentTransaction = null;
     },
     clearGroupData: (state) => {
       state.currentGroup = null;
@@ -619,5 +622,5 @@ const groupsSlice = createSlice({
   },
 });
 
-export const { clearError, setCurrentGroup, clearGroupData } = groupsSlice.actions;
+export const { clearError, setCurrentGroup, clearCurrentTransaction, clearGroupData } = groupsSlice.actions;
 export default groupsSlice.reducer;
