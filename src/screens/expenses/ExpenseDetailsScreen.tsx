@@ -44,8 +44,7 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
     dispatch(fetchTransaction(expenseId));
   }, [expenseId]);
 
-  useEffect(() => {
-  }, [currentTransaction, isLoading]);
+  useEffect(() => {}, [currentTransaction, isLoading]);
 
   const handleDeleteExpense = () => {
     Alert.alert(
@@ -138,24 +137,6 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
               ? new Date(expense.created_at).toLocaleDateString()
               : "Unknown"}
           </Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Status</Text>
-          <View
-            style={[
-              styles.statusBadge,
-              expense.is_completed ? styles.settledBadge : styles.pendingBadge,
-            ]}
-          >
-            <Text
-              style={[
-                styles.statusText,
-                expense.is_completed ? styles.settledText : styles.pendingText,
-              ]}
-            >
-              {expense.is_completed ? "Completed" : "Pending"}
-            </Text>
-          </View>
         </View>
       </View>
 
@@ -291,27 +272,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     fontWeight: "500",
-  },
-  statusBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  settledBadge: {
-    backgroundColor: "#e8f5e8",
-  },
-  pendingBadge: {
-    backgroundColor: "#fff3cd",
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  settledText: {
-    color: "#4CAF50",
-  },
-  pendingText: {
-    color: "#856404",
   },
   notes: {
     fontSize: 16,

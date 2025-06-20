@@ -88,7 +88,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
 
   // Utility function to extract error message from various error formats
   const extractErrorMessage = (error: any, defaultMessage: string): string => {
-
     if (typeof error === "string") {
       return error;
     }
@@ -140,7 +139,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         [{ text: "OK" }]
       );
     } catch (error: any) {
-
       let errorMessage = "Failed to complete settlement. Please try again.";
 
       if (error?.message) {
@@ -160,7 +158,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   const handleMarkAsPaid = async (settlement: any) => {
     if (!user?.id) return;
 
-
     try {
       // Use the new transaction-based settlement API
       const settlementTransaction = await dispatch(
@@ -174,7 +171,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
           settlement_method: "manual", // This will make it created as completed
         })
       ).unwrap();
-
 
       // Reload the group data to get updated balances and settlements
       setTimeout(() => {
@@ -244,7 +240,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         [{ text: "OK" }]
       );
     } catch (error: any) {
-
       let errorMessage = "Failed to create settlement. Please try again.";
 
       if (error?.message) {
@@ -294,7 +289,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   };
 
   const getSettlementParticipants = (transaction: any) => {
-
     // For settlements, we can get payer/payee info from multiple places
     if (transaction.payer_id && transaction.payee_id) {
       return {
@@ -413,33 +407,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                         </Text>
                       );
                     })()}
-                    <View
-                      style={[
-                        styles.settlementStatus,
-                        transaction.is_completed ||
-                        transaction.status === "completed" ||
-                        transaction.completed
-                          ? styles.settledBadge
-                          : styles.pendingBadge,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.settlementStatusText,
-                          transaction.is_completed ||
-                          transaction.status === "completed" ||
-                          transaction.completed
-                            ? styles.settledText
-                            : styles.pendingText,
-                        ]}
-                      >
-                        {transaction.is_completed ||
-                        transaction.status === "completed" ||
-                        transaction.completed
-                          ? "COMPLETED"
-                          : "PENDING"}
-                      </Text>
-                    </View>
                   </View>
                 )}
               </View>
@@ -1015,26 +982,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginLeft: 4,
-  },
-  settlementStatus: {
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  settlementStatusText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  settledBadge: {
-    backgroundColor: "#e8f5e8",
-  },
-  pendingBadge: {
-    backgroundColor: "#fff3cd",
-  },
-  settledText: {
-    color: "#4CAF50",
-  },
-  pendingText: {
-    color: "#856404",
   },
 });

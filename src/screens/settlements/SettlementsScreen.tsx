@@ -65,76 +65,8 @@ export default function SettlementsScreen({ navigation, route }: Props) {
     setRefreshing(false);
   };
 
-  const handleCompleteSettlement = async (settlement: Transaction) => {
-    Alert.alert(
-      "Confirm Payment",
-      `Mark payment of ${formatCurrency(
-        settlement.amount,
-        settlement.currency
-      )} as completed?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Confirm",
-          onPress: async () => {
-            try {
-              await dispatch(
-                completeTransaction({
-                  id: settlement._id,
-                  data: {
-                    notes: `Payment completed on ${new Date().toLocaleDateString()}`,
-                  },
-                })
-              ).unwrap();
-
-              loadSettlements();
-
-              Alert.alert(
-                "Settlement Completed",
-                `Payment of ${formatCurrency(
-                  settlement.amount,
-                  settlement.currency
-                )} has been marked as completed.`,
-                [{ text: "OK" }]
-              );
-            } catch (error: any) {
-
-              let errorMessage =
-                "Failed to complete settlement. Please try again.";
-
-              if (error?.message) {
-                errorMessage = error.message;
-              } else if (typeof error === "string") {
-                errorMessage = error;
-              } else if (error?.error) {
-                errorMessage = error.error;
-              } else if (error?.data?.message) {
-                errorMessage = error.data.message;
-              }
-
-              Alert.alert("Error", errorMessage, [{ text: "OK" }]);
-            }
-          },
-        },
-      ]
-    );
-  };
-
   const formatCurrency = (amount: number, currency: string) => {
     return `${currency} ${amount.toFixed(2)}`;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "#4CAF50";
-      case "pending":
-        return "#FF9800";
-      case "cancelled":
-        return "#F44336";
-      default:
-        return "#666";
-    }
   };
 
   const renderSettlementItem = ({ item }: { item: Transaction }) => (
@@ -143,20 +75,6 @@ export default function SettlementsScreen({ navigation, route }: Props) {
         <Text style={styles.amount}>
           {formatCurrency(item.amount, item.currency)}
         </Text>
-        <View
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor: getStatusColor(
-                item.is_completed ? "completed" : "pending"
-              ),
-            },
-          ]}
-        >
-          <Text style={styles.statusText}>
-            {(item.is_completed ? "completed" : "pending").toUpperCase()}
-          </Text>
-        </View>
       </View>
 
       <View style={styles.settlementDetails}>
@@ -167,15 +85,6 @@ export default function SettlementsScreen({ navigation, route }: Props) {
       </View>
 
       {item.notes && <Text style={styles.notes}>{item.notes}</Text>}
-
-      {!item.is_completed && (
-        <TouchableOpacity
-          style={styles.markCompleteButton}
-          onPress={() => handleCompleteSettlement(item)}
-        >
-          <Text style={styles.markCompleteText}>Mark as Complete</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 
@@ -235,16 +144,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
-  statusBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  statusText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
   settlementDetails: {
     marginBottom: 8,
   },
@@ -263,18 +162,6 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 8,
     marginBottom: 12,
-  },
-  markCompleteButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  markCompleteText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   emptyState: {
     flex: 1,

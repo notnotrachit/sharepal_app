@@ -35,7 +35,6 @@ export default function ExpensesScreen({ navigation }: Props) {
     (transaction) => transaction.type === "expense"
   );
 
-
   useEffect(() => {
     loadExpenses();
   }, []);
@@ -63,7 +62,6 @@ export default function ExpensesScreen({ navigation }: Props) {
     const category = item?.category || "Unknown";
     const createdAt = item?.created_at;
     const splitType = item?.split_type || "Unknown";
-    const isSettled = item?.is_completed || false;
 
     return (
       <TouchableOpacity
@@ -90,14 +88,6 @@ export default function ExpensesScreen({ navigation }: Props) {
           </View>
           <View style={styles.splitInfo}>
             <Text style={styles.splitType}>Split: {splitType}</Text>
-            <Text
-              style={[
-                styles.settledStatus,
-                isSettled ? styles.settled : styles.pending,
-              ]}
-            >
-              {isSettled ? "Settled" : "Pending"}
-            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -238,21 +228,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888",
     textTransform: "capitalize",
-  },
-  settledStatus: {
-    fontSize: 12,
-    fontWeight: "600",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  settled: {
-    backgroundColor: "#e8f5e8",
-    color: "#4CAF50",
-  },
-  pending: {
-    backgroundColor: "#fff3cd",
-    color: "#856404",
   },
   emptyState: {
     flex: 1,
