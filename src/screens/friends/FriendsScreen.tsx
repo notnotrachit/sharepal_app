@@ -176,17 +176,25 @@ export default function FriendsScreen({ navigation }: Props) {
     );
   };
 
-  const renderSentRequestItem = ({ item }: { item: FriendRequest }) => (
-    <View style={styles.requestItem}>
-      <View style={styles.requestInfo}>
-        <Text style={styles.requestText}>Friend request sent</Text>
-        <Text style={styles.requestDate}>
-          {new Date(item.created_at).toLocaleDateString()}
-        </Text>
+  const renderSentRequestItem = ({ item }: { item: FriendRequest }) => {
+    console.log(
+      "🔍 Rendering sent request item:",
+      JSON.stringify(item, null, 2)
+    );
+    return (
+      <View style={styles.requestItem}>
+        <View style={styles.requestInfo}>
+          <Text style={styles.requestText}>Friend request sent</Text>
+          <Text style={styles.requestDate}>
+            {item?.created_at
+              ? new Date(item.created_at).toLocaleDateString()
+              : "No date"}
+          </Text>
+        </View>
+        <Text style={styles.pendingText}>Pending</Text>
       </View>
-      <Text style={styles.pendingText}>Pending</Text>
-    </View>
-  );
+    );
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -215,14 +223,17 @@ export default function FriendsScreen({ navigation }: Props) {
         );
 
       case "received":
-        return receivedRequests.length === 0 ? (
+        const validReceivedRequests = receivedRequests.filter(
+          (item) => item && item.id
+        );
+        return validReceivedRequests.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="mail-outline" size={64} color="#ccc" />
             <Text style={styles.emptyTitle}>No Pending Requests</Text>
           </View>
         ) : (
           <FlatList
-            data={receivedRequests}
+            data={validReceivedRequests}
             renderItem={renderReceivedRequestItem}
             keyExtractor={(item, index) => item?.id || `received-${index}`}
             contentContainerStyle={styles.listContainer}
@@ -230,14 +241,17 @@ export default function FriendsScreen({ navigation }: Props) {
         );
 
       case "sent":
-        return sentRequests.length === 0 ? (
+        const validSentRequests = sentRequests.filter(
+          (item) => item && item.id
+        );
+        return validSentRequests.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="paper-plane-outline" size={64} color="#ccc" />
             <Text style={styles.emptyTitle}>No Sent Requests</Text>
           </View>
         ) : (
           <FlatList
-            data={sentRequests}
+            data={validSentRequests}
             renderItem={renderSentRequestItem}
             keyExtractor={(item, index) => item?.id || `sent-${index}`}
             contentContainerStyle={styles.listContainer}

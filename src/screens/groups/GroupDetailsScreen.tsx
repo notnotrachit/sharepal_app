@@ -56,9 +56,9 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   } = useSelector((state: RootState) => state.groups);
   const { user } = useSelector((state: RootState) => state.auth);
 
-  const [activeTab, setActiveTab] = useState<
-    "transactions" | "balances" | "settle"
-  >("transactions");
+  const [activeTab, setActiveTab] = useState<"transactions" | "balances">(
+    "transactions"
+  );
 
   useEffect(() => {
     loadGroupData();
@@ -174,63 +174,18 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
           payee_id: settlement.payee_id,
           amount: settlement.amount,
           currency: settlement.currency,
-          notes: "Settlement from suggestion",
+          notes: "Settlement payment made",
+          settlement_method: "manual", // This will make it created as completed
         })
       ).unwrap();
 
       console.log("✅ Settlement transaction created:", settlementTransaction);
 
-      // Check if we got a valid transaction ID
-      if (!settlementTransaction || !settlementTransaction._id) {
-        console.log("⚠️ No valid transaction ID, using fallback");
-        // Fallback: just record that the payment was made
-        loadGroupData();
-        Alert.alert(
-          "Payment Recorded",
-          `Payment of ${formatCurrency(
-            settlement.amount,
-            settlement.currency
-          )} to ${settlement.payee_name || "recipient"} has been recorded.`,
-          [{ text: "OK" }]
-        );
-        return;
-      }
-
-      // Then immediately mark it as completed using the new API
-      console.log(
-        "🔄 Completing transaction with ID:",
-        settlementTransaction._id
-      );
-
-      try {
-        const completionResult = await dispatch(
-          completeTransaction({
-            id: settlementTransaction._id,
-            data: {
-              notes: `Paid ${formatCurrency(
-                settlement.amount,
-                settlement.currency
-              )} to ${settlement.payee_name || "recipient"}`,
-              settlement_method: "manual",
-            },
-          })
-        ).unwrap();
-
-        console.log("✅ Transaction completion result:", completionResult);
-      } catch (completionError) {
-        console.error("⚠️ Error completing transaction:", completionError);
-        console.error(
-          "Full completion error:",
-          JSON.stringify(completionError, null, 2)
-        );
-        // Continue anyway - the transaction was created, we just couldn't mark it as completed
-      }
-
-      // Wait a moment for the backend to process, then reload the group data
+      // Reload the group data to get updated balances and settlements
       console.log("🔄 Reloading group data...");
       setTimeout(() => {
         loadGroupData();
-      }, 1500); // Increased delay to allow backend processing
+      }, 1000);
 
       Alert.alert(
         "Payment Completed",
@@ -239,7 +194,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
           settlement.currency
         )} to ${
           settlement.payee_name || "recipient"
-        } has been marked as completed.`,
+        } has been recorded and marked as completed.`,
         [{ text: "OK" }]
       );
     } catch (error: any) {
@@ -609,145 +564,99 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
               )}
             </View>
 
-            {/* Detailed Breakdown */}
+            {/* Detailed Breakdown with Settlement Actions */}
             {detailedBalances.length > 0 && (
               <>
                 <Text style={styles.detailHeader}>
                   <Ionicons name="list-outline" size={16} color="#333" />{" "}
-                  Breakdown:
+                  Breakdown & Settlements:
                 </Text>
-                {detailedBalances.map((detail, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.detailItem,
-                      {
-                        borderLeftColor: detail.isDebt ? "#FF6B35" : "#4CAF50",
-                      },
-                    ]}
-                  >
-                    <Text style={styles.detailText}>
-                      {detail.isDebt ? (
-                        <>
-                          You owe{" "}
-                          <Text
-                            style={[styles.detailAmount, { color: "#FF6B35" }]}
-                          >
-                            {formatCurrency(detail.amount, detail.currency)}
-                          </Text>{" "}
-                          to{" "}
-                          <Text style={styles.detailUser}>
-                            {detail.otherUser}
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          <Text style={styles.detailUser}>
-                            {detail.otherUser}
-                          </Text>{" "}
-                          owes you{" "}
-                          <Text
-                            style={[styles.detailAmount, { color: "#4CAF50" }]}
-                          >
-                            {formatCurrency(detail.amount, detail.currency)}
-                          </Text>
-                        </>
-                      )}
-                    </Text>
-                  </View>
-                ))}
-              </>
-            )}
-          </ScrollView>
-        )}
-      </View>
-    );
-  };
+                {detailedBalances.map((detail, index) => {
+                  // Find corresponding settlement for pay button
+                  const correspondingSettlement = settlementData.find(
+                    (settlement) =>
+                      (settlement.payer_id === user?.id && detail.isDebt) ||
+                      (settlement.payee_id === user?.id && !detail.isDebt)
+                  );
 
-  const renderSettleTab = () => {
-    // Use simplify data
-    const activeSettlementData = Array.isArray(groupSimplify)
-      ? groupSimplify
-      : [];
-
-    // Filter settlements to only show ones involving the current user
-    const userSettlements = Array.isArray(activeSettlementData)
-      ? activeSettlementData.filter(
-          (settlement) =>
-            settlement.payer_id === user?.id || settlement.payee_id === user?.id
-        )
-      : [];
-
-    return (
-      <View style={styles.tabContent}>
-        {!activeSettlementData ||
-        !Array.isArray(activeSettlementData) ||
-        activeSettlementData.length === 0 ||
-        userSettlements.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={48}
-              color="#4CAF50"
-            />
-            <Text style={styles.emptyTitle}>All settled up!</Text>
-            <Text style={styles.emptySubtitle}>No payments needed</Text>
-          </View>
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.settleHeader}>Settlements:</Text>
-            {userSettlements.map((settlement, index) => {
-              const isUserPayer = settlement.payer_id === user?.id;
-              const isUserPayee = settlement.payee_id === user?.id;
-
-              // Use the names provided in the settlement object
-              const otherUserName = isUserPayer
-                ? settlement.payee_name || "Someone"
-                : settlement.payer_name || "Someone";
-
-              return (
-                <View
-                  key={`${settlement.payer_id}-${settlement.payee_id}-${index}`}
-                  style={styles.settlementItem}
-                >
-                  {isUserPayer ? (
-                    // Current user owes money
-                    <>
-                      <Text style={styles.settlementText}>
-                        Pay{" "}
-                        {formatCurrency(
-                          settlement.amount || 0,
-                          settlement.currency || "INR"
-                        )}{" "}
-                        to {otherUserName}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.settleButton}
-                        onPress={() => handleMarkAsPaid(settlement)}
-                      >
-                        <Text style={styles.settleButtonText}>
-                          Mark as Paid
-                        </Text>
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    // Current user is owed money
-                    <Text
+                  return (
+                    <View
+                      key={index}
                       style={[
-                        styles.settlementText,
-                        { color: "#4CAF50", fontWeight: "bold" },
+                        styles.detailItem,
+                        {
+                          borderLeftColor: detail.isDebt
+                            ? "#FF6B35"
+                            : "#4CAF50",
+                        },
                       ]}
                     >
-                      {otherUserName} owes you{" "}
-                      {formatCurrency(
-                        settlement.amount || 0,
-                        settlement.currency || "INR"
-                      )}
-                    </Text>
-                  )}
-                </View>
-              );
-            })}
+                      <View style={styles.detailRow}>
+                        <View style={styles.detailTextContainer}>
+                          <Text style={styles.detailText}>
+                            {detail.isDebt ? (
+                              <>
+                                You owe{" "}
+                                <Text
+                                  style={[
+                                    styles.detailAmount,
+                                    { color: "#FF6B35" },
+                                  ]}
+                                >
+                                  {formatCurrency(
+                                    detail.amount,
+                                    detail.currency
+                                  )}
+                                </Text>{" "}
+                                to{" "}
+                                <Text style={styles.detailUser}>
+                                  {detail.otherUser}
+                                </Text>
+                              </>
+                            ) : (
+                              <>
+                                <Text style={styles.detailUser}>
+                                  {detail.otherUser}
+                                </Text>{" "}
+                                owes you{" "}
+                                <Text
+                                  style={[
+                                    styles.detailAmount,
+                                    { color: "#4CAF50" },
+                                  ]}
+                                >
+                                  {formatCurrency(
+                                    detail.amount,
+                                    detail.currency
+                                  )}
+                                </Text>
+                              </>
+                            )}
+                          </Text>
+                        </View>
+
+                        {/* Settlement Action Button */}
+                        {detail.isDebt && correspondingSettlement && (
+                          <TouchableOpacity
+                            style={styles.payButton}
+                            onPress={() =>
+                              handleMarkAsPaid(correspondingSettlement)
+                            }
+                          >
+                            <Ionicons
+                              name="card-outline"
+                              size={16}
+                              color="#fff"
+                            />
+                            <Text style={styles.payButtonText}>Pay</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </>
+            )}
           </ScrollView>
         )}
       </View>
@@ -802,20 +711,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
               activeTab === "balances" && styles.activeTabText,
             ]}
           >
-            Balances
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "settle" && styles.activeTab]}
-          onPress={() => setActiveTab("settle")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "settle" && styles.activeTabText,
-            ]}
-          >
-            Settle Up
+            Balances & Settle
           </Text>
         </TouchableOpacity>
       </View>
@@ -824,7 +720,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       <View style={styles.content}>
         {activeTab === "transactions" && renderTransactionsTab()}
         {activeTab === "balances" && renderBalancesTab()}
-        {activeTab === "settle" && renderSettleTab()}
       </View>
     </View>
   );
@@ -1116,6 +1011,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     fontFamily: "monospace",
+  },
+  // New styles for combined balance and settlement layout
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+  },
+  detailTextContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
+  payButton: {
+    backgroundColor: "#4CAF50",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    minWidth: 60,
+  },
+  payButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+    marginLeft: 4,
   },
   settlementStatus: {
     borderRadius: 12,

@@ -173,6 +173,7 @@ export interface CreateExpenseTransactionRequest {
   }>;
   category?: string;
   notes?: string;
+  is_completed?: boolean;
 }
 
 export interface CreateSettlementTransactionRequest {
@@ -182,6 +183,7 @@ export interface CreateSettlementTransactionRequest {
   amount: number;
   currency: string;
   notes?: string;
+  settlement_method?: string;
 }
 
 export interface CompleteTransactionRequest {

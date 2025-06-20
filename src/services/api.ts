@@ -210,14 +210,27 @@ class ApiService {
   // Transaction Management
   async createExpenseTransaction(data: any) {
     console.log('🔍 Creating expense transaction with data:', JSON.stringify(data, null, 2));
-    const result = await this.request('POST', API_ENDPOINTS.TRANSACTION_EXPENSE, data);
+    // Expenses should be marked as completed since they represent money already spent
+    const expenseData = {
+      ...data,
+      is_completed: true
+    };
+    console.log('🔍 Enhanced expense data with is_completed:', JSON.stringify(expenseData, null, 2));
+    const result = await this.request('POST', API_ENDPOINTS.TRANSACTION_EXPENSE, expenseData);
     console.log('🔍 Create expense transaction API result:', result);
     return result;
   }
 
   async createSettlementTransaction(data: any) {
     console.log('🔍 Creating settlement transaction with data:', JSON.stringify(data, null, 2));
-    const result = await this.request('POST', API_ENDPOINTS.TRANSACTION_SETTLEMENT, data);
+    // If this settlement is being created as a payment (has settlement_method), mark it as completed
+    const settlementData = {
+      ...data,
+      // If it's a payment being made, mark as completed
+      is_completed: data.settlement_method ? true : false
+    };
+    console.log('🔍 Enhanced settlement data:', JSON.stringify(settlementData, null, 2));
+    const result = await this.request('POST', API_ENDPOINTS.TRANSACTION_SETTLEMENT, settlementData);
     console.log('🔍 Create settlement transaction API result:', result);
     return result;
   }
