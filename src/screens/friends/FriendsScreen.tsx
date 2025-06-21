@@ -630,6 +630,7 @@ export default function FriendsScreen({ navigation }: Props) {
             <TextInput
               style={styles.emailInput}
               placeholder="Enter friend's email"
+              placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"

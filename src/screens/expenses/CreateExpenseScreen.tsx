@@ -520,13 +520,19 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       fontWeight: "600",
     },
     createButton: {
-      ...components.button,
+      ...components.button.primary,
       backgroundColor: colors.primary,
       marginTop: spacing.lg,
+      ...shadows.medium,
+      elevation: 4,
+      alignItems: "center",
+      justifyContent: "center",
     },
     createButtonText: {
       ...typography.button,
-      color: colors.surface,
+      color: "#ffffff",
+      fontWeight: "600",
+      textAlign: "center",
     },
     disabledButton: {
       backgroundColor: colors.textSecondary,
@@ -590,8 +596,9 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Description *</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: colors.text }]}
             placeholder="What was this expense for?"
+            placeholderTextColor={colors.textSecondary}
             value={formData.description}
             onChangeText={(value) =>
               setFormData((prev) => ({ ...prev, description: value }))
@@ -602,8 +609,9 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Amount *</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: colors.text }]}
             placeholder="0.00"
+            placeholderTextColor={colors.textSecondary}
             value={formData.amount}
             onChangeText={(value) => {
               setFormData((prev) => ({ ...prev, amount: value }));
@@ -678,8 +686,9 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
                   <View style={styles.percentageInputContainer}>
                     <View style={styles.percentageInput}>
                       <TextInput
-                        style={styles.splitInput}
+                        style={[styles.splitInput, { color: colors.text }]}
                         value={split.amount.toString()}
+                        placeholderTextColor={colors.textSecondary}
                         onChangeText={(value) =>
                           updateSplitPercentage(
                             split.user_id,
@@ -703,8 +712,9 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
                   </View>
                 ) : (
                   <TextInput
-                    style={styles.splitInput}
+                    style={[styles.splitInput, { color: colors.text }]}
                     value={split.amount.toString()}
+                    placeholderTextColor={colors.textSecondary}
                     onChangeText={(value) =>
                       updateSplitAmount(split.user_id, parseFloat(value) || 0)
                     }
@@ -731,8 +741,9 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Notes</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[styles.input, styles.textArea, { color: colors.text }]}
             placeholder="Add any additional notes"
+            placeholderTextColor={colors.textSecondary}
             value={formData.notes}
             onChangeText={(value) =>
               setFormData((prev) => ({ ...prev, notes: value }))

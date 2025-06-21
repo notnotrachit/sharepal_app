@@ -265,7 +265,11 @@ export default function ExpensesScreen({ navigation }: Props) {
   return (
     <AnimatedScreen animationType="slideUp" duration={400}>
       <View style={styles.container}>
-        {expenses.length === 0 && !isLoading ? (
+        {isLoading && expenses.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Loading expenses...</Text>
+          </View>
+        ) : expenses.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyCard}>
               <View style={styles.emptyIcon}>
@@ -311,7 +315,7 @@ export default function ExpensesScreen({ navigation }: Props) {
           style={styles.fab}
           iconName="add"
           iconSize={28}
-          iconColor={colors.text}
+          iconColor={colors.surface}
           onPress={() => navigation.navigate("CreateExpense", {})}
         />
       </View>

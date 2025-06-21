@@ -20,7 +20,12 @@ import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { CURRENCIES } from "../../constants/api";
 import { User } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
-import { spacing, borderRadius, typography } from "../../constants/theme";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type CreateGroupScreenNavigationProp = StackNavigationProp<
   GroupsStackParamList,
@@ -145,16 +150,22 @@ export default function CreateGroupScreen({ navigation }: Props) {
       color: colors.text,
     },
     createButton: {
-      ...components.button,
+      ...components.button.primary,
       backgroundColor: colors.primary,
       marginTop: spacing.lg,
+      ...shadows.medium,
+      elevation: 4,
+      alignItems: "center",
+      justifyContent: "center",
     },
     buttonDisabled: {
       backgroundColor: colors.textSecondary,
     },
     createButtonText: {
       ...typography.button,
-      color: colors.surface,
+      color: "#ffffff",
+      fontWeight: "600",
+      textAlign: "center",
     },
     modalContainer: {
       flex: 1,
@@ -203,6 +214,7 @@ export default function CreateGroupScreen({ navigation }: Props) {
           <TextInput
             style={styles.input}
             placeholder="Enter group name"
+            placeholderTextColor={colors.textSecondary}
             value={formData.name}
             onChangeText={(value) =>
               setFormData((prev) => ({ ...prev, name: value }))
@@ -215,6 +227,7 @@ export default function CreateGroupScreen({ navigation }: Props) {
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="What's this group for?"
+            placeholderTextColor={colors.textSecondary}
             value={formData.description}
             onChangeText={(value) =>
               setFormData((prev) => ({ ...prev, description: value }))
