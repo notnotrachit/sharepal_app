@@ -5,14 +5,17 @@ import { Provider } from "react-redux";
 import { store } from "./src/store";
 import AppNavigator from "./src/navigation/AppNavigator";
 import AuthInitializer from "./src/components/AuthInitializer";
+import { ThemeProvider } from "./src/constants/ThemeProvider";
 
 export default function App() {
   return (
     <Provider store={store}>
-      <AuthInitializer>
-        <StatusBar style="auto" />
-        <AppNavigator />
-      </AuthInitializer>
+      <ThemeProvider>
+        <AuthInitializer>
+          <StatusBar style="auto" />
+          <AppNavigator />
+        </AuthInitializer>
+      </ThemeProvider>
     </Provider>
   );
 }

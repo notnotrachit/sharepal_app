@@ -23,6 +23,13 @@ import {
 } from "../../store/slices/friendsSlice";
 import { FriendsStackParamList } from "../../navigation/AppNavigator";
 import { User, FriendRequest } from "../../types/api";
+import { useTheme } from "../../constants/ThemeProvider";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type FriendsScreenNavigationProp = StackNavigationProp<
   FriendsStackParamList,
@@ -35,6 +42,7 @@ interface Props {
 
 export default function FriendsScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
   const { friends, receivedRequests, sentRequests, isLoading } = useSelector(
     (state: RootState) => state.friends
   );
@@ -44,6 +52,291 @@ export default function FriendsScreen({ navigation }: Props) {
   >("friends");
   const [showAddFriend, setShowAddFriend] = React.useState(false);
   const [email, setEmail] = React.useState("");
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.md,
+    },
+    title: {
+      ...typography.h2,
+      color: colors.text,
+    },
+    fab: {
+      ...components.fab,
+    },
+    tabs: {
+      flexDirection: "row",
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      alignItems: "center",
+      borderBottomWidth: 2,
+      borderBottomColor: "transparent",
+    },
+    activeTab: {
+      borderBottomColor: colors.primary,
+    },
+    tabText: {
+      ...typography.bodySmall,
+      fontWeight: "600",
+      color: colors.textSecondary,
+    },
+    activeTabText: {
+      ...typography.bodySmall,
+      color: colors.primary,
+      fontWeight: "700",
+    },
+    content: {
+      flex: 1,
+    },
+    listContainer: {
+      padding: spacing.lg,
+      paddingBottom: 100, // Account for FAB
+    },
+    friendCard: {
+      ...components.card,
+      marginBottom: spacing.md,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.md,
+    },
+    friendInfo: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    avatarContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: spacing.md,
+    },
+    avatarText: {
+      ...typography.body,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    friendDetails: {
+      flex: 1,
+    },
+    friendName: {
+      ...typography.h4,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    friendEmail: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    statusBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+      marginTop: spacing.sm,
+    },
+    statusText: {
+      ...typography.caption,
+      color: colors.success,
+      marginLeft: spacing.xs,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    removeButton: {
+      padding: spacing.sm,
+      borderRadius: borderRadius.md,
+      backgroundColor: colors.surface,
+    },
+    requestCard: {
+      ...components.card,
+      marginBottom: spacing.md,
+    },
+    requestHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.md,
+    },
+    requestInfo: {
+      flex: 1,
+    },
+    requestTitle: {
+      ...typography.h4,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    requestDate: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+    requestActions: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    acceptButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.success,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    rejectButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.error,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    pendingBadge: {
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+    },
+    pendingText: {
+      ...typography.caption,
+      color: colors.warning,
+      fontWeight: "600",
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    emptyCard: {
+      ...components.card,
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    emptyIcon: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: spacing.lg,
+    },
+    emptyTitle: {
+      ...typography.h3,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    emptySubtitle: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginBottom: spacing.lg,
+      lineHeight: 22,
+    },
+    createFirstButton: {
+      ...components.button.primary,
+    },
+    createFirstButtonText: {
+      ...typography.button,
+      color: colors.text,
+      textAlign: "center",
+    },
+    modal: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.overlay,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalContent: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: borderRadius.lg,
+      padding: spacing.xl,
+      margin: spacing.xl,
+      width: "80%",
+      ...shadows.large,
+    },
+    modalTitle: {
+      ...typography.h3,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: spacing.lg,
+    },
+    emailInput: {
+      ...components.input,
+      marginBottom: spacing.lg,
+    },
+    modalActions: {
+      flexDirection: "row",
+      gap: spacing.md,
+    },
+    cancelButton: {
+      ...components.button.secondary,
+      flex: 1,
+    },
+    cancelButtonText: {
+      ...typography.button,
+      color: colors.primary,
+      textAlign: "center",
+    },
+    sendButton: {
+      ...components.button.primary,
+      flex: 1,
+    },
+    sendButtonText: {
+      ...typography.button,
+      color: colors.text,
+      textAlign: "center",
+    },
+  });
+
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#FFA07A",
+      "#98D8C8",
+      "#F7DC6F",
+      "#BB8FCE",
+      "#85C1E9",
+      "#82E0AA",
+      "#F8C471",
+    ];
+    const index = name.length % colors.length;
+    return colors[index];
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   useEffect(() => {
     loadFriendsData();
@@ -100,46 +393,71 @@ export default function FriendsScreen({ navigation }: Props) {
   };
 
   const renderFriendItem = ({ item }: { item: User }) => {
+    const friendName = item?.name || "No name";
+    const friendEmail = item?.email || "No email";
+    const avatarColor = getAvatarColor(friendName);
+    const initials = getInitials(friendName);
+
     return (
-      <View style={styles.friendItem}>
-        <View style={styles.friendInfo}>
-          <Text style={styles.friendName}>{item?.name || "No name"}</Text>
-          <Text style={styles.friendEmail}>{item?.email || "No email"}</Text>
+      <View style={styles.friendCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.friendInfo}>
+            <View
+              style={[styles.avatarContainer, { backgroundColor: avatarColor }]}
+            >
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+            <View style={styles.friendDetails}>
+              <Text style={styles.friendName}>{friendName}</Text>
+              <Text style={styles.friendEmail}>{friendEmail}</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.removeButton}
+            onPress={() => handleRemoveFriend(item)}
+          >
+            <Ionicons
+              name="person-remove-outline"
+              size={20}
+              color={colors.error}
+            />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.removeButton}
-          onPress={() => handleRemoveFriend(item)}
-        >
-          <Ionicons name="person-remove-outline" size={20} color="#ff4444" />
-        </TouchableOpacity>
+
+        <View style={styles.statusBadge}>
+          <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+          <Text style={styles.statusText}>Friends</Text>
+        </View>
       </View>
     );
   };
 
   const renderReceivedRequestItem = ({ item }: { item: FriendRequest }) => {
     return (
-      <View style={styles.requestItem}>
-        <View style={styles.requestInfo}>
-          <Text style={styles.requestText}>Friend request received</Text>
-          <Text style={styles.requestDate}>
-            {item?.created_at
-              ? new Date(item.created_at).toLocaleDateString()
-              : "No date"}
-          </Text>
-        </View>
-        <View style={styles.requestActions}>
-          <TouchableOpacity
-            style={styles.acceptButton}
-            onPress={() => handleRespondToRequest(item?.id || "", true)}
-          >
-            <Ionicons name="checkmark" size={20} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.rejectButton}
-            onPress={() => handleRespondToRequest(item?.id || "", false)}
-          >
-            <Ionicons name="close" size={20} color="#fff" />
-          </TouchableOpacity>
+      <View style={styles.requestCard}>
+        <View style={styles.requestHeader}>
+          <View style={styles.requestInfo}>
+            <Text style={styles.requestTitle}>Friend Request Received</Text>
+            <Text style={styles.requestDate}>
+              {item?.created_at
+                ? new Date(item.created_at).toLocaleDateString()
+                : "No date"}
+            </Text>
+          </View>
+          <View style={styles.requestActions}>
+            <TouchableOpacity
+              style={styles.acceptButton}
+              onPress={() => handleRespondToRequest(item?.id || "", true)}
+            >
+              <Ionicons name="checkmark" size={20} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.rejectButton}
+              onPress={() => handleRespondToRequest(item?.id || "", false)}
+            >
+              <Ionicons name="close" size={20} color={colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -147,16 +465,20 @@ export default function FriendsScreen({ navigation }: Props) {
 
   const renderSentRequestItem = ({ item }: { item: FriendRequest }) => {
     return (
-      <View style={styles.requestItem}>
-        <View style={styles.requestInfo}>
-          <Text style={styles.requestText}>Friend request sent</Text>
-          <Text style={styles.requestDate}>
-            {item?.created_at
-              ? new Date(item.created_at).toLocaleDateString()
-              : "No date"}
-          </Text>
+      <View style={styles.requestCard}>
+        <View style={styles.requestHeader}>
+          <View style={styles.requestInfo}>
+            <Text style={styles.requestTitle}>Friend Request Sent</Text>
+            <Text style={styles.requestDate}>
+              {item?.created_at
+                ? new Date(item.created_at).toLocaleDateString()
+                : "No date"}
+            </Text>
+          </View>
+          <View style={styles.pendingBadge}>
+            <Text style={styles.pendingText}>Pending</Text>
+          </View>
         </View>
-        <Text style={styles.pendingText}>Pending</Text>
       </View>
     );
   };
@@ -166,19 +488,27 @@ export default function FriendsScreen({ navigation }: Props) {
       case "friends":
         return friends.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyTitle}>No Friends Yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Send friend requests to start splitting expenses
-            </Text>
-            <TouchableOpacity
-              style={styles.createFirstButton}
-              onPress={() => setShowAddFriend(true)}
-            >
-              <Text style={styles.createFirstButtonText}>
-                Add Your First Friend
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIcon}>
+                <Ionicons
+                  name="people-outline"
+                  size={40}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={styles.emptyTitle}>No Friends Yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Send friend requests to start splitting expenses
               </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.createFirstButton}
+                onPress={() => setShowAddFriend(true)}
+              >
+                <Text style={styles.createFirstButtonText}>
+                  Add Your First Friend
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <FlatList
@@ -201,8 +531,10 @@ export default function FriendsScreen({ navigation }: Props) {
         );
         return validReceivedRequests.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="mail-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyTitle}>No Pending Requests</Text>
+            <View style={styles.emptyCard}>
+              <Ionicons name="mail-outline" size={64} color={colors.primary} />
+              <Text style={styles.emptyTitle}>No Pending Requests</Text>
+            </View>
           </View>
         ) : (
           <FlatList
@@ -219,8 +551,14 @@ export default function FriendsScreen({ navigation }: Props) {
         );
         return validSentRequests.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="paper-plane-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyTitle}>No Sent Requests</Text>
+            <View style={styles.emptyCard}>
+              <Ionicons
+                name="paper-plane-outline"
+                size={64}
+                color={colors.primary}
+              />
+              <Text style={styles.emptyTitle}>No Sent Requests</Text>
+            </View>
           </View>
         ) : (
           <FlatList
@@ -238,10 +576,6 @@ export default function FriendsScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Friends</Text>
-      </View>
-
       {/* Tabs */}
       <View style={styles.tabs}>
         <TouchableOpacity
@@ -327,245 +661,8 @@ export default function FriendsScreen({ navigation }: Props) {
         style={styles.fab}
         onPress={() => setShowAddFriend(true)}
       >
-        <Ionicons name="person-add" size={28} color="#fff" />
+        <Ionicons name="person-add" size={28} color={colors.text} />
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  header: {
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  fab: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: "#007AFF",
-    borderRadius: 28,
-    width: 56,
-    height: 56,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-  },
-  tabs: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: "center",
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-  },
-  activeTab: {
-    borderBottomColor: "#007AFF",
-  },
-  tabText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  activeTabText: {
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  content: {
-    flex: 1,
-  },
-  listContainer: {
-    padding: 16,
-  },
-  friendItem: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  friendInfo: {
-    flex: 1,
-  },
-  friendName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  friendEmail: {
-    fontSize: 14,
-    color: "#666",
-  },
-  removeButton: {
-    padding: 8,
-  },
-  requestItem: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  requestInfo: {
-    flex: 1,
-  },
-  requestText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  requestDate: {
-    fontSize: 12,
-    color: "#666",
-  },
-  requestActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  acceptButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 20,
-    width: 36,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rejectButton: {
-    backgroundColor: "#F44336",
-    borderRadius: 20,
-    width: 36,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  pendingText: {
-    fontSize: 14,
-    color: "#888",
-    fontStyle: "italic",
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  createFirstButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  createFirstButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modal: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 24,
-    margin: 32,
-    width: "80%",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  emailInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    color: "#333",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  sendButton: {
-    flex: 1,
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-  },
-  sendButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

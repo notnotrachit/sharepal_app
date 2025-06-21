@@ -23,6 +23,13 @@ import { fetchGroups, fetchGroupMembers } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "../../constants/api";
 import { Group, User } from "../../types/api";
+import { useTheme } from "../../constants/ThemeProvider";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type CreateExpenseScreenNavigationProp = StackNavigationProp<
   ExpensesStackParamList,
@@ -51,6 +58,7 @@ interface Payer {
 export default function CreateExpenseScreen({ navigation, route }: Props) {
   const { groupId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
   const { isLoading } = useSelector((state: RootState) => state.groups);
   const { groups } = useSelector((state: RootState) => state.groups);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -327,7 +335,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     >
       <Text style={styles.modalItemText}>{item}</Text>
       {formData.category === item && (
-        <Ionicons name="checkmark" size={20} color="#007AFF" />
+        <Ionicons name="checkmark" size={20} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
@@ -362,7 +370,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         {item.charAt(0).toUpperCase() + item.slice(1)}
       </Text>
       {formData.split_type === item && (
-        <Ionicons name="checkmark" size={20} color="#007AFF" />
+        <Ionicons name="checkmark" size={20} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
@@ -377,7 +385,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     >
       <Text style={styles.modalItemText}>{item.name}</Text>
       {formData.group_id === item.id && (
-        <Ionicons name="checkmark" size={20} color="#007AFF" />
+        <Ionicons name="checkmark" size={20} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
@@ -405,6 +413,176 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       }
     }
   }, [formData.amount, user?.id]);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.lg,
+    },
+    form: {
+      gap: spacing.lg,
+    },
+    inputGroup: {
+      gap: spacing.sm,
+    },
+    label: {
+      ...typography.h4,
+      color: colors.text,
+      marginBottom: spacing.xs,
+    },
+    input: {
+      ...components.input,
+    },
+    textArea: {
+      ...components.input,
+      height: 80,
+      textAlignVertical: "top",
+    },
+    selector: {
+      ...components.input,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    selectorText: {
+      ...typography.body,
+      color: colors.text,
+    },
+    splitItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: colors.card,
+      borderRadius: borderRadius.md,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    splitUser: {
+      ...typography.body,
+      color: colors.text,
+      flex: 1,
+    },
+    splitAmount: {
+      ...typography.body,
+      color: colors.primary,
+      fontWeight: "600",
+    },
+    splitInput: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: borderRadius.sm,
+      padding: spacing.sm,
+      width: 80,
+      textAlign: "center",
+      color: colors.text,
+    },
+    percentageInputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    percentageInput: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: borderRadius.sm,
+      paddingHorizontal: spacing.sm,
+    },
+    percentageSymbol: {
+      ...typography.body,
+      color: colors.textSecondary,
+      marginLeft: spacing.xs,
+    },
+    calculatedAmount: {
+      ...typography.body,
+      color: colors.primary,
+      fontWeight: "600",
+      marginLeft: spacing.sm,
+    },
+    percentageTotal: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: spacing.sm,
+      padding: spacing.md,
+      backgroundColor: colors.cardSecondary,
+      borderRadius: borderRadius.md,
+    },
+    percentageTotalText: {
+      ...typography.body,
+      color: colors.primary,
+      fontWeight: "600",
+    },
+    createButton: {
+      ...components.button,
+      backgroundColor: colors.primary,
+      marginTop: spacing.lg,
+    },
+    createButtonText: {
+      ...typography.button,
+      color: colors.surface,
+    },
+    disabledButton: {
+      backgroundColor: colors.textSecondary,
+    },
+    buttonDisabled: {
+      backgroundColor: colors.textSecondary,
+    },
+    disabledButtonText: {
+      color: colors.textTertiary,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalContent: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      margin: spacing.lg,
+      maxHeight: "80%",
+      width: "90%",
+    },
+    modalContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      margin: spacing.lg,
+      maxHeight: "80%",
+      width: "90%",
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.md,
+    },
+    modalTitle: {
+      ...typography.h3,
+      color: colors.text,
+    },
+    modalItem: {
+      padding: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalItemText: {
+      ...typography.body,
+      color: colors.text,
+    },
+    closeButton: {
+      alignSelf: "flex-end",
+      padding: spacing.sm,
+    },
+  });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -443,7 +621,11 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
             <Text style={styles.selectorText}>
               {selectedGroup ? selectedGroup.name : "Select a group"}
             </Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons
+              name="chevron-down"
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -454,7 +636,11 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
             onPress={() => setShowCategoryModal(true)}
           >
             <Text style={styles.selectorText}>{formData.category}</Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons
+              name="chevron-down"
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -468,7 +654,11 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
               {formData.split_type.charAt(0).toUpperCase() +
                 formData.split_type.slice(1)}
             </Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons
+              name="chevron-down"
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -573,7 +763,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Category</Text>
             <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
           <FlatList
@@ -593,7 +783,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Split Type</Text>
             <TouchableOpacity onPress={() => setShowSplitTypeModal(false)}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
           <FlatList
@@ -613,7 +803,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Group</Text>
             <TouchableOpacity onPress={() => setShowGroupModal(false)}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
           <FlatList
@@ -626,157 +816,3 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  content: {
-    padding: 16,
-  },
-  form: {
-    gap: 20,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    color: "#333",
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: "top",
-  },
-  selector: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  selectorText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  splitItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  splitUser: {
-    fontSize: 16,
-    color: "#333",
-    flex: 1,
-  },
-  splitInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 6,
-    padding: 8,
-    fontSize: 16,
-    width: 80,
-    textAlign: "right",
-  },
-  splitAmount: {
-    fontSize: 16,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  percentageInputContainer: {
-    flexDirection: "column",
-    alignItems: "flex-end",
-    gap: 4,
-  },
-  percentageInput: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  percentageSymbol: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "600",
-  },
-  calculatedAmount: {
-    fontSize: 12,
-    color: "#666",
-    fontStyle: "italic",
-  },
-  percentageTotal: {
-    marginTop: 8,
-    padding: 8,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 6,
-    alignItems: "center",
-  },
-  percentageTotalText: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "600",
-  },
-  createButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  buttonDisabled: {
-    backgroundColor: "#ccc",
-  },
-  createButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-  },
-  modalItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: "#333",
-  },
-});

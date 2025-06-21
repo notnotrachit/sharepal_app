@@ -27,6 +27,13 @@ import {
   clearGroupData,
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
+import { useTheme } from "../../constants/ThemeProvider";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type GroupDetailsScreenNavigationProp = StackNavigationProp<
   GroupsStackParamList,
@@ -45,6 +52,364 @@ interface Props {
 export default function GroupDetailsScreen({ navigation, route }: Props) {
   const { groupId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+    },
+    header: {
+      ...components.card,
+      margin: spacing.lg,
+      marginBottom: spacing.sm,
+    },
+    groupInfo: {
+      flex: 1,
+    },
+    groupName: {
+      ...typography.h2,
+      color: colors.text,
+    },
+    memberCount: {
+      ...typography.body,
+      color: colors.textSecondary,
+      marginTop: spacing.xs,
+    },
+    fab: {
+      position: "absolute",
+      bottom: spacing.xl,
+      right: spacing.xl,
+      backgroundColor: colors.primary,
+      borderRadius: 32,
+      width: 64,
+      height: 64,
+      justifyContent: "center",
+      alignItems: "center",
+      ...shadows.large,
+      elevation: 8,
+    },
+    tabs: {
+      flexDirection: "row",
+      ...components.card,
+      margin: spacing.lg,
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
+      padding: spacing.xs,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.sm,
+      alignItems: "center",
+      borderRadius: borderRadius.lg,
+      marginHorizontal: 2,
+      backgroundColor: colors.surface,
+    },
+    activeTab: {
+      backgroundColor: colors.primary,
+      ...shadows.small,
+    },
+    tabText: {
+      ...typography.body,
+      color: colors.textSecondary,
+      fontWeight: "500",
+    },
+    activeTabText: {
+      color: colors.surface,
+      fontWeight: "600",
+    },
+    content: {
+      flex: 1,
+    },
+    tabContent: {
+      flex: 1,
+      padding: spacing.lg,
+    },
+    emptyState: {
+      alignItems: "center",
+      padding: spacing.xl * 2,
+      ...components.card,
+    },
+    emptyTitle: {
+      ...typography.h4,
+      color: colors.text,
+      marginTop: spacing.lg,
+    },
+    emptySubtitle: {
+      ...typography.body,
+      color: colors.textSecondary,
+      marginTop: spacing.sm,
+      textAlign: "center",
+    },
+    expenseItem: {
+      ...components.card,
+      marginBottom: spacing.md,
+    },
+    expenseHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.sm,
+    },
+    expenseDescription: {
+      ...typography.h4,
+      color: colors.text,
+      flex: 1,
+    },
+    expenseAmount: {
+      ...typography.h4,
+      fontWeight: "700",
+      color: colors.primary,
+    },
+    expenseDetails: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    expenseInfo: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    expenseCategory: {
+      ...typography.caption,
+      color: colors.primary,
+      backgroundColor: `${colors.primary}15`,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: borderRadius.sm,
+      fontWeight: "500",
+    },
+    expenseDate: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    expenseMeta: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: spacing.sm,
+    },
+    expenseContent: {
+      flex: 1,
+    },
+    transactionActions: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      marginTop: spacing.sm,
+    },
+    transactionEditButton: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      flex: 1,
+    },
+    transactionDeleteButton: {
+      backgroundColor: colors.error,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      flex: 1,
+    },
+    balanceItem: {
+      ...components.card,
+      marginBottom: spacing.md,
+    },
+    balanceHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    balanceName: {
+      ...typography.h4,
+      color: colors.text,
+    },
+    balanceUser: {
+      ...typography.h4,
+      color: colors.text,
+      marginBottom: spacing.xs,
+    },
+    balanceAmount: {
+      ...typography.h4,
+      fontWeight: "700",
+    },
+    balanceStatus: {
+      ...typography.caption,
+      marginTop: spacing.xs,
+    },
+    balanceDescription: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginTop: spacing.xs,
+    },
+    actionButton: {
+      ...components.button,
+      marginTop: spacing.lg,
+    },
+    actionButtonText: {
+      ...typography.button,
+      color: colors.surface,
+    },
+    settleButton: {
+      ...components.button,
+      backgroundColor: colors.success,
+      marginTop: spacing.sm,
+    },
+    settleButtonText: {
+      color: colors.surface,
+      ...typography.body,
+      fontWeight: "600",
+    },
+    detailHeader: {
+      ...typography.h4,
+      color: colors.text,
+      marginTop: spacing.lg,
+      marginBottom: spacing.md,
+      paddingHorizontal: spacing.xs,
+    },
+    detailItem: {
+      ...components.card,
+      marginBottom: spacing.sm,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.primary,
+    },
+    detailText: {
+      ...typography.body,
+      color: colors.text,
+      lineHeight: 20,
+    },
+    detailAmount: {
+      fontWeight: "600",
+      color: colors.primary,
+    },
+    detailUser: {
+      fontWeight: "600",
+      color: colors.text,
+    },
+    enhancedBalanceInfo: {
+      marginTop: spacing.md,
+      paddingTop: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    enhancedBalanceText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginVertical: 2,
+    },
+    dataSourceHeader: {
+      ...typography.body,
+      fontWeight: "600",
+      color: colors.primary,
+      textAlign: "center",
+      marginBottom: spacing.lg,
+      paddingVertical: spacing.md,
+      backgroundColor: `${colors.primary}15`,
+      borderRadius: borderRadius.md,
+    },
+    participantCount: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontStyle: "italic",
+    },
+    settleHeader: {
+      ...typography.h4,
+      color: colors.text,
+      marginBottom: spacing.lg,
+    },
+    settlementItem: {
+      ...components.card,
+      marginBottom: spacing.md,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    settlementText: {
+      ...typography.h4,
+      color: colors.text,
+      flex: 1,
+    },
+    transactionTitleRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flex: 1,
+    },
+    transactionTypeBadge: {
+      borderRadius: borderRadius.md,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      marginLeft: spacing.sm,
+    },
+    expenseTypeBadge: {
+      backgroundColor: `${colors.primary}25`,
+    },
+    settlementTypeBadge: {
+      backgroundColor: `${colors.secondary}25`,
+    },
+    transactionTypeText: {
+      ...typography.caption,
+      fontWeight: "600",
+    },
+    expenseTypeText: {
+      color: colors.primary,
+    },
+    settlementTypeText: {
+      color: colors.secondary,
+    },
+    settlementInfo: {
+      marginTop: spacing.sm,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    settlementFromTo: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontFamily: "monospace",
+    },
+    detailRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      width: "100%",
+    },
+    detailTextContainer: {
+      flex: 1,
+      marginRight: spacing.sm,
+    },
+    payButton: {
+      ...components.button,
+      backgroundColor: colors.success,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minWidth: 70,
+    },
+    payButtonText: {
+      ...typography.button,
+      color: colors.surface,
+      marginLeft: spacing.xs,
+    },
+  });
+
   const {
     currentGroup,
     groupBalances,
@@ -263,9 +628,9 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   };
 
   const getBalanceColor = (balance: number) => {
-    if (balance < 0) return "#F44336"; // Red for negative (you owe money)
-    if (balance > 0) return "#4CAF50"; // Green for positive (you are owed money)
-    return "#666"; // Gray for zero
+    if (balance < 0) return colors.error; // Red for negative (you owe money)
+    if (balance > 0) return colors.success; // Green for positive (you are owed money)
+    return colors.textSecondary; // Gray for zero
   };
 
   const getBalanceText = (balance: number) => {
@@ -332,7 +697,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         !Array.isArray(displayTransactions) ||
         displayTransactions.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="receipt-outline" size={48} color="#ccc" />
+            <Ionicons
+              name="receipt-outline"
+              size={48}
+              color={colors.textTertiary}
+            />
             <Text style={styles.emptyTitle}>No transactions yet</Text>
             <Text style={styles.emptySubtitle}>
               Add your first expense to get started
@@ -346,77 +715,81 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
             </Text>
 
             {displayTransactions.map((transaction: any) => (
-              <TouchableOpacity
+              <View
                 key={transaction.id || transaction._id}
                 style={styles.expenseItem}
-                onPress={() =>
-                  handleTransactionPress(transaction.id || transaction._id)
-                }
               >
-                <View style={styles.expenseHeader}>
-                  <View style={styles.transactionTitleRow}>
-                    <Text style={styles.expenseDescription}>
-                      {transaction.description}
-                    </Text>
-                    <View
-                      style={[
-                        styles.transactionTypeBadge,
-                        transaction.type === "expense"
-                          ? styles.expenseTypeBadge
-                          : styles.settlementTypeBadge,
-                      ]}
-                    >
-                      <Text
+                <TouchableOpacity
+                  style={styles.expenseContent}
+                  onPress={() =>
+                    handleTransactionPress(transaction.id || transaction._id)
+                  }
+                >
+                  <View style={styles.expenseHeader}>
+                    <View style={styles.transactionTitleRow}>
+                      <Text style={styles.expenseDescription}>
+                        {transaction.description}
+                      </Text>
+                      <View
                         style={[
-                          styles.transactionTypeText,
+                          styles.transactionTypeBadge,
                           transaction.type === "expense"
-                            ? styles.expenseTypeText
-                            : styles.settlementTypeText,
+                            ? styles.expenseTypeBadge
+                            : styles.settlementTypeBadge,
                         ]}
                       >
-                        {transaction.type === "expense"
-                          ? "EXPENSE"
-                          : "SETTLEMENT"}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.expenseAmount}>
-                    {formatCurrency(transaction.amount, transaction.currency)}
-                  </Text>
-                </View>
-                <View style={styles.expenseMeta}>
-                  <Text style={styles.expenseCategory}>
-                    {transaction.category ||
-                      (transaction.type === "settlement"
-                        ? "Settlement"
-                        : "General")}
-                  </Text>
-                  <Text style={styles.expenseDate}>
-                    {new Date(
-                      transaction.created_at || transaction.date
-                    ).toLocaleDateString()}
-                  </Text>
-                  {transaction.participants && (
-                    <Text style={styles.participantCount}>
-                      {transaction.participants.length} participants
-                    </Text>
-                  )}
-                </View>
-                {transaction.type === "settlement" && (
-                  <View style={styles.settlementInfo}>
-                    {(() => {
-                      const participants =
-                        getSettlementParticipants(transaction);
-                      return (
-                        <Text style={styles.settlementFromTo}>
-                          Settlement: {participants.payer} →{" "}
-                          {participants.payee}
+                        <Text
+                          style={[
+                            styles.transactionTypeText,
+                            transaction.type === "expense"
+                              ? styles.expenseTypeText
+                              : styles.settlementTypeText,
+                          ]}
+                        >
+                          {transaction.type === "expense"
+                            ? "Expense"
+                            : "Settlement"}
                         </Text>
-                      );
-                    })()}
+                      </View>
+                    </View>
+                    <Text style={styles.expenseAmount}>
+                      {formatCurrency(transaction.amount, transaction.currency)}
+                    </Text>
                   </View>
-                )}
-              </TouchableOpacity>
+                  <View style={styles.expenseMeta}>
+                    <Text style={styles.expenseCategory}>
+                      {transaction.category ||
+                        (transaction.type === "settlement"
+                          ? "Settlement"
+                          : "General")}
+                    </Text>
+                    <Text style={styles.expenseDate}>
+                      {new Date(
+                        transaction.created_at || transaction.date
+                      ).toLocaleDateString()}
+                    </Text>
+                    {transaction.participants && (
+                      <Text style={styles.participantCount}>
+                        {transaction.participants.length} participants
+                      </Text>
+                    )}
+                  </View>
+                  {transaction.type === "settlement" && (
+                    <View style={styles.settlementInfo}>
+                      {(() => {
+                        const participants =
+                          getSettlementParticipants(transaction);
+                        return (
+                          <Text style={styles.settlementFromTo}>
+                            Settlement: {participants.payer} →{" "}
+                            {participants.payee}
+                          </Text>
+                        );
+                      })()}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
             ))}
           </ScrollView>
         )}
@@ -467,7 +840,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       <View style={styles.tabContent}>
         {!currentUserBalance || getBalanceAmount(currentUserBalance) === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="wallet-outline" size={48} color="#ccc" />
+            <Ionicons
+              name="wallet-outline"
+              size={48}
+              color={colors.textTertiary}
+            />
             <Text style={styles.emptyTitle}>You are settled up</Text>
             <Text style={styles.emptySubtitle}>All expenses are balanced</Text>
           </View>
@@ -520,7 +897,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
             {detailedBalances.length > 0 && (
               <>
                 <Text style={styles.detailHeader}>
-                  <Ionicons name="list-outline" size={16} color="#333" />{" "}
+                  <Ionicons name="list-outline" size={16} color={colors.text} />{" "}
                   Breakdown & Settlements:
                 </Text>
                 {detailedBalances.map((detail, index) => {
@@ -538,8 +915,8 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                         styles.detailItem,
                         {
                           borderLeftColor: detail.isDebt
-                            ? "#FF6B35"
-                            : "#4CAF50",
+                            ? colors.error
+                            : colors.success,
                         },
                       ]}
                     >
@@ -552,7 +929,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                                 <Text
                                   style={[
                                     styles.detailAmount,
-                                    { color: "#FF6B35" },
+                                    { color: colors.error },
                                   ]}
                                 >
                                   {formatCurrency(
@@ -574,7 +951,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                                 <Text
                                   style={[
                                     styles.detailAmount,
-                                    { color: "#4CAF50" },
+                                    { color: colors.success },
                                   ]}
                                 >
                                   {formatCurrency(
@@ -598,7 +975,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                             <Ionicons
                               name="card-outline"
                               size={16}
-                              color="#fff"
+                              color={colors.surface}
                             />
                             <Text style={styles.payButtonText}>Pay</Text>
                           </TouchableOpacity>
@@ -626,14 +1003,15 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <View style={styles.groupInfo}>
           <Text style={styles.groupName}>{currentGroup?.name}</Text>
+          {console.log("Group Details:", currentGroup)}
           <Text style={styles.memberCount}>
             {currentGroup?.members?.length || 0} members
           </Text>
         </View>
-      </View>
+      </View> */}
 
       {/* Tabs */}
       <View style={styles.tabs}>
@@ -660,7 +1038,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
               activeTab === "balances" && styles.activeTabText,
             ]}
           >
-            Balances & Settle
+            Balances
           </Text>
         </TouchableOpacity>
       </View>
@@ -673,331 +1051,8 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
 
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={handleAddExpense}>
-        <Ionicons name="add" size={28} color="#fff" />
+        <Ionicons name="add" size={28} color={colors.surface} />
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  header: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  groupInfo: {
-    flex: 1,
-  },
-  groupName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  memberCount: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-  },
-  fab: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: "#007AFF",
-    borderRadius: 28,
-    width: 56,
-    height: 56,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-  },
-  tabs: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: "center",
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-  },
-  activeTab: {
-    borderBottomColor: "#007AFF",
-  },
-  tabText: {
-    fontSize: 16,
-    color: "#666",
-  },
-  activeTabText: {
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  content: {
-    flex: 1,
-  },
-  tabContent: {
-    flex: 1,
-    padding: 16,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 16,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  expenseItem: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  expenseHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  expenseDescription: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    flex: 1,
-  },
-  expenseAmount: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#007AFF",
-  },
-  expenseMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  expenseCategory: {
-    fontSize: 12,
-    color: "#666",
-  },
-  expenseDate: {
-    fontSize: 12,
-    color: "#666",
-  },
-  balanceItem: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  balanceUser: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  balanceAmount: {
-    fontSize: 14,
-  },
-  balanceDescription: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 4,
-  },
-  detailHeader: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 16,
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  detailItem: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#007AFF",
-  },
-  detailText: {
-    fontSize: 14,
-    color: "#333",
-    lineHeight: 20,
-  },
-  detailAmount: {
-    fontWeight: "600",
-    color: "#007AFF",
-  },
-  detailUser: {
-    fontWeight: "600",
-    color: "#333",
-  },
-  enhancedBalanceInfo: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-  },
-  enhancedBalanceText: {
-    fontSize: 12,
-    color: "#666",
-    marginVertical: 2,
-  },
-  dataSourceHeader: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#007AFF",
-    textAlign: "center",
-    marginBottom: 12,
-    paddingVertical: 8,
-    backgroundColor: "#f0f8ff",
-    borderRadius: 6,
-  },
-  participantCount: {
-    fontSize: 10,
-    color: "#999",
-    fontStyle: "italic",
-  },
-  settleHeader: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 16,
-  },
-  settlementItem: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  settlementText: {
-    fontSize: 16,
-    color: "#333",
-    flex: 1,
-  },
-  settleButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  settleButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  // Transaction-specific styles
-  transactionTitleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flex: 1,
-  },
-  transactionTypeBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginLeft: 8,
-  },
-  expenseTypeBadge: {
-    backgroundColor: "#e3f2fd",
-  },
-  settlementTypeBadge: {
-    backgroundColor: "#f3e5f5",
-  },
-  transactionTypeText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  expenseTypeText: {
-    color: "#1976d2",
-  },
-  settlementTypeText: {
-    color: "#7b1fa2",
-  },
-  settlementInfo: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  settlementFromTo: {
-    fontSize: 12,
-    color: "#666",
-    fontFamily: "monospace",
-  },
-  // New styles for combined balance and settlement layout
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-  },
-  detailTextContainer: {
-    flex: 1,
-    marginRight: 8,
-  },
-  payButton: {
-    backgroundColor: "#4CAF50",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    minWidth: 60,
-  },
-  payButtonText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-    marginLeft: 4,
-  },
-});

@@ -1,11 +1,16 @@
 import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSelector } from "react-redux";
 import { Ionicons } from "@expo/vector-icons";
 
 import { RootState } from "../store";
+import { useTheme } from "../constants/ThemeProvider";
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import GroupsScreen from "../screens/groups/GroupsScreen";
@@ -70,8 +75,15 @@ const FriendsStack = createStackNavigator<FriendsStackParamList>();
 const ProfileStack = createStackNavigator<ProfileStackParamList>();
 
 function AuthNavigator() {
+  const { colors } = useTheme();
+
   return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+    <AuthStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        cardStyle: { backgroundColor: colors.background },
+      }}
+    >
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
     </AuthStack.Navigator>
@@ -79,8 +91,21 @@ function AuthNavigator() {
 }
 
 function GroupsNavigator() {
+  const { colors } = useTheme();
+
   return (
-    <GroupsStack.Navigator>
+    <GroupsStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          color: colors.text,
+        },
+        cardStyle: { backgroundColor: colors.background },
+      }}
+    >
       <GroupsStack.Screen
         name="GroupsList"
         component={GroupsScreen}
@@ -116,8 +141,21 @@ function GroupsNavigator() {
 }
 
 function ExpensesNavigator() {
+  const { colors } = useTheme();
+
   return (
-    <ExpensesStack.Navigator>
+    <ExpensesStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          color: colors.text,
+        },
+        cardStyle: { backgroundColor: colors.background },
+      }}
+    >
       <ExpensesStack.Screen
         name="ExpensesList"
         component={ExpensesScreen}
@@ -138,8 +176,21 @@ function ExpensesNavigator() {
 }
 
 function FriendsNavigator() {
+  const { colors } = useTheme();
+
   return (
-    <FriendsStack.Navigator>
+    <FriendsStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          color: colors.text,
+        },
+        cardStyle: { backgroundColor: colors.background },
+      }}
+    >
       <FriendsStack.Screen
         name="FriendsList"
         component={FriendsScreen}
@@ -150,8 +201,21 @@ function FriendsNavigator() {
 }
 
 function ProfileNavigator() {
+  const { colors } = useTheme();
+
   return (
-    <ProfileStack.Navigator>
+    <ProfileStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          color: colors.text,
+        },
+        cardStyle: { backgroundColor: colors.background },
+      }}
+    >
       <ProfileStack.Screen
         name="ProfileMain"
         component={ProfileScreen}
@@ -162,6 +226,8 @@ function ProfileNavigator() {
 }
 
 function MainNavigator() {
+  const { colors } = useTheme();
+
   return (
     <MainTab.Navigator
       screenOptions={({ route }) => ({
@@ -182,8 +248,17 @@ function MainNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "#007AFF",
-        tabBarInactiveTintColor: "gray",
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
+        },
         headerShown: false,
       })}
     >
@@ -196,12 +271,27 @@ function MainNavigator() {
 }
 
 export default function AppNavigator() {
+  const { colors, colorScheme } = useTheme();
   const isAuthenticated = useSelector(
     (state: RootState) => state.auth.isAuthenticated
   );
 
+  // Create custom theme based on current color scheme
+  const navigationTheme = {
+    ...(colorScheme === "dark" ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(colorScheme === "dark" ? DarkTheme.colors : DefaultTheme.colors),
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.text,
+      border: colors.border,
+      notification: colors.primary,
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <RootStack.Screen name="Main" component={MainNavigator} />

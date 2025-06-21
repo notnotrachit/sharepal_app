@@ -19,6 +19,13 @@ import {
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { Transaction } from "../../types/api";
+import { useTheme } from "../../constants/ThemeProvider";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type SettlementsScreenNavigationProp = StackNavigationProp<
   GroupsStackParamList,
@@ -37,6 +44,7 @@ interface Props {
 export default function SettlementsScreen({ navigation, route }: Props) {
   const { groupId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
   const { groupTransactions, isLoading } = useSelector(
     (state: RootState) => state.groups
   );
@@ -88,11 +96,90 @@ export default function SettlementsScreen({ navigation, route }: Props) {
     </View>
   );
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContainer: {
+      paddingVertical: spacing.sm,
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    emptyTitle: {
+      ...typography.h3,
+      color: colors.text,
+      marginTop: spacing.lg,
+      marginBottom: spacing.sm,
+    },
+    emptySubtitle: {
+      ...typography.body,
+      color: colors.textSecondary,
+      textAlign: "center",
+    },
+    settlementItem: {
+      ...components.card,
+      margin: spacing.lg,
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    settlementHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.sm,
+    },
+    settlementTitle: {
+      ...typography.h4,
+      color: colors.text,
+    },
+    amount: {
+      ...typography.h4,
+      color: colors.success,
+      fontWeight: "700",
+    },
+    settlementAmount: {
+      ...typography.h4,
+      color: colors.success,
+      fontWeight: "700",
+    },
+    settlementDetails: {
+      marginTop: spacing.sm,
+    },
+    settlementInfo: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    paymentInfo: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    date: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginTop: spacing.xs,
+    },
+    notes: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      fontStyle: "italic",
+      marginTop: spacing.xs,
+    },
+  });
+
   return (
     <View style={styles.container}>
       {settlementTransactions.length === 0 && !isLoading ? (
         <View style={styles.emptyState}>
-          <Ionicons name="checkmark-circle-outline" size={64} color="#4CAF50" />
+          <Ionicons
+            name="checkmark-circle-outline"
+            size={64}
+            color={colors.success}
+          />
           <Text style={styles.emptyTitle}>No Settlements</Text>
           <Text style={styles.emptySubtitle}>
             All expenses are settled up or no settlements have been created yet
@@ -113,72 +200,3 @@ export default function SettlementsScreen({ navigation, route }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  listContainer: {
-    padding: 16,
-  },
-  settlementItem: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  settlementHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  amount: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  settlementDetails: {
-    marginBottom: 8,
-  },
-  paymentInfo: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 4,
-  },
-  date: {
-    fontSize: 12,
-    color: "#666",
-  },
-  notes: {
-    fontSize: 14,
-    color: "#666",
-    fontStyle: "italic",
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-  },
-});

@@ -14,6 +14,13 @@ import { AppDispatch, RootState } from "../../store";
 import { fetchUserTransactions } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { Transaction } from "../../types/api";
+import { useTheme } from "../../constants/ThemeProvider";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type ExpensesScreenNavigationProp = StackNavigationProp<
   ExpensesStackParamList,
@@ -26,9 +33,137 @@ interface Props {
 
 export default function ExpensesScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
   const { userTransactions, isLoading } = useSelector(
     (state: RootState) => state.groups
   );
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.md,
+    },
+    title: {
+      ...typography.h2,
+      color: colors.text,
+    },
+    fab: {
+      ...components.fab,
+    },
+    listContainer: {
+      padding: spacing.lg,
+      paddingBottom: 100,
+    },
+    expenseCard: {
+      ...components.card,
+      marginBottom: spacing.md,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.sm,
+    },
+    categoryIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    expenseAmount: {
+      alignItems: "flex-end",
+    },
+    amountText: {
+      ...typography.h4,
+      color: colors.primary,
+    },
+    cardContent: {
+      marginTop: spacing.sm,
+    },
+    expenseDescription: {
+      ...typography.h4,
+      color: colors.text,
+      marginBottom: 4,
+    },
+    categoryText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      textTransform: "capitalize",
+      marginBottom: spacing.sm,
+    },
+    expenseMeta: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    splitInfo: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+    },
+    splitText: {
+      ...typography.caption,
+      color: colors.textMuted,
+      marginLeft: spacing.xs,
+      textTransform: "capitalize",
+    },
+    dateText: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    emptyCard: {
+      ...components.card,
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    emptyIcon: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: spacing.lg,
+    },
+    emptyTitle: {
+      ...typography.h3,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    emptySubtitle: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginBottom: spacing.lg,
+    },
+    createFirstButton: {
+      ...components.button.primary,
+    },
+    createFirstButtonText: {
+      ...typography.button,
+      color: colors.text,
+      textAlign: "center",
+    },
+  });
 
   // Filter transactions to only include expense types
   const expenses = userTransactions.filter(
@@ -53,6 +188,24 @@ export default function ExpensesScreen({ navigation }: Props) {
     navigation.navigate("ExpenseDetails", { expenseId: transactionId });
   };
 
+  const getCategoryIcon = (category: string) => {
+    const categoryMap: { [key: string]: { icon: string; color: string } } = {
+      food: { icon: "restaurant", color: "#FF6B6B" },
+      transport: { icon: "car", color: "#4ECDC4" },
+      entertainment: { icon: "game-controller", color: "#45B7D1" },
+      shopping: { icon: "bag", color: "#FFA07A" },
+      groceries: { icon: "basket", color: "#98D8C8" },
+      utilities: { icon: "home", color: "#F7DC6F" },
+      health: { icon: "medical", color: "#BB8FCE" },
+      travel: { icon: "airplane", color: "#85C1E9" },
+      education: { icon: "school", color: "#82E0AA" },
+      other: { icon: "ellipsis-horizontal", color: "#D5DBDB" },
+    };
+
+    const lowerCategory = category.toLowerCase();
+    return categoryMap[lowerCategory] || categoryMap.other;
+  };
+
   const formatCurrency = (amount: number, currency: string) => {
     if (amount === undefined || amount === null || isNaN(amount)) {
       return `${currency || "USD"} 0.00`;
@@ -65,35 +218,42 @@ export default function ExpensesScreen({ navigation }: Props) {
     const description = item?.description || "No description";
     const amount = item?.amount || 0;
     const currency = item?.currency || "USD";
-    const category = item?.category || "Unknown";
+    const category = item?.category || "other";
     const createdAt = item?.created_at;
-    const splitType = item?.split_type || "Unknown";
+    const splitType = item?.split_type || "equal";
+
+    const { icon, color } = getCategoryIcon(category);
 
     return (
       <TouchableOpacity
-        style={styles.expenseItem}
+        style={styles.expenseCard}
         onPress={() => handleExpensePress(item)}
       >
-        <View style={styles.expenseContent}>
-          <View style={styles.expenseHeader}>
-            <Text style={styles.expenseDescription}>{description}</Text>
-            <Text style={styles.expenseAmount}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.categoryIcon, { backgroundColor: color }]}>
+            <Ionicons name={icon as any} size={24} color="#fff" />
+          </View>
+          <View style={styles.expenseAmount}>
+            <Text style={styles.amountText}>
               {formatCurrency(amount, currency)}
             </Text>
           </View>
+        </View>
+
+        <View style={styles.cardContent}>
+          <Text style={styles.expenseDescription}>{description}</Text>
+          <Text style={styles.categoryText}>{category}</Text>
+
           <View style={styles.expenseMeta}>
-            <View style={styles.categoryContainer}>
-              <Ionicons name="pricetag-outline" size={14} color="#666" />
-              <Text style={styles.category}>{category}</Text>
+            <View style={styles.splitInfo}>
+              <Ionicons name="people" size={14} color={colors.textMuted} />
+              <Text style={styles.splitText}>Split {splitType}</Text>
             </View>
-            <Text style={styles.date}>
+            <Text style={styles.dateText}>
               {createdAt
                 ? new Date(createdAt).toLocaleDateString()
                 : "Invalid date"}
             </Text>
-          </View>
-          <View style={styles.splitInfo}>
-            <Text style={styles.splitType}>Split: {splitType}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -104,19 +264,27 @@ export default function ExpensesScreen({ navigation }: Props) {
     <View style={styles.container}>
       {expenses.length === 0 && !isLoading ? (
         <View style={styles.emptyState}>
-          <Ionicons name="receipt-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyTitle}>No Expenses Yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Start by adding your first expense to track your spending
-          </Text>
-          <TouchableOpacity
-            style={styles.createFirstButton}
-            onPress={() => navigation.navigate("CreateExpense", {})}
-          >
-            <Text style={styles.createFirstButtonText}>
-              Add Your First Expense
+          <View style={styles.emptyCard}>
+            <View style={styles.emptyIcon}>
+              <Ionicons
+                name="receipt-outline"
+                size={40}
+                color={colors.primary}
+              />
+            </View>
+            <Text style={styles.emptyTitle}>No Expenses Yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Start by adding your first expense to track your spending
             </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.createFirstButton}
+              onPress={() => navigation.navigate("CreateExpense", {})}
+            >
+              <Text style={styles.createFirstButtonText}>
+                Add Your First Expense
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <FlatList
@@ -138,138 +306,8 @@ export default function ExpensesScreen({ navigation }: Props) {
         style={styles.fab}
         onPress={() => navigation.navigate("CreateExpense", {})}
       >
-        <Ionicons name="add" size={28} color="#fff" />
+        <Ionicons name="add" size={28} color={colors.text} />
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  header: {
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  fab: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: "#007AFF",
-    borderRadius: 28,
-    width: 56,
-    height: 56,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-  },
-  listContainer: {
-    padding: 16,
-  },
-  expenseItem: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  expenseContent: {
-    padding: 16,
-  },
-  expenseHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  expenseDescription: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    flex: 1,
-    marginRight: 12,
-  },
-  expenseAmount: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#007AFF",
-  },
-  expenseMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  categoryContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  category: {
-    fontSize: 12,
-    color: "#666",
-  },
-  date: {
-    fontSize: 12,
-    color: "#666",
-  },
-  splitInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  splitType: {
-    fontSize: 12,
-    color: "#888",
-    textTransform: "capitalize",
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  createFirstButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  createFirstButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

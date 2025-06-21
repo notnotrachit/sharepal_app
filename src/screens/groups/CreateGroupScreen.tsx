@@ -19,6 +19,8 @@ import { fetchFriends } from "../../store/slices/friendsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { CURRENCIES } from "../../constants/api";
 import { User } from "../../types/api";
+import { useTheme } from "../../constants/ThemeProvider";
+import { spacing, borderRadius, typography } from "../../constants/theme";
 
 type CreateGroupScreenNavigationProp = StackNavigationProp<
   GroupsStackParamList,
@@ -31,6 +33,7 @@ interface Props {
 
 export default function CreateGroupScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
   const { isLoading } = useSelector((state: RootState) => state.groups);
   const { friends } = useSelector((state: RootState) => state.friends);
 
@@ -88,7 +91,7 @@ export default function CreateGroupScreen({ navigation }: Props) {
     >
       <Text style={styles.modalItemText}>{item}</Text>
       {formData.currency === item && (
-        <Ionicons name="checkmark" size={20} color="#007AFF" />
+        <Ionicons name="checkmark" size={20} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
@@ -100,10 +103,97 @@ export default function CreateGroupScreen({ navigation }: Props) {
     >
       <Text style={styles.modalItemText}>{item.name}</Text>
       {selectedMembers.includes(item.id) && (
-        <Ionicons name="checkmark" size={20} color="#007AFF" />
+        <Ionicons name="checkmark" size={20} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.lg,
+    },
+    form: {
+      gap: spacing.lg,
+    },
+    inputGroup: {
+      gap: spacing.sm,
+    },
+    label: {
+      ...typography.h4,
+      color: colors.text,
+    },
+    input: {
+      ...components.input,
+    },
+    textArea: {
+      ...components.input,
+      height: 80,
+      textAlignVertical: "top",
+    },
+    selector: {
+      ...components.input,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    selectorText: {
+      ...typography.body,
+      color: colors.text,
+    },
+    createButton: {
+      ...components.button,
+      backgroundColor: colors.primary,
+      marginTop: spacing.lg,
+    },
+    buttonDisabled: {
+      backgroundColor: colors.textSecondary,
+    },
+    createButtonText: {
+      ...typography.button,
+      color: colors.surface,
+    },
+    modalContainer: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitle: {
+      ...typography.h3,
+      color: colors.text,
+    },
+    modalItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalItemText: {
+      ...typography.body,
+      color: colors.text,
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    emptyText: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+  });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -141,7 +231,11 @@ export default function CreateGroupScreen({ navigation }: Props) {
             onPress={() => setShowCurrencyModal(true)}
           >
             <Text style={styles.selectorText}>{formData.currency}</Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons
+              name="chevron-down"
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -158,7 +252,11 @@ export default function CreateGroupScreen({ navigation }: Props) {
                 ? "Select friends to add"
                 : `${selectedMembers.length} friends selected`}
             </Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons
+              name="chevron-down"
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -183,7 +281,7 @@ export default function CreateGroupScreen({ navigation }: Props) {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Currency</Text>
             <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
           <FlatList
@@ -204,7 +302,7 @@ export default function CreateGroupScreen({ navigation }: Props) {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add Friends</Text>
             <TouchableOpacity onPress={() => setShowMembersModal(false)}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
           {friends.length === 0 ? (
@@ -223,104 +321,3 @@ export default function CreateGroupScreen({ navigation }: Props) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  content: {
-    padding: 16,
-  },
-  form: {
-    gap: 20,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    color: "#333",
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: "top",
-  },
-  selector: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  selectorText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  createButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  buttonDisabled: {
-    backgroundColor: "#ccc",
-  },
-  createButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-  },
-  modalItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "#666",
-  },
-});

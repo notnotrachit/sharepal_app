@@ -18,6 +18,13 @@ import {
   clearCurrentTransaction,
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
+import { useTheme } from "../../constants/ThemeProvider";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type TransactionDetailsScreenNavigationProp = StackNavigationProp<
   GroupsStackParamList,
@@ -36,10 +43,207 @@ interface Props {
 export default function TransactionDetailsScreen({ navigation, route }: Props) {
   const { transactionId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
   const { currentTransaction, isLoading, currentGroup } = useSelector(
     (state: RootState) => state.groups
   );
   const { user } = useSelector((state: RootState) => state.auth);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.lg,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+    },
+    header: {
+      ...components.card,
+      marginBottom: spacing.lg,
+    },
+    title: {
+      ...typography.h2,
+      color: colors.text,
+      marginBottom: spacing.sm,
+    },
+    amount: {
+      ...typography.h3,
+      color: colors.primary,
+      fontWeight: "700",
+      marginBottom: spacing.sm,
+    },
+    typeBadge: {
+      alignSelf: "flex-start",
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: borderRadius.md,
+    },
+    expenseTypeBadge: {
+      backgroundColor: `${colors.primary}25`,
+    },
+    settlementTypeBadge: {
+      backgroundColor: `${colors.secondary}25`,
+    },
+    typeText: {
+      ...typography.caption,
+      fontWeight: "600",
+    },
+    expenseTypeText: {
+      color: colors.primary,
+    },
+    settlementTypeText: {
+      color: colors.secondary,
+    },
+    section: {
+      ...components.card,
+      marginBottom: spacing.lg,
+    },
+    sectionTitle: {
+      ...typography.h4,
+      color: colors.text,
+      marginBottom: spacing.md,
+    },
+    infoRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: spacing.sm,
+    },
+    infoLabel: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    infoValue: {
+      ...typography.body,
+      color: colors.text,
+      fontWeight: "500",
+    },
+    detailRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: spacing.sm,
+    },
+    detailLabel: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    detailValue: {
+      ...typography.body,
+      color: colors.text,
+      fontWeight: "500",
+    },
+    participantItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    participantName: {
+      ...typography.body,
+      color: colors.text,
+      flex: 1,
+    },
+    participantAmount: {
+      ...typography.body,
+      fontWeight: "600",
+    },
+    actionButtonContainer: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      marginTop: spacing.lg,
+    },
+    actionButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderRadius: borderRadius.lg,
+      minWidth: 120,
+      justifyContent: "center",
+    },
+    editButton: {
+      ...components.button.primary,
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+    },
+    deleteButton: {
+      ...components.button.primary,
+      backgroundColor: colors.error,
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+    },
+    actionButtonText: {
+      color: colors.surface,
+      ...typography.button,
+      marginLeft: spacing.xs,
+    },
+    notes: {
+      ...typography.body,
+      color: colors.text,
+      fontStyle: "italic",
+    },
+    shareContainer: {
+      alignItems: "center",
+      marginVertical: spacing.lg,
+    },
+    shareAmount: {
+      ...typography.h3,
+      color: colors.primary,
+      fontWeight: "700",
+    },
+    shareLabel: {
+      ...typography.body,
+      color: colors.textSecondary,
+      marginTop: spacing.xs,
+    },
+    splitRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    splitUser: {
+      ...typography.body,
+      color: colors.text,
+    },
+    splitAmount: {
+      ...typography.body,
+      color: colors.text,
+      fontWeight: "600",
+    },
+    actions: {
+      flexDirection: "row",
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.lg,
+      marginTop: spacing.lg,
+    },
+    editButtonText: {
+      ...typography.button,
+      color: colors.surface,
+      fontWeight: "600",
+    },
+    deleteButtonText: {
+      ...typography.button,
+      color: colors.surface,
+      fontWeight: "600",
+    },
+  });
 
   useEffect(() => {
     if (
@@ -405,7 +609,7 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.editButton}>
-          <Ionicons name="pencil" size={20} color="#007AFF" />
+          <Ionicons name="pencil" size={20} color={colors.surface} />
           <Text style={styles.editButtonText}>Edit</Text>
         </TouchableOpacity>
 
@@ -413,176 +617,10 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
           style={styles.deleteButton}
           onPress={handleDeleteTransaction}
         >
-          <Ionicons name="trash" size={20} color="#F44336" />
+          <Ionicons name="trash" size={20} color={colors.surface} />
           <Text style={styles.deleteButtonText}>Delete</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  content: {
-    padding: 16,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  header: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  amount: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#007AFF",
-    marginBottom: 8,
-  },
-  typeBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  expenseTypeBadge: {
-    backgroundColor: "#e3f2fd",
-  },
-  settlementTypeBadge: {
-    backgroundColor: "#f3e5f5",
-  },
-  typeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  expenseTypeText: {
-    color: "#1976d2",
-  },
-  settlementTypeText: {
-    color: "#7b1fa2",
-  },
-  section: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 12,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  detailLabel: {
-    fontSize: 16,
-    color: "#666",
-    flex: 1,
-  },
-  detailValue: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "500",
-    flex: 1,
-    textAlign: "right",
-  },
-  notes: {
-    fontSize: 16,
-    color: "#333",
-    lineHeight: 24,
-  },
-  shareContainer: {
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-  },
-  shareAmount: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#007AFF",
-    marginBottom: 4,
-  },
-  shareLabel: {
-    fontSize: 14,
-    color: "#666",
-  },
-  splitRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  splitUser: {
-    fontSize: 16,
-    color: "#333",
-    flex: 1,
-  },
-  splitAmount: {
-    fontSize: 16,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-  editButton: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#007AFF",
-  },
-  editButtonText: {
-    color: "#007AFF",
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  deleteButton: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#F44336",
-  },
-  deleteButtonText: {
-    color: "#F44336",
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-});

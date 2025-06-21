@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,14 +9,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AppDispatch, RootState } from '../../store';
-import { login, clearError } from '../../store/slices/authSlice';
-import { AuthStackParamList } from '../../navigation/AppNavigator';
+} from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { AppDispatch, RootState } from "../../store";
+import { login, clearError } from "../../store/slices/authSlice";
+import { AuthStackParamList } from "../../navigation/AppNavigator";
+import { useTheme } from "../../constants/ThemeProvider";
+import { spacing, borderRadius, typography } from "../../constants/theme";
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
+type LoginScreenNavigationProp = StackNavigationProp<
+  AuthStackParamList,
+  "Login"
+>;
 
 interface Props {
   navigation: LoginScreenNavigationProp;
@@ -24,50 +29,110 @@ interface Props {
 
 export default function LoginScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
   const { isLoading, error } = useSelector((state: RootState) => state.auth);
-  
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
 
   const handleLogin = async () => {
     if (!formData.email || !formData.password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
     try {
       await dispatch(login(formData)).unwrap();
     } catch (error: any) {
-      Alert.alert('Login Failed', error);
+      Alert.alert("Login Failed", error);
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (error) {
       dispatch(clearError());
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      justifyContent: "center",
+      paddingHorizontal: spacing.lg,
+    },
+    content: {
+      paddingHorizontal: spacing.lg,
+    },
+    title: {
+      ...typography.h1,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: spacing.lg,
+    },
+    subtitle: {
+      ...typography.h2,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: spacing.xxl,
+    },
+    form: {
+      gap: spacing.lg,
+    },
+    input: {
+      ...components.input,
+    },
+    signUpButton: {
+      ...components.button,
+      backgroundColor: colors.primary,
+      marginTop: spacing.lg,
+    },
+    buttonDisabled: {
+      backgroundColor: colors.textSecondary,
+    },
+    signUpButtonText: {
+      ...typography.button,
+      color: colors.surface,
+      textAlign: "center",
+    },
+    logInButton: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: borderRadius.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      alignItems: "center",
+    },
+    logInButtonText: {
+      ...typography.button,
+      color: colors.text,
+    },
+  });
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <Text style={styles.title}>Welcome to Sharepal</Text>
-          <Text style={styles.subtitle}>Split expenses with friends easily</Text>
+          <Text style={styles.title}>Sharepal</Text>
+          <Text style={styles.subtitle}>Get started</Text>
 
           <View style={styles.form}>
             <TextInput
               style={styles.input}
               placeholder="Email"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
               value={formData.email}
-              onChangeText={(value) => handleInputChange('email', value)}
+              onChangeText={(value) => handleInputChange("email", value)}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -76,30 +141,28 @@ export default function LoginScreen({ navigation }: Props) {
             <TextInput
               style={styles.input}
               placeholder="Password"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
               value={formData.password}
-              onChangeText={(value) => handleInputChange('password', value)}
+              onChangeText={(value) => handleInputChange("password", value)}
               secureTextEntry
               autoCapitalize="none"
             />
 
             <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
+              style={[styles.signUpButton, isLoading && styles.buttonDisabled]}
               onPress={handleLogin}
               disabled={isLoading}
             >
-              <Text style={styles.buttonText}>
-                {isLoading ? 'Signing In...' : 'Sign In'}
+              <Text style={styles.signUpButtonText}>
+                {isLoading ? "Signing In..." : "Sign up"}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => navigation.navigate('Register')}
+              style={styles.logInButton}
+              onPress={() => navigation.navigate("Register")}
             >
-              <Text style={styles.linkText}>
-                Don't have an account? Sign Up
-              </Text>
+              <Text style={styles.logInButtonText}>Log in</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -107,65 +170,3 @@ export default function LoginScreen({ navigation }: Props) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  content: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 40,
-    color: '#666',
-  },
-  form: {
-    gap: 16,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkButton: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  linkText: {
-    color: '#007AFF',
-    fontSize: 16,
-  },
-});

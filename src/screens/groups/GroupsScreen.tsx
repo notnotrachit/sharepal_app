@@ -15,6 +15,13 @@ import { AppDispatch, RootState } from "../../store";
 import { fetchGroups, deleteGroup } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { Group } from "../../types/api";
+import { useTheme } from "../../constants/ThemeProvider";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type GroupsScreenNavigationProp = StackNavigationProp<
   GroupsStackParamList,
@@ -27,9 +34,155 @@ interface Props {
 
 export default function GroupsScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components, colorScheme } = useTheme();
   const { groups, isLoading, error } = useSelector(
     (state: RootState) => state.groups
   );
+
+  console.log("GroupsScreen - Theme info:", {
+    colorScheme,
+    backgroundColor: colors.background,
+    textColor: colors.text,
+  });
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.md,
+    },
+    headerTitle: {
+      ...typography.h2,
+      color: colors.text,
+    },
+    fab: {
+      ...components.fab,
+    },
+    listContainer: {
+      padding: spacing.lg,
+      paddingBottom: 100, // Account for FAB
+    },
+    groupCard: {
+      ...components.card,
+      marginBottom: spacing.md,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing.md,
+    },
+    groupIconContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    groupIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: spacing.md,
+    },
+    groupInfo: {
+      flex: 1,
+    },
+    groupName: {
+      ...typography.h4,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    groupDescription: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    deleteButton: {
+      padding: spacing.sm,
+      borderRadius: borderRadius.md,
+      backgroundColor: colors.surface,
+    },
+    groupStats: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: spacing.sm,
+    },
+    statItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+    },
+    statText: {
+      ...typography.caption,
+      color: colors.textMuted,
+      marginLeft: spacing.xs,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    currencyBadge: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md,
+    },
+    currencyText: {
+      ...typography.caption,
+      color: colors.text,
+      fontWeight: "600",
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    emptyCard: {
+      ...components.card,
+      alignItems: "center",
+      padding: spacing.xl,
+    },
+    emptyIcon: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: spacing.lg,
+    },
+    emptyTitle: {
+      ...typography.h3,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    emptySubtitle: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginBottom: spacing.lg,
+      lineHeight: 22,
+    },
+    createFirstButton: {
+      ...components.button.primary,
+    },
+    createFirstButtonText: {
+      ...typography.button,
+      color: colors.text,
+      textAlign: "center",
+    },
+  });
 
   useEffect(() => {
     loadGroups();
@@ -60,49 +213,103 @@ export default function GroupsScreen({ navigation }: Props) {
     );
   };
 
-  const renderGroupItem = ({ item }: { item: Group }) => (
-    <TouchableOpacity
-      style={styles.groupItem}
-      onPress={() => handleGroupPress(item)}
-    >
-      <View style={styles.groupInfo}>
-        <Text style={styles.groupName}>{item.name}</Text>
-        {item.description && (
-          <Text style={styles.groupDescription}>{item.description}</Text>
-        )}
-        <View style={styles.groupMeta}>
-          <Text style={styles.memberCount}>
-            {item.members?.length || 0} members
-          </Text>
-          <Text style={styles.currency}>{item.currency}</Text>
-        </View>
-      </View>
+  const getGroupIcon = (groupName: string) => {
+    const icons = [
+      "people",
+      "home",
+      "car",
+      "restaurant",
+      "airplane",
+      "school",
+      "business",
+      "heart",
+    ];
+    const colors = [
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#FFA07A",
+      "#98D8C8",
+      "#F7DC6F",
+      "#BB8FCE",
+      "#85C1E9",
+    ];
+    const index = groupName.length % icons.length;
+    return { icon: icons[index], color: colors[index] };
+  };
+
+  const renderGroupItem = ({ item }: { item: Group }) => {
+    const { icon, color } = getGroupIcon(item.name);
+
+    return (
       <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteGroup(item.id)}
+        style={styles.groupCard}
+        onPress={() => handleGroupPress(item)}
       >
-        <Ionicons name="trash-outline" size={20} color="#ff4444" />
+        <View style={styles.cardHeader}>
+          <View style={styles.groupIconContainer}>
+            <View style={[styles.groupIcon, { backgroundColor: color }]}>
+              <Ionicons name={icon as any} size={24} color="#fff" />
+            </View>
+            <View style={styles.groupInfo}>
+              <Text style={styles.groupName}>{item.name}</Text>
+              {item.description && (
+                <Text style={styles.groupDescription}>{item.description}</Text>
+              )}
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteGroup(item.id)}
+          >
+            <Ionicons
+              name="ellipsis-horizontal"
+              size={20}
+              color={colors.textMuted}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.groupStats}>
+          <View style={styles.statItem}>
+            <Ionicons name="people" size={16} color={colors.textMuted} />
+            <Text style={styles.statText}>
+              {item.members?.length || 0} members
+            </Text>
+          </View>
+          <View style={styles.currencyBadge}>
+            <Text style={styles.currencyText}>{item.currency}</Text>
+          </View>
+        </View>
       </TouchableOpacity>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
       {groups.length === 0 && !isLoading ? (
         <View style={styles.emptyState}>
-          <Ionicons name="people-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyTitle}>No Groups Yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Create your first group to start splitting expenses with friends
-          </Text>
-          <TouchableOpacity
-            style={styles.createFirstButton}
-            onPress={() => navigation.navigate("CreateGroup")}
-          >
-            <Text style={styles.createFirstButtonText}>
-              Create Your First Group
+          <View style={styles.emptyCard}>
+            <View style={styles.emptyIcon}>
+              <Ionicons
+                name="people-outline"
+                size={40}
+                color={colors.primary}
+              />
+            </View>
+            <Text style={styles.emptyTitle}>No Groups Yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Create your first group to start splitting expenses with friends
             </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.createFirstButton}
+              onPress={() => navigation.navigate("CreateGroup")}
+            >
+              <Text style={styles.createFirstButtonText}>
+                Create Your First Group
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <FlatList
@@ -122,121 +329,8 @@ export default function GroupsScreen({ navigation }: Props) {
         style={styles.fab}
         onPress={() => navigation.navigate("CreateGroup")}
       >
-        <Ionicons name="add" size={28} color="#fff" />
+        <Ionicons name="add" size={28} color={colors.text} />
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  header: {
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  fab: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: "#007AFF",
-    borderRadius: 28,
-    width: 56,
-    height: 56,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-  },
-  listContainer: {
-    padding: 16,
-  },
-  groupItem: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  groupInfo: {
-    flex: 1,
-  },
-  groupName: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  groupDescription: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
-  },
-  groupMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  memberCount: {
-    fontSize: 12,
-    color: "#888",
-  },
-  currency: {
-    fontSize: 12,
-    color: "#007AFF",
-    fontWeight: "500",
-  },
-  deleteButton: {
-    padding: 8,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  createFirstButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  createFirstButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

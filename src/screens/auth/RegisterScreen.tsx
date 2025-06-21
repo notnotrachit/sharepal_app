@@ -15,6 +15,13 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { AppDispatch, RootState } from "../../store";
 import { register, clearError } from "../../store/slices/authSlice";
 import { AuthStackParamList } from "../../navigation/AppNavigator";
+import { useTheme } from "../../constants/ThemeProvider";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type RegisterScreenNavigationProp = StackNavigationProp<
   AuthStackParamList,
@@ -27,6 +34,7 @@ interface Props {
 
 export default function RegisterScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
   const { isLoading, error } = useSelector((state: RootState) => state.auth);
 
   const [formData, setFormData] = useState({
@@ -77,6 +85,87 @@ export default function RegisterScreen({ navigation }: Props) {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      justifyContent: "center",
+      padding: spacing.xl,
+    },
+    content: {
+      flex: 1,
+      justifyContent: "center",
+    },
+    title: {
+      ...typography.h1,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    subtitle: {
+      ...typography.body,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginBottom: spacing.xl,
+    },
+    form: {
+      width: "100%",
+    },
+    inputContainer: {
+      marginBottom: spacing.lg,
+    },
+    label: {
+      ...typography.body,
+      color: colors.text,
+      marginBottom: spacing.sm,
+      fontWeight: "500",
+    },
+    input: {
+      ...components.input,
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      color: colors.text,
+    },
+    button: {
+      ...components.button,
+      backgroundColor: colors.primary,
+      marginTop: spacing.lg,
+    },
+    buttonText: {
+      ...typography.button,
+      color: colors.surface,
+    },
+    disabledButton: {
+      backgroundColor: colors.textSecondary,
+    },
+    buttonDisabled: {
+      backgroundColor: colors.textSecondary,
+    },
+    linkContainer: {
+      marginTop: spacing.lg,
+      alignItems: "center",
+    },
+    linkText: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    link: {
+      color: colors.primary,
+      fontWeight: "600",
+    },
+    linkButton: {
+      marginTop: spacing.sm,
+    },
+    errorText: {
+      ...typography.bodySmall,
+      color: colors.error,
+      marginTop: spacing.xs,
+    },
+  });
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -93,7 +182,7 @@ export default function RegisterScreen({ navigation }: Props) {
             <TextInput
               style={styles.input}
               placeholder="Full Name"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
               value={formData.name}
               onChangeText={(value) => handleInputChange("name", value)}
               autoCapitalize="words"
@@ -102,7 +191,7 @@ export default function RegisterScreen({ navigation }: Props) {
             <TextInput
               style={styles.input}
               placeholder="Email"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
               value={formData.email}
               onChangeText={(value) => handleInputChange("email", value)}
               keyboardType="email-address"
@@ -113,7 +202,7 @@ export default function RegisterScreen({ navigation }: Props) {
             <TextInput
               style={styles.input}
               placeholder="Password"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
               value={formData.password}
               onChangeText={(value) => handleInputChange("password", value)}
               secureTextEntry
@@ -123,7 +212,7 @@ export default function RegisterScreen({ navigation }: Props) {
             <TextInput
               style={styles.input}
               placeholder="Confirm Password"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
               value={formData.confirmPassword}
               onChangeText={(value) =>
                 handleInputChange("confirmPassword", value)
@@ -156,65 +245,3 @@ export default function RegisterScreen({ navigation }: Props) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  content: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 8,
-    color: "#333",
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 40,
-    color: "#666",
-  },
-  form: {
-    gap: 16,
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    color: "#333",
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    backgroundColor: "#ccc",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  linkButton: {
-    alignItems: "center",
-    marginTop: 16,
-  },
-  linkText: {
-    color: "#007AFF",
-    fontSize: 16,
-  },
-});

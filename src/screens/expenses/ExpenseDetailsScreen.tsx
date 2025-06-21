@@ -18,6 +18,13 @@ import {
   clearCurrentTransaction,
 } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
+import { useTheme } from "../../constants/ThemeProvider";
+import {
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+} from "../../constants/theme";
 
 type ExpenseDetailsScreenNavigationProp = StackNavigationProp<
   ExpensesStackParamList,
@@ -36,10 +43,158 @@ interface Props {
 export default function ExpenseDetailsScreen({ navigation, route }: Props) {
   const { expenseId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
+  const { colors, components } = useTheme();
   const { currentTransaction, isLoading } = useSelector(
     (state: RootState) => state.groups
   );
   const { user } = useSelector((state: RootState) => state.auth);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.lg,
+    },
+    header: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      padding: spacing.xl,
+      marginBottom: spacing.lg,
+      alignItems: "center",
+      ...shadows.medium,
+    },
+    title: {
+      ...typography.h2,
+      color: colors.text,
+      marginBottom: spacing.sm,
+      textAlign: "center",
+    },
+    amount: {
+      ...typography.h1,
+      color: colors.primary,
+    },
+    section: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
+      ...shadows.small,
+    },
+    sectionTitle: {
+      ...typography.h3,
+      color: colors.text,
+      marginBottom: spacing.md,
+    },
+    detailRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    detailLabel: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    detailValue: {
+      ...typography.body,
+      color: colors.text,
+      fontWeight: "500",
+    },
+    notes: {
+      ...typography.body,
+      color: colors.textSecondary,
+      lineHeight: 24,
+    },
+    shareContainer: {
+      alignItems: "center",
+      padding: spacing.lg,
+      backgroundColor: colors.cardSecondary,
+      borderRadius: borderRadius.md,
+    },
+    shareAmount: {
+      ...typography.h2,
+      color: colors.primary,
+      marginBottom: spacing.xs,
+    },
+    shareLabel: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    splitRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    splitUser: {
+      ...typography.body,
+      color: colors.text,
+      flex: 1,
+    },
+    splitAmount: {
+      ...typography.body,
+      color: colors.primary,
+      fontWeight: "600",
+    },
+    actions: {
+      flexDirection: "row",
+      gap: spacing.md,
+      marginTop: spacing.xl,
+    },
+    editButton: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderColor: colors.primary,
+      borderWidth: 2,
+      borderRadius: borderRadius.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+    },
+    editButtonText: {
+      ...typography.button,
+      color: colors.primary,
+      fontWeight: "600",
+    },
+    deleteButton: {
+      flex: 1,
+      backgroundColor: colors.error,
+      borderRadius: borderRadius.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.sm,
+    },
+    deleteButtonText: {
+      ...typography.button,
+      color: colors.surface,
+      fontWeight: "600",
+    },
+    noSplitsText: {
+      ...typography.body,
+      color: colors.textSecondary,
+      fontStyle: "italic",
+      textAlign: "center",
+      padding: spacing.lg,
+    },
+  });
 
   useEffect(() => {
     // Only clear if we have a different transaction loaded
@@ -296,7 +451,7 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.editButton}>
-          <Ionicons name="pencil" size={20} color="#007AFF" />
+          <Ionicons name="pencil" size={20} color={colors.primary} />
           <Text style={styles.editButtonText}>Edit</Text>
         </TouchableOpacity>
 
@@ -304,168 +459,10 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
           style={styles.deleteButton}
           onPress={handleDeleteExpense}
         >
-          <Ionicons name="trash" size={20} color="#F44336" />
+          <Ionicons name="trash" size={20} color={colors.surface} />
           <Text style={styles.deleteButtonText}>Delete</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  content: {
-    padding: 16,
-  },
-  header: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  amount: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#007AFF",
-  },
-  section: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 12,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  detailLabel: {
-    fontSize: 16,
-    color: "#666",
-  },
-  detailValue: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "500",
-  },
-  notes: {
-    fontSize: 16,
-    color: "#666",
-    lineHeight: 24,
-  },
-  shareContainer: {
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-  },
-  shareAmount: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#007AFF",
-    marginBottom: 4,
-  },
-  shareLabel: {
-    fontSize: 16,
-    color: "#666",
-  },
-  splitRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  splitUser: {
-    fontSize: 16,
-    color: "#333",
-    flex: 1,
-  },
-  splitAmount: {
-    fontSize: 16,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-  editButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#007AFF",
-    borderRadius: 8,
-    padding: 16,
-    gap: 8,
-  },
-  editButtonText: {
-    color: "#007AFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  deleteButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#F44336",
-    borderRadius: 8,
-    padding: 16,
-    gap: 8,
-  },
-  deleteButtonText: {
-    color: "#F44336",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  noSplitsText: {
-    fontSize: 14,
-    color: "#666",
-    fontStyle: "italic",
-    textAlign: "center",
-    padding: 16,
-  },
-});
