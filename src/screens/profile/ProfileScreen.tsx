@@ -1,12 +1,14 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
 import { logout } from "../../store/slices/authSlice";
-import { ProfileStackParamList } from "../../navigation/AppNavigator";
+import { RootStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
+import Card from "../../components/Card";
+import SecondaryButton from "../../components/SecondaryButton";
 import {
   spacing,
   borderRadius,
@@ -14,10 +16,7 @@ import {
   shadows,
 } from "../../constants/theme";
 
-type ProfileScreenNavigationProp = StackNavigationProp<
-  ProfileStackParamList,
-  "ProfileMain"
->;
+type ProfileScreenNavigationProp = StackNavigationProp<any>;
 
 interface Props {
   navigation: ProfileScreenNavigationProp;
@@ -65,33 +64,6 @@ export default function ProfileScreen({ navigation }: Props) {
     menuSection: {
       padding: spacing.lg,
     },
-    menuItem: {
-      ...components.card,
-      marginBottom: spacing.md,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    menuItemLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      flex: 1,
-    },
-    menuIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: colors.surface,
-      justifyContent: "center",
-      alignItems: "center",
-      marginRight: spacing.md,
-    },
-    menuText: {
-      ...typography.body,
-      color: colors.text,
-      flex: 1,
-      marginLeft: spacing.md,
-    },
     section: {
       marginBottom: spacing.lg,
     },
@@ -100,18 +72,8 @@ export default function ProfileScreen({ navigation }: Props) {
       color: colors.text,
       marginBottom: spacing.md,
     },
-    logoutButton: {
-      ...components.card,
-      backgroundColor: colors.error,
-      margin: spacing.lg,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    logoutText: {
-      ...typography.button,
-      color: colors.text,
-      marginLeft: spacing.sm,
+    menuItem: {
+      marginBottom: spacing.sm,
     },
     errorText: {
       fontSize: 16,
@@ -155,95 +117,88 @@ export default function ProfileScreen({ navigation }: Props) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons
-                name="person-circle-outline"
-                size={24}
-                color={colors.textMuted}
-              />
-              <Text style={styles.menuText}>Edit Profile</Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.textMuted}
+          <Card style={styles.menuItem}>
+            <Card.Header
+              title="Edit Profile"
+              icon="person-circle-outline"
+              rightElement={
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={colors.textMuted}
+                />
+              }
             />
-          </TouchableOpacity>
+          </Card>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons
-                name="card-outline"
-                size={24}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.menuText}>Payment Methods</Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.textTertiary}
+          <Card style={styles.menuItem}>
+            <Card.Header
+              title="Payment Methods"
+              icon="card-outline"
+              rightElement={
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={colors.textMuted}
+                />
+              }
             />
-          </TouchableOpacity>
+          </Card>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons
-                name="notifications-outline"
-                size={24}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.menuText}>Notifications</Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.textTertiary}
+          <Card style={styles.menuItem}>
+            <Card.Header
+              title="Notifications"
+              icon="notifications-outline"
+              rightElement={
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={colors.textMuted}
+                />
+              }
             />
-          </TouchableOpacity>
+          </Card>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons
-                name="help-circle-outline"
-                size={24}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.menuText}>Help & Support</Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.textTertiary}
+          <Card style={styles.menuItem}>
+            <Card.Header
+              title="Help & Support"
+              icon="help-circle-outline"
+              rightElement={
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={colors.textMuted}
+                />
+              }
             />
-          </TouchableOpacity>
+          </Card>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons
-                name="document-text-outline"
-                size={24}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.menuText}>Terms & Privacy</Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.textTertiary}
+          <Card style={styles.menuItem}>
+            <Card.Header
+              title="Terms & Privacy"
+              icon="document-text-outline"
+              rightElement={
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={colors.textMuted}
+                />
+              }
             />
-          </TouchableOpacity>
+          </Card>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={24} color={colors.surface} />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        <SecondaryButton
+          title="Logout"
+          icon="log-out-outline"
+          onPress={handleLogout}
+          variant="error"
+          style={{ margin: spacing.lg }}
+        />
       </View>
     </View>
   );

@@ -20,6 +20,9 @@ import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { CURRENCIES } from "../../constants/api";
 import { User } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
+import InputGroup from "../../components/InputGroup";
+import AppModal from "../../components/AppModal";
+import PrimaryButton from "../../components/PrimaryButton";
 import {
   spacing,
   borderRadius,
@@ -209,33 +212,26 @@ export default function CreateGroupScreen({ navigation }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Group Name *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter group name"
-            placeholderTextColor={colors.textSecondary}
-            value={formData.name}
-            onChangeText={(value) =>
-              setFormData((prev) => ({ ...prev, name: value }))
-            }
-          />
-        </View>
+        <InputGroup
+          label="Group Name"
+          value={formData.name}
+          onChangeText={(value) =>
+            setFormData((prev) => ({ ...prev, name: value }))
+          }
+          placeholder="Enter group name"
+          required
+        />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="What's this group for?"
-            placeholderTextColor={colors.textSecondary}
-            value={formData.description}
-            onChangeText={(value) =>
-              setFormData((prev) => ({ ...prev, description: value }))
-            }
-            multiline
-            numberOfLines={3}
-          />
-        </View>
+        <InputGroup
+          label="Description"
+          value={formData.description}
+          onChangeText={(value) =>
+            setFormData((prev) => ({ ...prev, description: value }))
+          }
+          placeholder="What's this group for?"
+          multiline
+          numberOfLines={3}
+        />
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Currency</Text>
@@ -273,64 +269,45 @@ export default function CreateGroupScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[styles.createButton, isLoading && styles.buttonDisabled]}
+        <PrimaryButton
+          title={isLoading ? "Creating..." : "Create Group"}
           onPress={handleCreateGroup}
-          disabled={isLoading}
-        >
-          <Text style={styles.createButtonText}>
-            {isLoading ? "Creating..." : "Create Group"}
-          </Text>
-        </TouchableOpacity>
+          loading={isLoading}
+          disabled={!formData.name.trim()}
+        />
       </View>
 
       {/* Currency Modal */}
-      <Modal
+      <AppModal
         visible={showCurrencyModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        onClose={() => setShowCurrencyModal(false)}
+        title="Select Currency"
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Currency</Text>
-            <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={CURRENCIES}
-            renderItem={renderCurrencyItem}
-            keyExtractor={(item) => item}
-          />
-        </View>
-      </Modal>
+        <FlatList
+          data={CURRENCIES}
+          renderItem={renderCurrencyItem}
+          keyExtractor={(item) => item}
+        />
+      </AppModal>
 
       {/* Members Modal */}
-      <Modal
+      <AppModal
         visible={showMembersModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        onClose={() => setShowMembersModal(false)}
+        title="Add Friends"
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Friends</Text>
-            <TouchableOpacity onPress={() => setShowMembersModal(false)}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
+        {friends.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No friends added yet</Text>
           </View>
-          {friends.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No friends added yet</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={friends}
-              renderItem={renderMemberItem}
-              keyExtractor={(item) => item.id}
-            />
-          )}
-        </View>
-      </Modal>
+        ) : (
+          <FlatList
+            data={friends}
+            renderItem={renderMemberItem}
+            keyExtractor={(item) => item.id}
+          />
+        )}
+      </AppModal>
     </ScrollView>
   );
 }

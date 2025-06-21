@@ -1,16 +1,8 @@
 import React, { useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
 import {
   fetchTransaction,
@@ -19,6 +11,10 @@ import {
 } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
+import LoadingState from "../../components/LoadingState";
+import Card from "../../components/Card";
+import PrimaryButton from "../../components/PrimaryButton";
+import SecondaryButton from "../../components/SecondaryButton";
 import {
   spacing,
   borderRadius,
@@ -54,17 +50,6 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
       flex: 1,
       backgroundColor: colors.background,
     },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: colors.background,
-    },
-    loadingText: {
-      ...typography.body,
-      color: colors.text,
-      textAlign: "center",
-    },
     content: {
       padding: spacing.lg,
     },
@@ -85,18 +70,6 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
     amount: {
       ...typography.h1,
       color: colors.primary,
-    },
-    section: {
-      backgroundColor: colors.surface,
-      borderRadius: borderRadius.lg,
-      padding: spacing.lg,
-      marginBottom: spacing.lg,
-      ...shadows.small,
-    },
-    sectionTitle: {
-      ...typography.h3,
-      color: colors.text,
-      marginBottom: spacing.md,
     },
     detailRow: {
       flexDirection: "row",
@@ -158,40 +131,6 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
       gap: spacing.md,
       marginTop: spacing.xl,
     },
-    editButton: {
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderColor: colors.primary,
-      borderWidth: 2,
-      borderRadius: borderRadius.md,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.lg,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: spacing.sm,
-    },
-    editButtonText: {
-      ...typography.button,
-      color: colors.primary,
-      fontWeight: "600",
-    },
-    deleteButton: {
-      flex: 1,
-      backgroundColor: colors.error,
-      borderRadius: borderRadius.md,
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.lg,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: spacing.sm,
-    },
-    deleteButtonText: {
-      ...typography.button,
-      color: colors.surface,
-      fontWeight: "600",
-    },
     noSplitsText: {
       ...typography.body,
       color: colors.textSecondary,
@@ -251,19 +190,11 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
   };
 
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
+    return <LoadingState message="Loading expense details..." />;
   }
 
   if (!currentTransaction) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>Transaction not found</Text>
-      </View>
-    );
+    return <LoadingState message="Transaction not found" />;
   }
 
   // Check if we have the right transaction (handle both _id and id fields)
@@ -272,22 +203,14 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
     (currentTransaction as any).id === expenseId;
 
   if (!transactionMatches) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading transaction...</Text>
-      </View>
-    );
+    return <LoadingState message="Loading transaction..." />;
   }
 
   // Use the transaction directly since it's already in the correct format
   const expense = currentTransaction;
 
   if (!expense) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>Transaction not found</Text>
-      </View>
-    );
+    return <LoadingState message="Transaction not found" />;
   }
 
   const getUserShare = () => {
@@ -347,126 +270,140 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
         </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Details</Text>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Category</Text>
-          <Text style={styles.detailValue}>
-            {expense.category || "Unknown"}
-          </Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Split Type</Text>
-          <Text style={styles.detailValue}>
-            {expense.split_type
-              ? expense.split_type.charAt(0).toUpperCase() +
-                expense.split_type.slice(1)
-              : "Unknown"}
-          </Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Date</Text>
-          <Text style={styles.detailValue}>
-            {expense.created_at
-              ? new Date(expense.created_at).toLocaleDateString()
-              : "Unknown"}
-          </Text>
-        </View>
-      </View>
+      <Card>
+        <Card.Header title="Details" />
+        <Card.Content>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Category</Text>
+            <Text style={styles.detailValue}>
+              {expense.category || "Unknown"}
+            </Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Split Type</Text>
+            <Text style={styles.detailValue}>
+              {expense.split_type
+                ? expense.split_type.charAt(0).toUpperCase() +
+                  expense.split_type.slice(1)
+                : "Unknown"}
+            </Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Date</Text>
+            <Text style={styles.detailValue}>
+              {expense.created_at
+                ? new Date(expense.created_at).toLocaleDateString()
+                : "Unknown"}
+            </Text>
+          </View>
+        </Card.Content>
+      </Card>
 
       {expense.notes && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notes</Text>
-          <Text style={styles.notes}>{expense.notes}</Text>
-        </View>
+        <Card>
+          <Card.Header title="Notes" />
+          <Card.Content>
+            <Text style={styles.notes}>{expense.notes}</Text>
+          </Card.Content>
+        </Card>
       )}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Your Share</Text>
-        <View style={styles.shareContainer}>
-          <Text style={styles.shareAmount}>
-            {formatCurrency(getUserShare(), expense.currency || "USD")}
-          </Text>
-          <Text style={styles.shareLabel}>
-            You {getUserPaidAmount() > 0 ? "paid" : "owe"}
-          </Text>
-        </View>
-      </View>
+      <Card>
+        <Card.Header title="Your Share" />
+        <Card.Content>
+          <View style={styles.shareContainer}>
+            <Text style={styles.shareAmount}>
+              {formatCurrency(getUserShare(), expense.currency || "USD")}
+            </Text>
+            <Text style={styles.shareLabel}>
+              You {getUserPaidAmount() > 0 ? "paid" : "owe"}
+            </Text>
+          </View>
+        </Card.Content>
+      </Card>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Who Paid</Text>
-        {(expense as any).payers && (expense as any).payers.length > 0 ? (
-          (expense as any).payers.map((payer: any, index: number) => (
-            <View key={index} style={styles.splitRow}>
-              <Text style={styles.splitUser}>
-                {payer.user_id === user?.id
-                  ? "You"
-                  : payer.user_name || `User ${payer.user_id.slice(-4)}`}
-              </Text>
-              <Text style={styles.splitAmount}>
-                {formatCurrency(payer.amount || 0, expense.currency || "USD")}
-              </Text>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.noSplitsText}>
-            No payer information available
-          </Text>
-        )}
-      </View>
+      <Card>
+        <Card.Header title="Who Paid" />
+        <Card.Content>
+          {(expense as any).payers && (expense as any).payers.length > 0 ? (
+            (expense as any).payers.map((payer: any, index: number) => (
+              <View key={index} style={styles.splitRow}>
+                <Text style={styles.splitUser}>
+                  {payer.user_id === user?.id
+                    ? "You"
+                    : payer.user_name || `User ${payer.user_id.slice(-4)}`}
+                </Text>
+                <Text style={styles.splitAmount}>
+                  {formatCurrency(payer.amount || 0, expense.currency || "USD")}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noSplitsText}>
+              No payer information available
+            </Text>
+          )}
+        </Card.Content>
+      </Card>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Split Breakdown</Text>
-        {(expense as any).splits && (expense as any).splits.length > 0 ? (
-          (expense as any).splits.map((split: any, index: number) => (
-            <View key={index} style={styles.splitRow}>
-              <Text style={styles.splitUser}>
-                {split.user_id === user?.id
-                  ? "You"
-                  : split.user_name || `User ${split.user_id.slice(-4)}`}
-              </Text>
-              <Text style={styles.splitAmount}>
-                {formatCurrency(split.amount || 0, expense.currency || "USD")}
-              </Text>
-            </View>
-          ))
-        ) : expense.participants && expense.participants.length > 0 ? (
-          expense.participants.map((participant, index: number) => (
-            <View key={index} style={styles.splitRow}>
-              <Text style={styles.splitUser}>
-                {participant.user_id === user?.id
-                  ? "You"
-                  : (participant as any).user_name ||
-                    `User ${participant.user_id.slice(-4)}`}
-              </Text>
-              <Text style={styles.splitAmount}>
-                {formatCurrency(
-                  Math.abs(participant.amount || 0),
-                  expense.currency || "USD"
-                )}
-              </Text>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.noSplitsText}>
-            No split information available
-          </Text>
-        )}
-      </View>
+      <Card>
+        <Card.Header title="Split Breakdown" />
+        <Card.Content>
+          {(expense as any).splits && (expense as any).splits.length > 0 ? (
+            (expense as any).splits.map((split: any, index: number) => (
+              <View key={index} style={styles.splitRow}>
+                <Text style={styles.splitUser}>
+                  {split.user_id === user?.id
+                    ? "You"
+                    : split.user_name || `User ${split.user_id.slice(-4)}`}
+                </Text>
+                <Text style={styles.splitAmount}>
+                  {formatCurrency(split.amount || 0, expense.currency || "USD")}
+                </Text>
+              </View>
+            ))
+          ) : expense.participants && expense.participants.length > 0 ? (
+            expense.participants.map((participant, index: number) => (
+              <View key={index} style={styles.splitRow}>
+                <Text style={styles.splitUser}>
+                  {participant.user_id === user?.id
+                    ? "You"
+                    : (participant as any).user_name ||
+                      `User ${participant.user_id.slice(-4)}`}
+                </Text>
+                <Text style={styles.splitAmount}>
+                  {formatCurrency(
+                    Math.abs(participant.amount || 0),
+                    expense.currency || "USD"
+                  )}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noSplitsText}>
+              No split information available
+            </Text>
+          )}
+        </Card.Content>
+      </Card>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.editButton}>
-          <Ionicons name="pencil" size={20} color={colors.primary} />
-          <Text style={styles.editButtonText}>Edit</Text>
-        </TouchableOpacity>
+        <SecondaryButton
+          title="Edit"
+          icon="pencil"
+          onPress={() => {
+            // Navigate to edit screen
+          }}
+          style={{ flex: 1 }}
+        />
 
-        <TouchableOpacity
-          style={styles.deleteButton}
+        <SecondaryButton
+          title="Delete"
+          icon="trash"
           onPress={handleDeleteExpense}
-        >
-          <Ionicons name="trash" size={20} color={colors.surface} />
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
+          variant="error"
+          style={{ flex: 1 }}
+        />
       </View>
     </ScrollView>
   );

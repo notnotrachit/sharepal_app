@@ -24,6 +24,10 @@ import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "../../constants/api";
 import { Group, User } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
+import InputGroup from "../../components/InputGroup";
+import AppModal from "../../components/AppModal";
+import PrimaryButton from "../../components/PrimaryButton";
+import SecondaryButton from "../../components/SecondaryButton";
 import {
   spacing,
   borderRadius,
@@ -425,22 +429,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     form: {
       gap: spacing.lg,
     },
-    inputGroup: {
-      gap: spacing.sm,
-    },
-    label: {
-      ...typography.h4,
-      color: colors.text,
-      marginBottom: spacing.xs,
-    },
-    input: {
-      ...components.input,
-    },
-    textArea: {
-      ...components.input,
-      height: 80,
-      textAlignVertical: "top",
-    },
     selector: {
       ...components.input,
       flexDirection: "row",
@@ -519,30 +507,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       color: colors.primary,
       fontWeight: "600",
     },
-    createButton: {
-      ...components.button.primary,
-      backgroundColor: colors.primary,
-      marginTop: spacing.lg,
-      ...shadows.medium,
-      elevation: 4,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    createButtonText: {
-      ...typography.button,
-      color: "#ffffff",
-      fontWeight: "600",
-      textAlign: "center",
-    },
-    disabledButton: {
-      backgroundColor: colors.textSecondary,
-    },
-    buttonDisabled: {
-      backgroundColor: colors.textSecondary,
-    },
-    disabledButtonText: {
-      color: colors.textTertiary,
-    },
     modalOverlay: {
       flex: 1,
       backgroundColor: colors.overlay,
@@ -557,24 +521,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       maxHeight: "80%",
       width: "90%",
     },
-    modalContainer: {
-      backgroundColor: colors.surface,
-      borderRadius: borderRadius.lg,
-      padding: spacing.lg,
-      margin: spacing.lg,
-      maxHeight: "80%",
-      width: "90%",
-    },
-    modalHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: spacing.md,
-    },
-    modalTitle: {
-      ...typography.h3,
-      color: colors.text,
-    },
     modalItem: {
       padding: spacing.md,
       borderBottomWidth: 1,
@@ -584,44 +530,42 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       ...typography.body,
       color: colors.text,
     },
-    closeButton: {
-      alignSelf: "flex-end",
-      padding: spacing.sm,
-    },
   });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description *</Text>
-          <TextInput
-            style={[styles.input, { color: colors.text }]}
-            placeholder="What was this expense for?"
-            placeholderTextColor={colors.textSecondary}
-            value={formData.description}
-            onChangeText={(value) =>
-              setFormData((prev) => ({ ...prev, description: value }))
-            }
-          />
-        </View>
+        <InputGroup
+          label="Description"
+          value={formData.description}
+          onChangeText={(value) =>
+            setFormData((prev) => ({ ...prev, description: value }))
+          }
+          placeholder="What was this expense for?"
+          required
+        />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Amount *</Text>
-          <TextInput
-            style={[styles.input, { color: colors.text }]}
-            placeholder="0.00"
-            placeholderTextColor={colors.textSecondary}
-            value={formData.amount}
-            onChangeText={(value) => {
-              setFormData((prev) => ({ ...prev, amount: value }));
+        <InputGroup
+          label="Amount"
+          value={formData.amount}
+          onChangeText={(value) => {
+            setFormData((prev) => ({ ...prev, amount: value }));
+          }}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+          required
+        />
+
+        <View style={{ marginBottom: spacing.md }}>
+          <Text
+            style={{
+              ...typography.h4,
+              color: colors.text,
+              marginBottom: spacing.xs,
             }}
-            keyboardType="decimal-pad"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Group *</Text>
+          >
+            Group *
+          </Text>
           <TouchableOpacity
             style={styles.selector}
             onPress={() => setShowGroupModal(true)}
@@ -637,8 +581,16 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Category</Text>
+        <View style={{ marginBottom: spacing.md }}>
+          <Text
+            style={{
+              ...typography.h4,
+              color: colors.text,
+              marginBottom: spacing.xs,
+            }}
+          >
+            Category
+          </Text>
           <TouchableOpacity
             style={styles.selector}
             onPress={() => setShowCategoryModal(true)}
@@ -652,8 +604,16 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Split Type</Text>
+        <View style={{ marginBottom: spacing.md }}>
+          <Text
+            style={{
+              ...typography.h4,
+              color: colors.text,
+              marginBottom: spacing.xs,
+            }}
+          >
+            Split Type
+          </Text>
           <TouchableOpacity
             style={styles.selector}
             onPress={() => setShowSplitTypeModal(true)}
@@ -671,8 +631,16 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         </View>
 
         {splits.length > 0 && (
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Split Details</Text>
+          <View style={{ marginBottom: spacing.md }}>
+            <Text
+              style={{
+                ...typography.h4,
+                color: colors.text,
+                marginBottom: spacing.xs,
+              }}
+            >
+              Split Details
+            </Text>
             {splits.map((split, index) => (
               <View key={`${split.user_id}-${index}`} style={styles.splitItem}>
                 <Text style={styles.splitUser}>
@@ -738,92 +706,61 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Notes</Text>
-          <TextInput
-            style={[styles.input, styles.textArea, { color: colors.text }]}
-            placeholder="Add any additional notes"
-            placeholderTextColor={colors.textSecondary}
-            value={formData.notes}
-            onChangeText={(value) =>
-              setFormData((prev) => ({ ...prev, notes: value }))
-            }
-            multiline
-            numberOfLines={3}
-          />
-        </View>
+        <InputGroup
+          label="Notes"
+          value={formData.notes}
+          onChangeText={(value) =>
+            setFormData((prev) => ({ ...prev, notes: value }))
+          }
+          placeholder="Add any additional notes"
+          multiline
+          numberOfLines={3}
+        />
 
-        <TouchableOpacity
-          style={[styles.createButton, isLoading && styles.buttonDisabled]}
+        <PrimaryButton
+          title={isLoading ? "Creating..." : "Create Expense"}
           onPress={handleCreateExpense}
-          disabled={isLoading}
-        >
-          <Text style={styles.createButtonText}>
-            {isLoading ? "Creating..." : "Create Expense"}
-          </Text>
-        </TouchableOpacity>
+          loading={isLoading}
+          disabled={!formData.description || !formData.amount || !selectedGroup}
+        />
       </View>
 
       {/* Modals */}
-      <Modal
+      <AppModal
         visible={showCategoryModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        onClose={() => setShowCategoryModal(false)}
+        title="Select Category"
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Category</Text>
-            <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={EXPENSE_CATEGORIES}
-            renderItem={renderCategoryItem}
-            keyExtractor={(item) => item}
-          />
-        </View>
-      </Modal>
+        <FlatList
+          data={EXPENSE_CATEGORIES}
+          renderItem={renderCategoryItem}
+          keyExtractor={(item) => item}
+        />
+      </AppModal>
 
-      <Modal
+      <AppModal
         visible={showSplitTypeModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        onClose={() => setShowSplitTypeModal(false)}
+        title="Select Split Type"
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Split Type</Text>
-            <TouchableOpacity onPress={() => setShowSplitTypeModal(false)}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={Object.values(SPLIT_TYPES)}
-            renderItem={renderSplitTypeItem}
-            keyExtractor={(item) => item}
-          />
-        </View>
-      </Modal>
+        <FlatList
+          data={Object.values(SPLIT_TYPES)}
+          renderItem={renderSplitTypeItem}
+          keyExtractor={(item) => item}
+        />
+      </AppModal>
 
-      <Modal
+      <AppModal
         visible={showGroupModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        onClose={() => setShowGroupModal(false)}
+        title="Select Group"
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Group</Text>
-            <TouchableOpacity onPress={() => setShowGroupModal(false)}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={groups}
-            renderItem={renderGroupItem}
-            keyExtractor={(item) => item.id}
-          />
-        </View>
-      </Modal>
+        <FlatList
+          data={groups}
+          renderItem={renderGroupItem}
+          keyExtractor={(item) => item.id}
+        />
+      </AppModal>
     </ScrollView>
   );
 }

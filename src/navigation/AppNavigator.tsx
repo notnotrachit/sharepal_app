@@ -36,6 +36,7 @@ import CreateExpenseScreen from "../screens/expenses/CreateExpenseScreen";
 import ExpenseDetailsScreen from "../screens/expenses/ExpenseDetailsScreen";
 import TransactionDetailsScreen from "../screens/transactions/TransactionDetailsScreen";
 import FriendsScreen from "../screens/friends/FriendsScreen";
+import AddFriendScreen from "../screens/friends/AddFriendScreen";
 import SettlementsScreen from "../screens/settlements/SettlementsScreen";
 
 export type RootStackParamList = {
@@ -79,6 +80,7 @@ export type ExpensesStackParamList = {
 
 export type FriendsStackParamList = {
   FriendsList: undefined;
+  AddFriend: undefined;
 };
 
 const RootStack = createStackNavigator<RootStackParamList>();
@@ -227,6 +229,22 @@ function FriendsNavigator() {
         options={{
           title: "Friends",
           ...TransitionPresets.FadeFromBottomAndroid,
+        }}
+      />
+      <FriendsStack.Screen
+        name="AddFriend"
+        component={AddFriendScreen}
+        options={{
+          title: "Add Friend",
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: colors.surface,
+          },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            fontWeight: "600",
+          },
+          ...TransitionPresets.SlideFromRightIOS,
         }}
       />
     </FriendsStack.Navigator>

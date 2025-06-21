@@ -28,6 +28,11 @@ import {
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
+import LoadingState from "../../components/LoadingState";
+import Card from "../../components/Card";
+import SecondaryButton from "../../components/SecondaryButton";
+import AnimatedFAB from "../../components/AnimatedFAB";
+import EmptyState from "../../components/EmptyState";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   spacing,
@@ -88,19 +93,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       color: colors.textSecondary,
       marginTop: spacing.xs,
     },
-    fab: {
-      position: "absolute",
-      bottom: spacing.xl,
-      right: spacing.xl,
-      backgroundColor: colors.primary,
-      borderRadius: 32,
-      width: 64,
-      height: 64,
-      justifyContent: "center",
-      alignItems: "center",
-      ...shadows.large,
-      elevation: 8,
-    },
     tabs: {
       flexDirection: "row",
       ...components.card,
@@ -137,22 +129,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     tabContent: {
       flex: 1,
       padding: spacing.lg,
-    },
-    emptyState: {
-      alignItems: "center",
-      padding: spacing.xl * 2,
-      ...components.card,
-    },
-    emptyTitle: {
-      ...typography.h4,
-      color: colors.text,
-      marginTop: spacing.lg,
-    },
-    emptySubtitle: {
-      ...typography.body,
-      color: colors.textSecondary,
-      marginTop: spacing.sm,
-      textAlign: "center",
     },
     expenseItem: {
       ...components.card,
@@ -231,7 +207,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       flex: 1,
     },
     balanceItem: {
-      ...components.card,
       marginBottom: spacing.md,
     },
     balanceHeader: {
@@ -399,20 +374,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     detailTextContainer: {
       flex: 1,
       marginRight: spacing.sm,
-    },
-    payButton: {
-      ...components.button,
-      backgroundColor: colors.success,
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      minWidth: 70,
-    },
-    payButtonText: {
-      ...typography.button,
-      color: colors.surface,
-      marginLeft: spacing.xs,
     },
   });
 
@@ -702,17 +663,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         {!displayTransactions ||
         !Array.isArray(displayTransactions) ||
         displayTransactions.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="receipt-outline"
-              size={48}
-              color={colors.textTertiary}
-            />
-            <Text style={styles.emptyTitle}>No transactions yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Add your first expense to get started
-            </Text>
-          </View>
+          <EmptyState
+            iconName="receipt-outline"
+            title="No transactions yet"
+            subtitle="Add your first expense to get started"
+          />
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Header to show data source */}
@@ -845,59 +800,57 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     return (
       <View style={styles.tabContent}>
         {!currentUserBalance || getBalanceAmount(currentUserBalance) === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="wallet-outline"
-              size={48}
-              color={colors.textTertiary}
-            />
-            <Text style={styles.emptyTitle}>You are settled up</Text>
-            <Text style={styles.emptySubtitle}>All expenses are balanced</Text>
-          </View>
+          <EmptyState
+            iconName="wallet-outline"
+            title="You are settled up"
+            subtitle="All expenses are balanced"
+          />
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Summary Balance */}
-            <View style={styles.balanceItem}>
-              <Text style={styles.balanceUser}>Overall Balance</Text>
-              <Text
-                style={[
-                  styles.balanceAmount,
-                  {
-                    color: getBalanceColor(
-                      getBalanceAmount(currentUserBalance)
-                    ),
-                  },
-                ]}
-              >
-                {formatCurrency(
-                  getBalanceAmount(currentUserBalance),
-                  currentUserBalance.currency || "INR"
-                )}
-              </Text>
-              <Text style={styles.balanceDescription}>
-                {getBalanceText(getBalanceAmount(currentUserBalance))}
-              </Text>
+            <Card>
+              <Card.Content>
+                <Text style={styles.balanceUser}>Overall Balance</Text>
+                <Text
+                  style={[
+                    styles.balanceAmount,
+                    {
+                      color: getBalanceColor(
+                        getBalanceAmount(currentUserBalance)
+                      ),
+                    },
+                  ]}
+                >
+                  {formatCurrency(
+                    getBalanceAmount(currentUserBalance),
+                    currentUserBalance.currency || "INR"
+                  )}
+                </Text>
+                <Text style={styles.balanceDescription}>
+                  {getBalanceText(getBalanceAmount(currentUserBalance))}
+                </Text>
 
-              {/* Show enhanced balance details */}
-              {currentUserBalance && (
-                <View style={styles.enhancedBalanceInfo}>
-                  <Text style={styles.enhancedBalanceText}>
-                    Total Paid:{" "}
-                    {formatCurrency(
-                      currentUserBalance.total_paid,
-                      currentUserBalance.currency
-                    )}
-                  </Text>
-                  <Text style={styles.enhancedBalanceText}>
-                    Total Owed:{" "}
-                    {formatCurrency(
-                      currentUserBalance.total_owed,
-                      currentUserBalance.currency
-                    )}
-                  </Text>
-                </View>
-              )}
-            </View>
+                {/* Show enhanced balance details */}
+                {currentUserBalance && (
+                  <View style={styles.enhancedBalanceInfo}>
+                    <Text style={styles.enhancedBalanceText}>
+                      Total Paid:{" "}
+                      {formatCurrency(
+                        currentUserBalance.total_paid,
+                        currentUserBalance.currency
+                      )}
+                    </Text>
+                    <Text style={styles.enhancedBalanceText}>
+                      Total Owed:{" "}
+                      {formatCurrency(
+                        currentUserBalance.total_owed,
+                        currentUserBalance.currency
+                      )}
+                    </Text>
+                  </View>
+                )}
+              </Card.Content>
+            </Card>
 
             {/* Detailed Breakdown with Settlement Actions */}
             {detailedBalances.length > 0 && (
@@ -972,19 +925,15 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
 
                         {/* Settlement Action Button */}
                         {detail.isDebt && correspondingSettlement && (
-                          <TouchableOpacity
-                            style={styles.payButton}
+                          <SecondaryButton
+                            title="Pay"
+                            icon="card-outline"
+                            variant="success"
+                            size="small"
                             onPress={() =>
                               handleMarkAsPaid(correspondingSettlement)
                             }
-                          >
-                            <Ionicons
-                              name="card-outline"
-                              size={16}
-                              color={colors.surface}
-                            />
-                            <Text style={styles.payButtonText}>Pay</Text>
-                          </TouchableOpacity>
+                          />
                         )}
                       </View>
                     </View>
@@ -1052,9 +1001,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       </View>
 
       {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleAddExpense}>
-        <Ionicons name="add" size={28} color={colors.surface} />
-      </TouchableOpacity>
+      <AnimatedFAB iconName="add" onPress={handleAddExpense} />
     </View>
   );
 }

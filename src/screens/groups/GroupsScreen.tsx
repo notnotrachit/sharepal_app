@@ -18,6 +18,9 @@ import { Group } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
 import AnimatedScreen from "../../components/AnimatedScreen";
 import AnimatedFAB from "../../components/AnimatedFAB";
+import EmptyState from "../../components/EmptyState";
+import LoadingState from "../../components/LoadingState";
+import ListContainer from "../../components/ListContainer";
 import {
   spacing,
   borderRadius,
@@ -66,10 +69,6 @@ export default function GroupsScreen({ navigation }: Props) {
     },
     fab: {
       ...components.fab,
-    },
-    listContainer: {
-      padding: spacing.lg,
-      paddingBottom: 100, // Account for FAB
     },
     groupCard: {
       ...components.card,
@@ -142,47 +141,6 @@ export default function GroupsScreen({ navigation }: Props) {
       ...typography.caption,
       color: colors.text,
       fontWeight: "600",
-    },
-    emptyState: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      padding: spacing.xl,
-    },
-    emptyCard: {
-      ...components.card,
-      alignItems: "center",
-      padding: spacing.xl,
-    },
-    emptyIcon: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: colors.surface,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: spacing.lg,
-    },
-    emptyTitle: {
-      ...typography.h3,
-      color: colors.text,
-      textAlign: "center",
-      marginBottom: spacing.sm,
-    },
-    emptySubtitle: {
-      ...typography.bodySmall,
-      color: colors.textSecondary,
-      textAlign: "center",
-      marginBottom: spacing.lg,
-      lineHeight: 22,
-    },
-    createFirstButton: {
-      ...components.button.primary,
-    },
-    createFirstButtonText: {
-      ...typography.button,
-      color: colors.text,
-      textAlign: "center",
     },
   });
 
@@ -291,43 +249,22 @@ export default function GroupsScreen({ navigation }: Props) {
     <AnimatedScreen animationType="slideUp" duration={400}>
       <View style={styles.container}>
         {isLoading && groups.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Loading groups...</Text>
-          </View>
+          <LoadingState message="Loading groups..." />
         ) : groups.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyCard}>
-              <View style={styles.emptyIcon}>
-                <Ionicons
-                  name="people-outline"
-                  size={40}
-                  color={colors.primary}
-                />
-              </View>
-              <Text style={styles.emptyTitle}>No Groups Yet</Text>
-              <Text style={styles.emptySubtitle}>
-                Create your first group to start splitting expenses with friends
-              </Text>
-              <TouchableOpacity
-                style={styles.createFirstButton}
-                onPress={() => navigation.navigate("CreateGroup")}
-              >
-                <Text style={styles.createFirstButtonText}>
-                  Create Your First Group
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <EmptyState
+            iconName="people-outline"
+            title="No Groups Yet"
+            subtitle="Create your first group to start splitting expenses with friends"
+            buttonText="Create Your First Group"
+            onButtonPress={() => navigation.navigate("CreateGroup")}
+          />
         ) : (
-          <FlatList
+          <ListContainer
             data={groups}
             renderItem={renderGroupItem}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContainer}
-            refreshControl={
-              <RefreshControl refreshing={isLoading} onRefresh={loadGroups} />
-            }
-            showsVerticalScrollIndicator={false}
+            refreshing={isLoading}
+            onRefresh={loadGroups}
           />
         )}
 

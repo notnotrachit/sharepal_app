@@ -1,6 +1,11 @@
 import React, { useEffect } from "react";
-import { TouchableOpacity, TouchableOpacityProps } from "react-native";
+import {
+  TouchableOpacity,
+  TouchableOpacityProps,
+  StyleSheet,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../constants/ThemeProvider";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -23,13 +28,22 @@ interface AnimatedFABProps extends TouchableOpacityProps {
 export default function AnimatedFAB({
   iconName,
   iconSize = 28,
-  iconColor = "#fff",
+  iconColor,
   delay = 300,
   style,
   ...props
 }: AnimatedFABProps) {
+  const { colors, components } = useTheme();
   const scale = useSharedValue(0);
   const rotate = useSharedValue(0);
+
+  const styles = StyleSheet.create({
+    fab: {
+      ...components.fab,
+    },
+  });
+
+  const finalIconColor = iconColor || colors.text;
 
   useEffect(() => {
     scale.value = withDelay(
@@ -64,10 +78,10 @@ export default function AnimatedFAB({
   return (
     <AnimatedTouchableOpacity
       {...props}
-      style={[style, animatedStyle]}
+      style={[styles.fab, style, animatedStyle]}
       onPress={handlePress}
     >
-      <Ionicons name={iconName} size={iconSize} color={iconColor} />
+      <Ionicons name={iconName} size={iconSize} color={finalIconColor} />
     </AnimatedTouchableOpacity>
   );
 }

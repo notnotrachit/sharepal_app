@@ -17,6 +17,9 @@ import { Transaction } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
 import AnimatedScreen from "../../components/AnimatedScreen";
 import AnimatedFAB from "../../components/AnimatedFAB";
+import EmptyState from "../../components/EmptyState";
+import LoadingState from "../../components/LoadingState";
+import ListContainer from "../../components/ListContainer";
 import {
   spacing,
   borderRadius,
@@ -56,10 +59,6 @@ export default function ExpensesScreen({ navigation }: Props) {
     },
     fab: {
       ...components.fab,
-    },
-    listContainer: {
-      padding: spacing.lg,
-      paddingBottom: 100,
     },
     expenseCard: {
       ...components.card,
@@ -124,46 +123,6 @@ export default function ExpensesScreen({ navigation }: Props) {
     dateText: {
       ...typography.caption,
       color: colors.textMuted,
-    },
-    emptyState: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      padding: spacing.xl,
-    },
-    emptyCard: {
-      ...components.card,
-      alignItems: "center",
-      padding: spacing.xl,
-    },
-    emptyIcon: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: colors.surface,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: spacing.lg,
-    },
-    emptyTitle: {
-      ...typography.h3,
-      color: colors.text,
-      textAlign: "center",
-      marginBottom: spacing.sm,
-    },
-    emptySubtitle: {
-      ...typography.bodySmall,
-      color: colors.textSecondary,
-      textAlign: "center",
-      marginBottom: spacing.lg,
-    },
-    createFirstButton: {
-      ...components.button.primary,
-    },
-    createFirstButtonText: {
-      ...typography.button,
-      color: colors.text,
-      textAlign: "center",
     },
   });
 
@@ -266,35 +225,17 @@ export default function ExpensesScreen({ navigation }: Props) {
     <AnimatedScreen animationType="slideUp" duration={400}>
       <View style={styles.container}>
         {isLoading && expenses.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Loading expenses...</Text>
-          </View>
+          <LoadingState message="Loading expenses..." />
         ) : expenses.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyCard}>
-              <View style={styles.emptyIcon}>
-                <Ionicons
-                  name="receipt-outline"
-                  size={40}
-                  color={colors.primary}
-                />
-              </View>
-              <Text style={styles.emptyTitle}>No Expenses Yet</Text>
-              <Text style={styles.emptySubtitle}>
-                Start by adding your first expense to track your spending
-              </Text>
-              <TouchableOpacity
-                style={styles.createFirstButton}
-                onPress={() => navigation.navigate("CreateExpense", {})}
-              >
-                <Text style={styles.createFirstButtonText}>
-                  Add Your First Expense
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <EmptyState
+            iconName="receipt-outline"
+            title="No Expenses Yet"
+            subtitle="Start by adding your first expense to track your spending"
+            buttonText="Add Your First Expense"
+            onButtonPress={() => navigation.navigate("CreateExpense", {})}
+          />
         ) : (
-          <FlatList
+          <ListContainer
             data={expenses}
             renderItem={renderExpenseItem}
             keyExtractor={(item) =>
@@ -302,11 +243,8 @@ export default function ExpensesScreen({ navigation }: Props) {
               (item as any).id ||
               `expense-${Math.random()}`
             }
-            contentContainerStyle={styles.listContainer}
-            refreshControl={
-              <RefreshControl refreshing={isLoading} onRefresh={loadExpenses} />
-            }
-            showsVerticalScrollIndicator={false}
+            refreshing={isLoading}
+            onRefresh={loadExpenses}
           />
         )}
 
