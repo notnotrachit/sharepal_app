@@ -35,8 +35,7 @@ export default function GroupsScreen({ navigation }: Props) {
     loadGroups();
   }, []);
 
-  useEffect(() => {
-  }, [groups, isLoading, error]);
+  useEffect(() => {}, [groups, isLoading, error]);
 
   const loadGroups = () => {
     dispatch(fetchGroups());
@@ -89,16 +88,6 @@ export default function GroupsScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Your Groups</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate("CreateGroup")}
-        >
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
       {groups.length === 0 && !isLoading ? (
         <View style={styles.emptyState}>
           <Ionicons name="people-outline" size={64} color="#ccc" />
@@ -127,6 +116,14 @@ export default function GroupsScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate("CreateGroup")}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -137,9 +134,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     padding: 16,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
@@ -150,13 +144,24 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
-  addButton: {
+  fab: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
     backgroundColor: "#007AFF",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 28,
+    width: 56,
+    height: 56,
     justifyContent: "center",
     alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
   },
   listContainer: {
     padding: 16,

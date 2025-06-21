@@ -49,7 +49,6 @@ export default function FriendsScreen({ navigation }: Props) {
     loadFriendsData();
   }, []);
 
-
   const loadFriendsData = () => {
     dispatch(fetchFriends());
     dispatch(fetchReceivedRequests());
@@ -172,6 +171,14 @@ export default function FriendsScreen({ navigation }: Props) {
             <Text style={styles.emptySubtitle}>
               Send friend requests to start splitting expenses
             </Text>
+            <TouchableOpacity
+              style={styles.createFirstButton}
+              onPress={() => setShowAddFriend(true)}
+            >
+              <Text style={styles.createFirstButtonText}>
+                Add Your First Friend
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <FlatList
@@ -233,12 +240,6 @@ export default function FriendsScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Friends</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowAddFriend(true)}
-        >
-          <Ionicons name="person-add" size={24} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       {/* Tabs */}
@@ -320,6 +321,14 @@ export default function FriendsScreen({ navigation }: Props) {
           </View>
         </View>
       )}
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setShowAddFriend(true)}
+      >
+        <Ionicons name="person-add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -330,9 +339,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     padding: 16,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
@@ -343,13 +349,24 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
-  addButton: {
+  fab: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
     backgroundColor: "#007AFF",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 28,
+    width: 56,
+    height: 56,
     justifyContent: "center",
     alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
   },
   tabs: {
     flexDirection: "row",
@@ -478,6 +495,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     textAlign: "center",
+    marginBottom: 24,
+  },
+  createFirstButton: {
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  createFirstButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
   modal: {
     position: "absolute",
