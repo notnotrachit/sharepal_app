@@ -6,11 +6,14 @@ import {
 } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createDrawerNavigator } from "@react-navigation/drawer";
 import { useSelector } from "react-redux";
 import { Ionicons } from "@expo/vector-icons";
 
 import { RootState } from "../store";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { useTheme } from "../constants/ThemeProvider";
+import CustomDrawerContent from "../components/CustomDrawerContent";
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import GroupsScreen from "../screens/groups/GroupsScreen";
@@ -21,7 +24,6 @@ import CreateExpenseScreen from "../screens/expenses/CreateExpenseScreen";
 import ExpenseDetailsScreen from "../screens/expenses/ExpenseDetailsScreen";
 import TransactionDetailsScreen from "../screens/transactions/TransactionDetailsScreen";
 import FriendsScreen from "../screens/friends/FriendsScreen";
-import ProfileScreen from "../screens/profile/ProfileScreen";
 import SettlementsScreen from "../screens/settlements/SettlementsScreen";
 
 export type RootStackParamList = {
@@ -40,7 +42,12 @@ export type MainTabParamList = {
   Groups: undefined;
   Expenses: undefined;
   Friends: undefined;
+};
+
+export type MainDrawerParamList = {
+  MainTabs: undefined;
   Profile: undefined;
+  Settings: undefined;
 };
 
 export type GroupsStackParamList = {
@@ -62,17 +69,13 @@ export type FriendsStackParamList = {
   FriendsList: undefined;
 };
 
-export type ProfileStackParamList = {
-  ProfileMain: undefined;
-};
-
 const RootStack = createStackNavigator<RootStackParamList>();
 const AuthStack = createStackNavigator<AuthStackParamList>();
+const MainDrawer = createDrawerNavigator<MainDrawerParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 const GroupsStack = createStackNavigator<GroupsStackParamList>();
 const ExpensesStack = createStackNavigator<ExpensesStackParamList>();
 const FriendsStack = createStackNavigator<FriendsStackParamList>();
-const ProfileStack = createStackNavigator<ProfileStackParamList>();
 
 function AuthNavigator() {
   const { colors } = useTheme();
@@ -96,13 +99,7 @@ function GroupsNavigator() {
   return (
     <GroupsStack.Navigator
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.surface,
-        },
-        headerTintColor: colors.text,
-        headerTitleStyle: {
-          color: colors.text,
-        },
+        headerShown: false,
         cardStyle: { backgroundColor: colors.background },
       }}
     >
@@ -146,13 +143,7 @@ function ExpensesNavigator() {
   return (
     <ExpensesStack.Navigator
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.surface,
-        },
-        headerTintColor: colors.text,
-        headerTitleStyle: {
-          color: colors.text,
-        },
+        headerShown: false,
         cardStyle: { backgroundColor: colors.background },
       }}
     >
@@ -181,13 +172,7 @@ function FriendsNavigator() {
   return (
     <FriendsStack.Navigator
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.surface,
-        },
-        headerTintColor: colors.text,
-        headerTitleStyle: {
-          color: colors.text,
-        },
+        headerShown: false,
         cardStyle: { backgroundColor: colors.background },
       }}
     >
@@ -200,11 +185,59 @@ function FriendsNavigator() {
   );
 }
 
-function ProfileNavigator() {
+function MainTabNavigator() {
   const { colors } = useTheme();
 
   return (
-    <ProfileStack.Navigator
+    <MainTab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+      }}
+    >
+      <MainTab.Screen
+        name="Groups"
+        component={GroupsNavigator}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="Expenses"
+        component={ExpensesNavigator}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="receipt-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="Friends"
+        component={FriendsNavigator}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-add-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </MainTab.Navigator>
+  );
+}
+
+function MainNavigator() {
+  const { colors } = useTheme();
+
+  return (
+    <MainDrawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerStyle: {
           backgroundColor: colors.surface,
@@ -213,60 +246,26 @@ function ProfileNavigator() {
         headerTitleStyle: {
           color: colors.text,
         },
-        cardStyle: { backgroundColor: colors.background },
+        drawerStyle: {
+          backgroundColor: colors.background,
+          width: 280,
+        },
+        drawerActiveBackgroundColor: colors.primaryLight,
+        drawerActiveTintColor: colors.primary,
+        drawerInactiveTintColor: colors.textSecondary,
       }}
     >
-      <ProfileStack.Screen
-        name="ProfileMain"
-        component={ProfileScreen}
-        options={{ title: "Profile" }}
+      <MainDrawer.Screen
+        name="MainTabs"
+        component={MainTabNavigator}
+        options={({ route }) => {
+          const routeName = getFocusedRouteNameFromRoute(route) ?? "Groups";
+          return {
+            headerTitle: routeName,
+          };
+        }}
       />
-    </ProfileStack.Navigator>
-  );
-}
-
-function MainNavigator() {
-  const { colors } = useTheme();
-
-  return (
-    <MainTab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          if (route.name === "Groups") {
-            iconName = focused ? "people" : "people-outline";
-          } else if (route.name === "Expenses") {
-            iconName = focused ? "receipt" : "receipt-outline";
-          } else if (route.name === "Friends") {
-            iconName = focused ? "person-add" : "person-add-outline";
-          } else if (route.name === "Profile") {
-            iconName = focused ? "person" : "person-outline";
-          } else {
-            iconName = "help-outline";
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "600",
-        },
-        headerShown: false,
-      })}
-    >
-      <MainTab.Screen name="Groups" component={GroupsNavigator} />
-      <MainTab.Screen name="Expenses" component={ExpensesNavigator} />
-      <MainTab.Screen name="Friends" component={FriendsNavigator} />
-      <MainTab.Screen name="Profile" component={ProfileNavigator} />
-    </MainTab.Navigator>
+    </MainDrawer.Navigator>
   );
 }
 
