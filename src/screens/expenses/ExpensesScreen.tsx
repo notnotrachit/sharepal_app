@@ -15,6 +15,8 @@ import { fetchUserTransactions } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { Transaction } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
+import AnimatedScreen from "../../components/AnimatedScreen";
+import AnimatedFAB from "../../components/AnimatedFAB";
 import {
   spacing,
   borderRadius,
@@ -261,53 +263,58 @@ export default function ExpensesScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      {expenses.length === 0 && !isLoading ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}>
-              <Ionicons
-                name="receipt-outline"
-                size={40}
-                color={colors.primary}
-              />
-            </View>
-            <Text style={styles.emptyTitle}>No Expenses Yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Start by adding your first expense to track your spending
-            </Text>
-            <TouchableOpacity
-              style={styles.createFirstButton}
-              onPress={() => navigation.navigate("CreateExpense", {})}
-            >
-              <Text style={styles.createFirstButtonText}>
-                Add Your First Expense
+    <AnimatedScreen animationType="slideUp" duration={400}>
+      <View style={styles.container}>
+        {expenses.length === 0 && !isLoading ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIcon}>
+                <Ionicons
+                  name="receipt-outline"
+                  size={40}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={styles.emptyTitle}>No Expenses Yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Start by adding your first expense to track your spending
               </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.createFirstButton}
+                onPress={() => navigation.navigate("CreateExpense", {})}
+              >
+                <Text style={styles.createFirstButtonText}>
+                  Add Your First Expense
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      ) : (
-        <FlatList
-          data={expenses}
-          renderItem={renderExpenseItem}
-          keyExtractor={(item) =>
-            (item as any)._id || (item as any).id || `expense-${Math.random()}`
-          }
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={loadExpenses} />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+        ) : (
+          <FlatList
+            data={expenses}
+            renderItem={renderExpenseItem}
+            keyExtractor={(item) =>
+              (item as any)._id ||
+              (item as any).id ||
+              `expense-${Math.random()}`
+            }
+            contentContainerStyle={styles.listContainer}
+            refreshControl={
+              <RefreshControl refreshing={isLoading} onRefresh={loadExpenses} />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate("CreateExpense", {})}
-      >
-        <Ionicons name="add" size={28} color={colors.text} />
-      </TouchableOpacity>
-    </View>
+        {/* Floating Action Button */}
+        <AnimatedFAB
+          style={styles.fab}
+          iconName="add"
+          iconSize={28}
+          iconColor={colors.text}
+          onPress={() => navigation.navigate("CreateExpense", {})}
+        />
+      </View>
+    </AnimatedScreen>
   );
 }

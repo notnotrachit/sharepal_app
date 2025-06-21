@@ -28,6 +28,7 @@ import {
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   spacing,
   borderRadius,
@@ -64,6 +65,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       justifyContent: "center",
       alignItems: "center",
       backgroundColor: colors.background,
+    },
+    loadingText: {
+      ...typography.body,
+      color: colors.text,
+      textAlign: "center",
     },
     header: {
       ...components.card,
@@ -993,11 +999,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   };
 
   if (!currentGroup) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>Loading...</Text>
-      </View>
-    );
+    return <LoadingSpinner message="Loading group details..." />;
   }
 
   return (

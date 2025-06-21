@@ -4,16 +4,28 @@ import {
   DefaultTheme,
   DarkTheme,
 } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+import {
+  createStackNavigator,
+  TransitionPresets,
+} from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { useSelector } from "react-redux";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  interpolate,
+  Extrapolate,
+} from "react-native-reanimated";
 
 import { RootState } from "../store";
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { useTheme } from "../constants/ThemeProvider";
 import CustomDrawerContent from "../components/CustomDrawerContent";
+import AnimatedTabIcon from "../components/AnimatedTabIcon";
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import GroupsScreen from "../screens/groups/GroupsScreen";
@@ -101,37 +113,57 @@ function GroupsNavigator() {
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: colors.background },
+        ...TransitionPresets.SlideFromRightIOS,
+        gestureEnabled: true,
       }}
     >
       <GroupsStack.Screen
         name="GroupsList"
         component={GroupsScreen}
-        options={{ title: "Groups" }}
+        options={{
+          title: "Groups",
+          ...TransitionPresets.FadeFromBottomAndroid,
+        }}
       />
       <GroupsStack.Screen
         name="GroupDetails"
         component={GroupDetailsScreen}
-        options={{ title: "Group Details" }}
+        options={{
+          title: "Group Details",
+          ...TransitionPresets.SlideFromRightIOS,
+        }}
       />
       <GroupsStack.Screen
         name="CreateGroup"
         component={CreateGroupScreen}
-        options={{ title: "Create Group" }}
+        options={{
+          title: "Create Group",
+          ...TransitionPresets.ModalSlideFromBottomIOS,
+        }}
       />
       <GroupsStack.Screen
         name="CreateExpense"
         component={CreateExpenseScreen}
-        options={{ title: "Add Expense" }}
+        options={{
+          title: "Add Expense",
+          ...TransitionPresets.ModalSlideFromBottomIOS,
+        }}
       />
       <GroupsStack.Screen
         name="Settlements"
         component={SettlementsScreen}
-        options={{ title: "Settlements" }}
+        options={{
+          title: "Settlements",
+          ...TransitionPresets.SlideFromRightIOS,
+        }}
       />
       <GroupsStack.Screen
         name="TransactionDetails"
         component={TransactionDetailsScreen}
-        options={{ title: "Transaction Details" }}
+        options={{
+          title: "Transaction Details",
+          ...TransitionPresets.SlideFromRightIOS,
+        }}
       />
     </GroupsStack.Navigator>
   );
@@ -145,22 +177,33 @@ function ExpensesNavigator() {
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: colors.background },
+        ...TransitionPresets.SlideFromRightIOS,
+        gestureEnabled: true,
       }}
     >
       <ExpensesStack.Screen
         name="ExpensesList"
         component={ExpensesScreen}
-        options={{ title: "Expenses" }}
+        options={{
+          title: "Expenses",
+          ...TransitionPresets.FadeFromBottomAndroid,
+        }}
       />
       <ExpensesStack.Screen
         name="CreateExpense"
         component={CreateExpenseScreen}
-        options={{ title: "Add Expense" }}
+        options={{
+          title: "Add Expense",
+          ...TransitionPresets.ModalSlideFromBottomIOS,
+        }}
       />
       <ExpensesStack.Screen
         name="ExpenseDetails"
         component={ExpenseDetailsScreen}
-        options={{ title: "Expense Details" }}
+        options={{
+          title: "Expense Details",
+          ...TransitionPresets.SlideFromRightIOS,
+        }}
       />
     </ExpensesStack.Navigator>
   );
@@ -174,12 +217,17 @@ function FriendsNavigator() {
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: colors.background },
+        ...TransitionPresets.SlideFromRightIOS,
+        gestureEnabled: true,
       }}
     >
       <FriendsStack.Screen
         name="FriendsList"
         component={FriendsScreen}
-        options={{ title: "Friends" }}
+        options={{
+          title: "Friends",
+          ...TransitionPresets.FadeFromBottomAndroid,
+        }}
       />
     </FriendsStack.Navigator>
   );
@@ -205,8 +253,13 @@ function MainTabNavigator() {
         name="Groups"
         component={GroupsNavigator}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedTabIcon
+              name="people-outline"
+              size={size}
+              color={color}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -214,8 +267,13 @@ function MainTabNavigator() {
         name="Expenses"
         component={ExpensesNavigator}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedTabIcon
+              name="receipt-outline"
+              size={size}
+              color={color}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -223,8 +281,13 @@ function MainTabNavigator() {
         name="Friends"
         component={FriendsNavigator}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-add-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedTabIcon
+              name="person-add-outline"
+              size={size}
+              color={color}
+              focused={focused}
+            />
           ),
         }}
       />

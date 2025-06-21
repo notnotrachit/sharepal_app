@@ -16,6 +16,8 @@ import { fetchGroups, deleteGroup } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { Group } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
+import AnimatedScreen from "../../components/AnimatedScreen";
+import AnimatedFAB from "../../components/AnimatedFAB";
 import {
   spacing,
   borderRadius,
@@ -286,51 +288,53 @@ export default function GroupsScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      {groups.length === 0 && !isLoading ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}>
-              <Ionicons
-                name="people-outline"
-                size={40}
-                color={colors.primary}
-              />
-            </View>
-            <Text style={styles.emptyTitle}>No Groups Yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Create your first group to start splitting expenses with friends
-            </Text>
-            <TouchableOpacity
-              style={styles.createFirstButton}
-              onPress={() => navigation.navigate("CreateGroup")}
-            >
-              <Text style={styles.createFirstButtonText}>
-                Create Your First Group
+    <AnimatedScreen animationType="slideUp" duration={400}>
+      <View style={styles.container}>
+        {groups.length === 0 && !isLoading ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIcon}>
+                <Ionicons
+                  name="people-outline"
+                  size={40}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={styles.emptyTitle}>No Groups Yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Create your first group to start splitting expenses with friends
               </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.createFirstButton}
+                onPress={() => navigation.navigate("CreateGroup")}
+              >
+                <Text style={styles.createFirstButtonText}>
+                  Create Your First Group
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      ) : (
-        <FlatList
-          data={groups}
-          renderItem={renderGroupItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={loadGroups} />
-          }
-          showsVerticalScrollIndicator={false}
+        ) : (
+          <FlatList
+            data={groups}
+            renderItem={renderGroupItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContainer}
+            refreshControl={
+              <RefreshControl refreshing={isLoading} onRefresh={loadGroups} />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+        {/* Floating Action Button */}{" "}
+        <AnimatedFAB
+          style={styles.fab}
+          iconName="add"
+          iconSize={28}
+          iconColor={colors.text}
+          onPress={() => navigation.navigate("CreateGroup")}
         />
-      )}
-
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate("CreateGroup")}
-      >
-        <Ionicons name="add" size={28} color={colors.text} />
-      </TouchableOpacity>
-    </View>
+      </View>
+    </AnimatedScreen>
   );
 }

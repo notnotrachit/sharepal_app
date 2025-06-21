@@ -60,6 +60,11 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
       alignItems: "center",
       backgroundColor: colors.background,
     },
+    loadingText: {
+      ...typography.body,
+      color: colors.text,
+      textAlign: "center",
+    },
     content: {
       padding: spacing.lg,
     },
@@ -248,7 +253,7 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -269,7 +274,7 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
   if (!transactionMatches) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading transaction...</Text>
+        <Text style={styles.loadingText}>Loading transaction...</Text>
       </View>
     );
   }

@@ -63,6 +63,11 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
       alignItems: "center",
       backgroundColor: colors.background,
     },
+    loadingText: {
+      ...typography.body,
+      color: colors.text,
+      textAlign: "center",
+    },
     header: {
       ...components.card,
       marginBottom: spacing.lg,
@@ -406,7 +411,7 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -427,7 +432,7 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
   if (!transactionMatches) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading transaction...</Text>
+        <Text style={styles.loadingText}>Loading transaction...</Text>
       </View>
     );
   }
