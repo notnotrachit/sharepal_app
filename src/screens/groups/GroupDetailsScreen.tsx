@@ -7,7 +7,10 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
+  Animated,
+  Dimensions,
 } from "react-native";
+import { PanGestureHandler, State } from "react-native-gesture-handler";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -62,6 +65,106 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   const { groupId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
   const { colors, components } = useTheme();
+
+  const {
+    groups,
+    currentGroup,
+    groupBalances,
+    groupSimplify,
+    groupMembers,
+    isLoading,
+    groupTransactions,
+    groupAnalytics,
+  } = useSelector((state: RootState) => state.groups);
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const [activeTab, setActiveTab] = useState<"transactions" | "balances">(
+    "transactions"
+  );
+
+  // Animation and gesture handling for swipe
+  const screenWidth = Dimensions.get("window").width;
+  const translateX = React.useRef(new Animated.Value(0)).current;
+  const currentIndex = React.useRef(0);
+
+  // Update translateX when activeTab changes
+  React.useEffect(() => {
+    const toValue = activeTab === "transactions" ? 0 : -screenWidth;
+    currentIndex.current = activeTab === "transactions" ? 0 : 1;
+
+    Animated.spring(translateX, {
+      toValue,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 8,
+    }).start();
+  }, [activeTab, screenWidth]);
+
+  const onGestureEvent = (event: any) => {
+    const { translationX } = event.nativeEvent;
+    const currentTabIndex = currentIndex.current;
+
+    // Calculate the base position for current tab
+    const basePosition = currentTabIndex === 0 ? 0 : -screenWidth;
+
+    // Calculate the new position with translation
+    let newPosition = basePosition + translationX;
+
+    // Clamp the position to prevent over-scrolling
+    if (currentTabIndex === 0) {
+      // On transactions tab, prevent scrolling right and limit left scroll
+      newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
+    } else {
+      // On balances tab, prevent scrolling left and limit right scroll
+      newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
+    }
+
+    translateX.setValue(newPosition);
+  };
+
+  const onHandlerStateChange = (event: any) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX, velocityX } = event.nativeEvent;
+      const threshold = screenWidth * 0.3; // 30% of screen width
+      const velocity = velocityX;
+
+      let shouldSwipe = false;
+      let newIndex = currentIndex.current;
+
+      // Determine if we should swipe based on distance or velocity
+      if (Math.abs(translationX) > threshold || Math.abs(velocity) > 500) {
+        if (translationX < 0 && velocity < 0) {
+          // Swiping left (to "balances" tab)
+          newIndex = 1;
+          // Only allow swipe if not already at the last tab
+          if (currentIndex.current < 1) {
+            shouldSwipe = true;
+          }
+        } else if (translationX > 0 && velocity > 0) {
+          // Swiping right (to "transactions" tab)
+          newIndex = 0;
+          // Only allow swipe if not already at the first tab
+          if (currentIndex.current > 0) {
+            shouldSwipe = true;
+          }
+        }
+      }
+
+      if (shouldSwipe && newIndex !== currentIndex.current) {
+        // Update the active tab
+        setActiveTab(newIndex === 0 ? "transactions" : "balances");
+      } else {
+        // Snap back to current position
+        const toValue = currentIndex.current === 0 ? 0 : -screenWidth;
+        Animated.spring(translateX, {
+          toValue,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }).start();
+      }
+    }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -127,6 +230,15 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       fontWeight: "600",
     },
     content: {
+      flex: 1,
+    },
+    swipeContainer: {
+      flex: 1,
+      flexDirection: "row",
+      width: screenWidth * 2, // Double width to fit both tabs
+    },
+    tabPage: {
+      width: screenWidth,
       flex: 1,
     },
     tabContent: {
@@ -379,22 +491,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       marginRight: spacing.sm,
     },
   });
-
-  const {
-    groups,
-    currentGroup,
-    groupBalances,
-    groupSimplify,
-    groupMembers,
-    isLoading,
-    groupTransactions,
-    groupAnalytics,
-  } = useSelector((state: RootState) => state.groups);
-  const { user } = useSelector((state: RootState) => state.auth);
-
-  const [activeTab, setActiveTab] = useState<"transactions" | "balances">(
-    "transactions"
-  );
 
   // Clear transaction state when screen is focused to avoid stale data
   useFocusEffect(
@@ -701,98 +797,103 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     const displayTransactions = allTransactions;
 
     return (
-      <View style={styles.tabContent}>
-        {isLoading && displayTransactions.length === 0 ? (
-          <LoadingState message="Loading transactions..." />
-        ) : !displayTransactions ||
-          !Array.isArray(displayTransactions) ||
-          displayTransactions.length === 0 ? (
-          <EmptyState
-            iconName="receipt-outline"
-            title="No transactions yet"
-            subtitle="Add your first expense to get started"
-          />
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {displayTransactions.map((transaction: any) => (
-              <View
-                key={transaction.id || transaction._id}
-                style={styles.expenseItem}
-              >
-                <TouchableOpacity
-                  style={styles.expenseContent}
-                  onPress={() =>
-                    handleTransactionPress(transaction.id || transaction._id)
-                  }
+      <View style={styles.tabPage}>
+        <View style={styles.tabContent}>
+          {isLoading && displayTransactions.length === 0 ? (
+            <LoadingState message="Loading transactions..." />
+          ) : !displayTransactions ||
+            !Array.isArray(displayTransactions) ||
+            displayTransactions.length === 0 ? (
+            <EmptyState
+              iconName="receipt-outline"
+              title="No transactions yet"
+              subtitle="Add your first expense to get started"
+            />
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {displayTransactions.map((transaction: any) => (
+                <View
+                  key={transaction.id || transaction._id}
+                  style={styles.expenseItem}
                 >
-                  <View style={styles.expenseHeader}>
-                    <View style={styles.transactionTitleRow}>
-                      <Text style={styles.expenseDescription}>
-                        {transaction.description}
-                      </Text>
-                      <View
-                        style={[
-                          styles.transactionTypeBadge,
-                          transaction.type === "expense"
-                            ? styles.expenseTypeBadge
-                            : styles.settlementTypeBadge,
-                        ]}
-                      >
-                        <Text
+                  <TouchableOpacity
+                    style={styles.expenseContent}
+                    onPress={() =>
+                      handleTransactionPress(transaction.id || transaction._id)
+                    }
+                  >
+                    <View style={styles.expenseHeader}>
+                      <View style={styles.transactionTitleRow}>
+                        <Text style={styles.expenseDescription}>
+                          {transaction.description}
+                        </Text>
+                        <View
                           style={[
-                            styles.transactionTypeText,
+                            styles.transactionTypeBadge,
                             transaction.type === "expense"
-                              ? styles.expenseTypeText
-                              : styles.settlementTypeText,
+                              ? styles.expenseTypeBadge
+                              : styles.settlementTypeBadge,
                           ]}
                         >
-                          {transaction.type === "expense"
-                            ? "Expense"
-                            : "Settlement"}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.expenseAmount}>
-                      {formatCurrency(transaction.amount, transaction.currency)}
-                    </Text>
-                  </View>
-                  <View style={styles.expenseMeta}>
-                    <Text style={styles.expenseCategory}>
-                      {transaction.category ||
-                        (transaction.type === "settlement"
-                          ? "Settlement"
-                          : "General")}
-                    </Text>
-                    <Text style={styles.expenseDate}>
-                      {new Date(
-                        transaction.created_at || transaction.date
-                      ).toLocaleDateString()}
-                    </Text>
-                    {transaction.participants && (
-                      <Text style={styles.participantCount}>
-                        {transaction.participants.length} participants
-                      </Text>
-                    )}
-                  </View>
-                  {transaction.type === "settlement" && (
-                    <View style={styles.settlementInfo}>
-                      {(() => {
-                        const participants =
-                          getSettlementParticipants(transaction);
-                        return (
-                          <Text style={styles.settlementFromTo}>
-                            Settlement: {participants.payer} →{" "}
-                            {participants.payee}
+                          <Text
+                            style={[
+                              styles.transactionTypeText,
+                              transaction.type === "expense"
+                                ? styles.expenseTypeText
+                                : styles.settlementTypeText,
+                            ]}
+                          >
+                            {transaction.type === "expense"
+                              ? "Expense"
+                              : "Settlement"}
                           </Text>
-                        );
-                      })()}
+                        </View>
+                      </View>
+                      <Text style={styles.expenseAmount}>
+                        {formatCurrency(
+                          transaction.amount,
+                          transaction.currency
+                        )}
+                      </Text>
                     </View>
-                  )}
-                </TouchableOpacity>
-              </View>
-            ))}
-          </ScrollView>
-        )}
+                    <View style={styles.expenseMeta}>
+                      <Text style={styles.expenseCategory}>
+                        {transaction.category ||
+                          (transaction.type === "settlement"
+                            ? "Settlement"
+                            : "General")}
+                      </Text>
+                      <Text style={styles.expenseDate}>
+                        {new Date(
+                          transaction.created_at || transaction.date
+                        ).toLocaleDateString()}
+                      </Text>
+                      {transaction.participants && (
+                        <Text style={styles.participantCount}>
+                          {transaction.participants.length} participants
+                        </Text>
+                      )}
+                    </View>
+                    {transaction.type === "settlement" && (
+                      <View style={styles.settlementInfo}>
+                        {(() => {
+                          const participants =
+                            getSettlementParticipants(transaction);
+                          return (
+                            <Text style={styles.settlementFromTo}>
+                              Settlement: {participants.payer} →{" "}
+                              {participants.payee}
+                            </Text>
+                          );
+                        })()}
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
       </View>
     );
   };
@@ -837,155 +938,185 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     };
 
     return (
-      <View style={styles.tabContent}>
-        {isLoading && (!groupBalances || groupBalances.length === 0) ? (
-          <LoadingState message="Loading balances..." />
-        ) : !currentUserBalance ||
-          getBalanceAmount(currentUserBalance) === 0 ? (
-          <EmptyState
-            iconName="wallet-outline"
-            title="You are settled up"
-            subtitle="All expenses are balanced"
-          />
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Summary Balance */}
-            <Card>
-              <Card.Content>
-                <Text style={styles.balanceUser}>Overall Balance</Text>
-                <Text
-                  style={[
-                    styles.balanceAmount,
-                    {
-                      color: getBalanceColor(
-                        getBalanceAmount(currentUserBalance)
-                      ),
-                    },
-                  ]}
-                >
-                  {formatCurrency(
-                    getBalanceAmount(currentUserBalance),
-                    currentUserBalance.currency || "INR"
-                  )}
-                </Text>
-                <Text style={styles.balanceDescription}>
-                  {getBalanceText(getBalanceAmount(currentUserBalance))}
-                </Text>
+      <View style={styles.tabPage}>
+        <View style={styles.tabContent}>
+          {isLoading && (!groupBalances || groupBalances.length === 0) ? (
+            <LoadingState message="Loading balances..." />
+          ) : !currentUserBalance ||
+            getBalanceAmount(currentUserBalance) === 0 ? (
+            <EmptyState
+              iconName="wallet-outline"
+              title="You are settled up"
+              subtitle="All expenses are balanced"
+            />
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Summary Balance */}
+              <Card>
+                <Card.Content>
+                  <Text style={styles.balanceUser}>Overall Balance</Text>
+                  <Text
+                    style={[
+                      styles.balanceAmount,
+                      {
+                        color: getBalanceColor(
+                          getBalanceAmount(currentUserBalance)
+                        ),
+                      },
+                    ]}
+                  >
+                    {formatCurrency(
+                      getBalanceAmount(currentUserBalance),
+                      currentUserBalance.currency || "INR"
+                    )}
+                  </Text>
+                  <Text style={styles.balanceDescription}>
+                    {getBalanceText(getBalanceAmount(currentUserBalance))}
+                  </Text>
 
-                {/* Show enhanced balance details */}
-                {currentUserBalance && (
-                  <View style={styles.enhancedBalanceInfo}>
-                    <Text style={styles.enhancedBalanceText}>
-                      Total Paid:{" "}
-                      {formatCurrency(
-                        currentUserBalance.total_paid,
-                        currentUserBalance.currency
-                      )}
-                    </Text>
-                    <Text style={styles.enhancedBalanceText}>
-                      Total Owed:{" "}
-                      {formatCurrency(
-                        currentUserBalance.total_owed,
-                        currentUserBalance.currency
-                      )}
-                    </Text>
-                  </View>
-                )}
-              </Card.Content>
-            </Card>
-
-            {/* Detailed Breakdown with Settlement Actions */}
-            {detailedBalances.length > 0 && (
-              <>
-                <Text style={styles.detailHeader}>
-                  <Ionicons name="list-outline" size={16} color={colors.text} />{" "}
-                  Breakdown & Settlements:
-                </Text>
-                {detailedBalances.map((detail, index) => {
-                  // Find corresponding settlement for pay button
-                  const correspondingSettlement = settlementData.find(
-                    (settlement) =>
-                      (settlement.payer_id === user?.id && detail.isDebt) ||
-                      (settlement.payee_id === user?.id && !detail.isDebt)
-                  );
-
-                  return (
-                    <View
-                      key={index}
-                      style={[
-                        styles.detailItem,
-                        {
-                          borderLeftColor: detail.isDebt
-                            ? colors.error
-                            : colors.success,
-                        },
-                      ]}
-                    >
-                      <View style={styles.detailRow}>
-                        <View style={styles.detailTextContainer}>
-                          <Text style={styles.detailText}>
-                            {detail.isDebt ? (
-                              <>
-                                You owe{" "}
-                                <Text
-                                  style={[
-                                    styles.detailAmount,
-                                    { color: colors.error },
-                                  ]}
-                                >
-                                  {formatCurrency(
-                                    detail.amount,
-                                    detail.currency
-                                  )}
-                                </Text>{" "}
-                                to{" "}
-                                <Text style={styles.detailUser}>
-                                  {detail.otherUser}
-                                </Text>
-                              </>
-                            ) : (
-                              <>
-                                <Text style={styles.detailUser}>
-                                  {detail.otherUser}
-                                </Text>{" "}
-                                owes you{" "}
-                                <Text
-                                  style={[
-                                    styles.detailAmount,
-                                    { color: colors.success },
-                                  ]}
-                                >
-                                  {formatCurrency(
-                                    detail.amount,
-                                    detail.currency
-                                  )}
-                                </Text>
-                              </>
-                            )}
-                          </Text>
-                        </View>
-
-                        {/* Settlement Action Button */}
-                        {detail.isDebt && correspondingSettlement && (
-                          <SecondaryButton
-                            title="Pay"
-                            icon="card-outline"
-                            variant="success"
-                            size="small"
-                            onPress={() =>
-                              handleMarkAsPaid(correspondingSettlement)
-                            }
-                          />
+                  {/* Show enhanced balance details */}
+                  {currentUserBalance && (
+                    <View style={styles.enhancedBalanceInfo}>
+                      <Text style={styles.enhancedBalanceText}>
+                        Total Paid:{" "}
+                        {formatCurrency(
+                          currentUserBalance.total_paid,
+                          currentUserBalance.currency
                         )}
-                      </View>
+                      </Text>
+                      <Text style={styles.enhancedBalanceText}>
+                        Total Owed:{" "}
+                        {formatCurrency(
+                          currentUserBalance.total_owed,
+                          currentUserBalance.currency
+                        )}
+                      </Text>
                     </View>
-                  );
-                })}
-              </>
-            )}
-          </ScrollView>
-        )}
+                  )}
+                </Card.Content>
+              </Card>
+
+              {/* Detailed Breakdown with Settlement Actions */}
+              {detailedBalances.length > 0 && (
+                <>
+                  <Text style={styles.detailHeader}>
+                    <Ionicons
+                      name="list-outline"
+                      size={16}
+                      color={colors.text}
+                    />{" "}
+                    Breakdown & Settlements:
+                  </Text>
+                  {detailedBalances.map((detail, index) => {
+                    // Find corresponding settlement for pay button
+                    const correspondingSettlement = settlementData.find(
+                      (settlement) =>
+                        (settlement.payer_id === user?.id && detail.isDebt) ||
+                        (settlement.payee_id === user?.id && !detail.isDebt)
+                    );
+
+                    return (
+                      <View
+                        key={index}
+                        style={[
+                          styles.detailItem,
+                          {
+                            borderLeftColor: detail.isDebt
+                              ? colors.error
+                              : colors.success,
+                          },
+                        ]}
+                      >
+                        <View style={styles.detailRow}>
+                          <View style={styles.detailTextContainer}>
+                            <Text style={styles.detailText}>
+                              {detail.isDebt ? (
+                                <>
+                                  You owe{" "}
+                                  <Text
+                                    style={[
+                                      styles.detailAmount,
+                                      { color: colors.error },
+                                    ]}
+                                  >
+                                    {formatCurrency(
+                                      detail.amount,
+                                      detail.currency
+                                    )}
+                                  </Text>{" "}
+                                  to{" "}
+                                  <Text style={styles.detailUser}>
+                                    {detail.otherUser}
+                                  </Text>
+                                </>
+                              ) : (
+                                <>
+                                  <Text style={styles.detailUser}>
+                                    {detail.otherUser}
+                                  </Text>{" "}
+                                  owes you{" "}
+                                  <Text
+                                    style={[
+                                      styles.detailAmount,
+                                      { color: colors.success },
+                                    ]}
+                                  >
+                                    {formatCurrency(
+                                      detail.amount,
+                                      detail.currency
+                                    )}
+                                  </Text>
+                                </>
+                              )}
+                            </Text>
+                          </View>
+
+                          {/* Settlement Action Button */}
+                          {detail.isDebt && correspondingSettlement && (
+                            <SecondaryButton
+                              title="Pay"
+                              icon="card-outline"
+                              variant="success"
+                              size="small"
+                              onPress={() =>
+                                handleMarkAsPaid(correspondingSettlement)
+                              }
+                            />
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </>
+              )}
+            </ScrollView>
+          )}
+        </View>
       </View>
+    );
+  };
+
+  const renderTabContent = () => {
+    return (
+      <PanGestureHandler
+        onGestureEvent={onGestureEvent}
+        onHandlerStateChange={onHandlerStateChange}
+        activeOffsetX={[-10, 10]}
+        failOffsetY={[-30, 30]}
+        shouldCancelWhenOutside={true}
+      >
+        <Animated.View
+          style={[
+            styles.swipeContainer,
+            {
+              transform: [{ translateX }],
+            },
+          ]}
+        >
+          {renderTransactionsTab()}
+          {renderBalancesTab()}
+        </Animated.View>
+      </PanGestureHandler>
     );
   };
 
@@ -1037,10 +1168,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       </View>
 
       {/* Tab Content */}
-      <View style={styles.content}>
-        {activeTab === "transactions" && renderTransactionsTab()}
-        {activeTab === "balances" && renderBalancesTab()}
-      </View>
+      <View style={styles.content}>{renderTabContent()}</View>
 
       {/* Floating Action Button */}
       <AnimatedFAB iconName="add" onPress={handleAddExpense} />

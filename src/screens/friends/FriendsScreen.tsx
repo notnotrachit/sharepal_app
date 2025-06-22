@@ -8,7 +8,10 @@ import {
   RefreshControl,
   Alert,
   Modal,
+  Animated,
+  Dimensions,
 } from "react-native";
+import { PanGestureHandler, State } from "react-native-gesture-handler";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useFocusEffect } from "@react-navigation/native";
@@ -58,6 +61,92 @@ export default function FriendsScreen({ navigation }: Props) {
   const [showReceivedRequestsModal, setShowReceivedRequestsModal] =
     React.useState(false);
 
+  // Animation and gesture handling for swipe
+  const screenWidth = Dimensions.get("window").width;
+  const translateX = React.useRef(new Animated.Value(0)).current;
+  const currentIndex = React.useRef(0);
+
+  // Update translateX when activeTab changes
+  React.useEffect(() => {
+    const toValue = activeTab === "friends" ? 0 : -screenWidth;
+    currentIndex.current = activeTab === "friends" ? 0 : 1;
+
+    Animated.spring(translateX, {
+      toValue,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 8,
+    }).start();
+  }, [activeTab, screenWidth]);
+
+  const onGestureEvent = (event: any) => {
+    const { translationX } = event.nativeEvent;
+    const currentTabIndex = currentIndex.current;
+
+    // Calculate the base position for current tab
+    const basePosition = currentTabIndex === 0 ? 0 : -screenWidth;
+
+    // Calculate the new position with translation
+    let newPosition = basePosition + translationX;
+
+    // Clamp the position to prevent over-scrolling
+    // For friends tab (index 0): can't scroll right (positive), can scroll left to -screenWidth
+    // For sent tab (index 1): can't scroll left (more negative than -screenWidth), can scroll right to 0
+    if (currentTabIndex === 0) {
+      // On friends tab, prevent scrolling right and limit left scroll
+      newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
+    } else {
+      // On sent tab, prevent scrolling left and limit right scroll
+      newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
+    }
+
+    translateX.setValue(newPosition);
+  };
+
+  const onHandlerStateChange = (event: any) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX, velocityX } = event.nativeEvent;
+      const threshold = screenWidth * 0.3; // 30% of screen width
+      const velocity = velocityX;
+
+      let shouldSwipe = false;
+      let newIndex = currentIndex.current;
+
+      // Determine if we should swipe based on distance or velocity
+      if (Math.abs(translationX) > threshold || Math.abs(velocity) > 500) {
+        if (translationX < 0 && velocity < 0) {
+          // Swiping left (to "sent" tab)
+          newIndex = 1;
+          // Only allow swipe if not already at the last tab
+          if (currentIndex.current < 1) {
+            shouldSwipe = true;
+          }
+        } else if (translationX > 0 && velocity > 0) {
+          // Swiping right (to "friends" tab)
+          newIndex = 0;
+          // Only allow swipe if not already at the first tab
+          if (currentIndex.current > 0) {
+            shouldSwipe = true;
+          }
+        }
+      }
+
+      if (shouldSwipe && newIndex !== currentIndex.current) {
+        // Update the active tab
+        setActiveTab(newIndex === 0 ? "friends" : "sent");
+      } else {
+        // Snap back to current position
+        const toValue = currentIndex.current === 0 ? 0 : -screenWidth;
+        Animated.spring(translateX, {
+          toValue,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }).start();
+      }
+    }
+  };
+
   // Debug modal state
   console.log("Modal state:", showReceivedRequestsModal);
 
@@ -93,6 +182,15 @@ export default function FriendsScreen({ navigation }: Props) {
       fontWeight: "700",
     },
     content: {
+      flex: 1,
+    },
+    swipeContainer: {
+      flex: 1,
+      flexDirection: "row",
+      width: screenWidth * 2, // Double width to fit both tabs
+    },
+    tabPage: {
+      width: screenWidth,
       flex: 1,
     },
     listContainer: {
@@ -376,10 +474,10 @@ export default function FriendsScreen({ navigation }: Props) {
     );
   };
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "friends":
-        return isLoading && friends.length === 0 ? (
+  const renderFriendsTab = () => {
+    return (
+      <View style={styles.tabPage}>
+        {isLoading && friends.length === 0 ? (
           <LoadingState message="Loading friends..." />
         ) : friends.length === 0 ? (
           <EmptyState
@@ -402,13 +500,16 @@ export default function FriendsScreen({ navigation }: Props) {
               />
             }
           />
-        );
+        )}
+      </View>
+    );
+  };
 
-      case "sent":
-        const validSentRequests = sentRequests.filter(
-          (item) => item && item.id
-        );
-        return isLoading && validSentRequests.length === 0 ? (
+  const renderSentTab = () => {
+    const validSentRequests = sentRequests.filter((item) => item && item.id);
+    return (
+      <View style={styles.tabPage}>
+        {isLoading && validSentRequests.length === 0 ? (
           <LoadingState message="Loading sent requests..." />
         ) : validSentRequests.length === 0 ? (
           <EmptyState
@@ -423,11 +524,33 @@ export default function FriendsScreen({ navigation }: Props) {
             keyExtractor={(item, index) => item?.id || `sent-${index}`}
             contentContainerStyle={styles.listContainer}
           />
-        );
+        )}
+      </View>
+    );
+  };
 
-      default:
-        return null;
-    }
+  const renderTabContent = () => {
+    return (
+      <PanGestureHandler
+        onGestureEvent={onGestureEvent}
+        onHandlerStateChange={onHandlerStateChange}
+        activeOffsetX={[-10, 10]}
+        failOffsetY={[-30, 30]}
+        shouldCancelWhenOutside={true}
+      >
+        <Animated.View
+          style={[
+            styles.swipeContainer,
+            {
+              transform: [{ translateX }],
+            },
+          ]}
+        >
+          {renderFriendsTab()}
+          {renderSentTab()}
+        </Animated.View>
+      </PanGestureHandler>
+    );
   };
 
   return (
