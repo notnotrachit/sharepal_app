@@ -94,6 +94,11 @@ export interface FriendRequest {
   status: 'pending' | 'accepted' | 'rejected' | 'blocked';
   created_at: string;
   updated_at: string;
+  requester_name?: string;
+  requester_email?: string;
+  addressee_name?: string;
+  addressee_email?: string;
+  requested_at?: string;
 }
 
 export interface SendFriendRequestRequest {

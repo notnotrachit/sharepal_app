@@ -98,30 +98,36 @@ export default function RegisterScreen({ navigation }: Props) {
     content: {
       flex: 1,
       justifyContent: "center",
+      maxWidth: 400,
+      alignSelf: "center",
+      width: "100%",
+    },
+    header: {
+      alignItems: "center",
+      marginBottom: spacing.xxl,
     },
     title: {
       ...typography.h1,
       color: colors.text,
       textAlign: "center",
       marginBottom: spacing.sm,
+      fontWeight: "700",
     },
     subtitle: {
       ...typography.body,
       color: colors.textSecondary,
       textAlign: "center",
-      marginBottom: spacing.xl,
     },
     form: {
-      width: "100%",
+      gap: spacing.lg,
     },
     inputContainer: {
-      marginBottom: spacing.lg,
+      gap: spacing.sm,
     },
     label: {
-      ...typography.body,
+      ...typography.bodySmall,
       color: colors.text,
-      marginBottom: spacing.sm,
-      fontWeight: "500",
+      fontWeight: "600",
     },
     input: {
       ...components.input,
@@ -129,35 +135,33 @@ export default function RegisterScreen({ navigation }: Props) {
       borderColor: colors.border,
       color: colors.text,
     },
-    button: {
-      ...components.button,
-      backgroundColor: colors.primary,
-      marginTop: spacing.lg,
+    inputFocused: {
+      borderColor: colors.primary,
     },
-    buttonText: {
+    primaryButton: {
+      ...components.button.primary,
+      marginTop: spacing.md,
+    },
+    primaryButtonText: {
       ...typography.button,
-      color: colors.surface,
-    },
-    disabledButton: {
-      backgroundColor: colors.textSecondary,
+      color: "white",
+      textAlign: "center",
     },
     buttonDisabled: {
       backgroundColor: colors.textSecondary,
     },
     linkContainer: {
-      marginTop: spacing.lg,
+      marginTop: spacing.xl,
       alignItems: "center",
     },
     linkText: {
       ...typography.body,
       color: colors.textSecondary,
+      textAlign: "center",
     },
     link: {
       color: colors.primary,
       fontWeight: "600",
-    },
-    linkButton: {
-      marginTop: spacing.sm,
     },
     errorText: {
       ...typography.bodySmall,
@@ -173,72 +177,89 @@ export default function RegisterScreen({ navigation }: Props) {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <Text style={styles.title}>Join Sharepal</Text>
-          <Text style={styles.subtitle}>
-            Create your account to start splitting expenses
-          </Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>Join Sharepal</Text>
+            <Text style={styles.subtitle}>
+              Create your account to start splitting expenses
+            </Text>
+          </View>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              placeholderTextColor={colors.textSecondary}
-              value={formData.name}
-              onChangeText={(value) => handleInputChange("name", value)}
-              autoCapitalize="words"
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Full Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your full name"
+                placeholderTextColor={colors.textSecondary}
+                value={formData.name}
+                onChangeText={(value) => handleInputChange("name", value)}
+                autoCapitalize="words"
+              />
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={colors.textSecondary}
-              value={formData.email}
-              onChangeText={(value) => handleInputChange("email", value)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor={colors.textSecondary}
+                value={formData.email}
+                onChangeText={(value) => handleInputChange("email", value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={colors.textSecondary}
-              value={formData.password}
-              onChangeText={(value) => handleInputChange("password", value)}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Create a password"
+                placeholderTextColor={colors.textSecondary}
+                value={formData.password}
+                onChangeText={(value) => handleInputChange("password", value)}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              placeholderTextColor={colors.textSecondary}
-              value={formData.confirmPassword}
-              onChangeText={(value) =>
-                handleInputChange("confirmPassword", value)
-              }
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm your password"
+                placeholderTextColor={colors.textSecondary}
+                value={formData.confirmPassword}
+                onChangeText={(value) =>
+                  handleInputChange("confirmPassword", value)
+                }
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
 
             <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
+              style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
               onPress={handleRegister}
               disabled={isLoading}
             >
-              <Text style={styles.buttonText}>
+              <Text style={styles.primaryButtonText}>
                 {isLoading ? "Creating Account..." : "Create Account"}
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => navigation.navigate("Login")}
-            >
+            <View style={styles.linkContainer}>
               <Text style={styles.linkText}>
-                Already have an account? Sign In
+                Already have an account?{" "}
+                <Text
+                  style={styles.link}
+                  onPress={() => navigation.navigate("Login")}
+                >
+                  Sign In
+                </Text>
               </Text>
-            </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>

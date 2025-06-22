@@ -65,54 +65,90 @@ export default function LoginScreen({ navigation }: Props) {
     scrollContainer: {
       flexGrow: 1,
       justifyContent: "center",
-      paddingHorizontal: spacing.lg,
+      padding: spacing.xl,
     },
     content: {
-      paddingHorizontal: spacing.lg,
+      flex: 1,
+      justifyContent: "center",
+      maxWidth: 400,
+      alignSelf: "center",
+      width: "100%",
+    },
+    header: {
+      alignItems: "center",
+      marginBottom: spacing.xxl,
     },
     title: {
       ...typography.h1,
       color: colors.text,
       textAlign: "center",
-      marginBottom: spacing.lg,
+      marginBottom: spacing.sm,
+      fontWeight: "700",
     },
     subtitle: {
-      ...typography.h2,
-      color: colors.text,
+      ...typography.body,
+      color: colors.textSecondary,
       textAlign: "center",
-      marginBottom: spacing.xxl,
     },
     form: {
       gap: spacing.lg,
     },
+    inputContainer: {
+      gap: spacing.sm,
+    },
+    label: {
+      ...typography.bodySmall,
+      color: colors.text,
+      fontWeight: "600",
+    },
     input: {
       ...components.input,
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      color: colors.text,
     },
-    signUpButton: {
-      ...components.button,
-      backgroundColor: colors.primary,
-      marginTop: spacing.lg,
+    inputFocused: {
+      borderColor: colors.primary,
     },
-    buttonDisabled: {
-      backgroundColor: colors.textSecondary,
+    primaryButton: {
+      ...components.button.primary,
+      marginTop: spacing.md,
     },
-    signUpButtonText: {
+    primaryButtonText: {
       ...typography.button,
-      color: colors.surface,
+      color: "white",
       textAlign: "center",
     },
-    logInButton: {
-      backgroundColor: colors.surface,
+    secondaryButton: {
+      backgroundColor: "transparent",
       borderColor: colors.border,
       borderWidth: 1,
       borderRadius: borderRadius.md,
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.lg,
       alignItems: "center",
+      marginTop: spacing.sm,
     },
-    logInButtonText: {
+    secondaryButtonText: {
       ...typography.button,
       color: colors.text,
+    },
+    buttonDisabled: {
+      backgroundColor: colors.textSecondary,
+      borderColor: colors.textSecondary,
+    },
+    linkContainer: {
+      marginTop: spacing.xl,
+      alignItems: "center",
+    },
+    linkText: {
+      ...typography.body,
+      color: colors.textSecondary,
+      textAlign: "center",
+    },
+    link: {
+      color: colors.primary,
+      fontWeight: "600",
     },
   });
 
@@ -123,47 +159,60 @@ export default function LoginScreen({ navigation }: Props) {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <Text style={styles.title}>Sharepal</Text>
-          <Text style={styles.subtitle}>Get started</Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Sign in to your account</Text>
+          </View>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={colors.textSecondary}
-              value={formData.email}
-              onChangeText={(value) => handleInputChange("email", value)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor={colors.textSecondary}
+                value={formData.email}
+                onChangeText={(value) => handleInputChange("email", value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={colors.textSecondary}
-              value={formData.password}
-              onChangeText={(value) => handleInputChange("password", value)}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                placeholderTextColor={colors.textSecondary}
+                value={formData.password}
+                onChangeText={(value) => handleInputChange("password", value)}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
 
             <TouchableOpacity
-              style={[styles.signUpButton, isLoading && styles.buttonDisabled]}
+              style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
               onPress={handleLogin}
               disabled={isLoading}
             >
-              <Text style={styles.signUpButtonText}>
-                {isLoading ? "Signing In..." : "Sign up"}
+              <Text style={styles.primaryButtonText}>
+                {isLoading ? "Signing In..." : "Sign In"}
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.logInButton}
-              onPress={() => navigation.navigate("Register")}
-            >
-              <Text style={styles.logInButtonText}>Log in</Text>
-            </TouchableOpacity>
+            <View style={styles.linkContainer}>
+              <Text style={styles.linkText}>
+                Don't have an account?{" "}
+                <Text
+                  style={styles.link}
+                  onPress={() => navigation.navigate("Register")}
+                >
+                  Sign Up
+                </Text>
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>

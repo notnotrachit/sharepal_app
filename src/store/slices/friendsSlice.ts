@@ -70,6 +70,7 @@ export const fetchReceivedRequests = createAsyncThunk<FriendRequest[], void>(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiService.getReceivedFriendRequests();
+      console.log('fetchReceivedRequests response:', response);
       
       // Handle different response structures
       if (Array.isArray(response)) {
