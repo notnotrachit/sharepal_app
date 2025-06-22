@@ -4,13 +4,16 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Alert,
   RefreshControl,
   Animated,
   Dimensions,
 } from "react-native";
-import { PanGestureHandler, State } from "react-native-gesture-handler";
+import {
+  PanGestureHandler,
+  State,
+  ScrollView,
+} from "react-native-gesture-handler";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -111,13 +114,8 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     let newPosition = basePosition + translationX;
 
     // Clamp the position to prevent over-scrolling
-    if (currentTabIndex === 0) {
-      // On transactions tab, prevent scrolling right and limit left scroll
-      newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
-    } else {
-      // On balances tab, prevent scrolling left and limit right scroll
-      newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
-    }
+    // Position range: 0 (transactions tab) to -screenWidth (balances tab)
+    newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
 
     translateX.setValue(newPosition);
   };

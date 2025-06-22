@@ -90,15 +90,8 @@ export default function FriendsScreen({ navigation }: Props) {
     let newPosition = basePosition + translationX;
 
     // Clamp the position to prevent over-scrolling
-    // For friends tab (index 0): can't scroll right (positive), can scroll left to -screenWidth
-    // For sent tab (index 1): can't scroll left (more negative than -screenWidth), can scroll right to 0
-    if (currentTabIndex === 0) {
-      // On friends tab, prevent scrolling right and limit left scroll
-      newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
-    } else {
-      // On sent tab, prevent scrolling left and limit right scroll
-      newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
-    }
+    // Position range: 0 (friends tab) to -screenWidth (sent tab)
+    newPosition = Math.max(Math.min(newPosition, 0), -screenWidth);
 
     translateX.setValue(newPosition);
   };

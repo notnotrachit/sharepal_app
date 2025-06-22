@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ScrollView,
   Modal,
   FlatList,
 } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
