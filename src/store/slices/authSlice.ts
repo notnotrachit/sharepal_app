@@ -88,11 +88,16 @@ export const loadStoredAuth = createAsyncThunk(
 
 export const logout = createAsyncThunk(
   'auth/logout',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, dispatch }) => {
     try {
       await secureStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
       await secureStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
       await secureStorage.removeItem(STORAGE_KEYS.USER);
+      
+      // Import and dispatch the groups reset action
+      const { resetAllState } = await import('./groupsSlice');
+      dispatch(resetAllState());
+      
       return null;
     } catch (error: any) {
       return rejectWithValue(error.message);
@@ -183,6 +188,12 @@ const authSlice = createSlice({
       
       // Logout
       .addCase(logout.fulfilled, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = null;
+      })
+      .addCase(logout.rejected, (state) => {
+        // Even if logout API fails, clear local state
         state.user = null;
         state.isAuthenticated = false;
         state.error = null;

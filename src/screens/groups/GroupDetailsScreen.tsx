@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
 import {
@@ -25,6 +26,8 @@ import {
   createExpenseTransaction,
   setCurrentGroup,
   clearGroupData,
+  clearNavigationState,
+  clearCurrentTransaction,
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
@@ -378,6 +381,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   });
 
   const {
+    groups,
     currentGroup,
     groupBalances,
     groupSimplify,
@@ -392,11 +396,28 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     "transactions"
   );
 
+  // Clear transaction state when screen is focused to avoid stale data
+  useFocusEffect(
+    useCallback(() => {
+      // Clear any stale transaction or navigation state
+      dispatch(clearCurrentTransaction());
+      dispatch(clearNavigationState());
+
+      return () => {
+        // Cleanup when leaving the screen
+        dispatch(clearCurrentTransaction());
+      };
+    }, [])
+  );
+
   useEffect(() => {
     loadGroupData();
   }, [groupId]);
 
   const loadGroupData = () => {
+    // Set current group context
+    dispatch(setCurrentGroup(null)); // Clear first to avoid stale data
+
     dispatch(fetchGroup(groupId));
     dispatch(fetchGroupMembers(groupId));
     dispatch(fetchGroupBalances(groupId));
@@ -411,6 +432,27 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   };
 
   const handleAddExpense = () => {
+    // Clear any stale state before navigating to create expense
+    dispatch(clearCurrentTransaction());
+    dispatch(clearNavigationState());
+
+    // Ensure group members are properly loaded before navigation
+    // This helps prevent the alternating issue where sometimes members are just IDs
+    const currentGroup = groups.find((g: any) => g.id === groupId);
+    if (currentGroup && currentGroup.members) {
+      const hasFullUserData = currentGroup.members.some(
+        (member: any) =>
+          member && typeof member === "object" && (member.id || member._id)
+      );
+
+      if (!hasFullUserData) {
+        console.log(
+          "Group members are just IDs, fetching full data before navigation"
+        );
+        dispatch(fetchGroupMembers(groupId));
+      }
+    }
+
     navigation.navigate("CreateExpense", { groupId });
   };
 
@@ -660,9 +702,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
 
     return (
       <View style={styles.tabContent}>
-        {!displayTransactions ||
-        !Array.isArray(displayTransactions) ||
-        displayTransactions.length === 0 ? (
+        {isLoading && displayTransactions.length === 0 ? (
+          <LoadingState message="Loading transactions..." />
+        ) : !displayTransactions ||
+          !Array.isArray(displayTransactions) ||
+          displayTransactions.length === 0 ? (
           <EmptyState
             iconName="receipt-outline"
             title="No transactions yet"
@@ -670,11 +714,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
           />
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Header to show data source */}
-            <Text style={styles.dataSourceHeader}>
-              📊 Enhanced Transaction Data
-            </Text>
-
             {displayTransactions.map((transaction: any) => (
               <View
                 key={transaction.id || transaction._id}
@@ -799,7 +838,10 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
 
     return (
       <View style={styles.tabContent}>
-        {!currentUserBalance || getBalanceAmount(currentUserBalance) === 0 ? (
+        {isLoading && (!groupBalances || groupBalances.length === 0) ? (
+          <LoadingState message="Loading balances..." />
+        ) : !currentUserBalance ||
+          getBalanceAmount(currentUserBalance) === 0 ? (
           <EmptyState
             iconName="wallet-outline"
             title="You are settled up"

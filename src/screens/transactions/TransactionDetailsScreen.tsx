@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,12 +10,14 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
 import {
   fetchTransaction,
   deleteTransaction,
   clearCurrentTransaction,
+  clearNavigationState,
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
@@ -250,7 +252,22 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
     },
   });
 
+  // Enhanced focus effect for better state management
+  useFocusEffect(
+    useCallback(() => {
+      // Clear any stale navigation state when screen is focused
+      dispatch(clearNavigationState());
+
+      return () => {
+        // Clear transaction when leaving the screen
+        dispatch(clearCurrentTransaction());
+        dispatch(clearNavigationState());
+      };
+    }, [])
+  );
+
   useEffect(() => {
+    // Clear current transaction if it's different from the one we need
     if (
       currentTransaction &&
       currentTransaction._id !== transactionId &&

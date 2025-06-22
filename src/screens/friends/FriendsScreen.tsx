@@ -379,7 +379,9 @@ export default function FriendsScreen({ navigation }: Props) {
   const renderTabContent = () => {
     switch (activeTab) {
       case "friends":
-        return friends.length === 0 ? (
+        return isLoading && friends.length === 0 ? (
+          <LoadingState message="Loading friends..." />
+        ) : friends.length === 0 ? (
           <EmptyState
             iconName="people-outline"
             title="No Friends Yet"
@@ -406,7 +408,9 @@ export default function FriendsScreen({ navigation }: Props) {
         const validSentRequests = sentRequests.filter(
           (item) => item && item.id
         );
-        return validSentRequests.length === 0 ? (
+        return isLoading && validSentRequests.length === 0 ? (
+          <LoadingState message="Loading sent requests..." />
+        ) : validSentRequests.length === 0 ? (
           <EmptyState
             iconName="paper-plane-outline"
             title="No Sent Requests"
@@ -506,8 +510,20 @@ export default function FriendsScreen({ navigation }: Props) {
             </View>
 
             <View style={styles.modalBody}>
-              {receivedRequests.filter((item) => item && item.id).length ===
-              0 ? (
+              {isLoading &&
+              receivedRequests.filter((item) => item && item.id).length ===
+                0 ? (
+                <View
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <LoadingState message="Loading requests..." />
+                </View>
+              ) : receivedRequests.filter((item) => item && item.id).length ===
+                0 ? (
                 <View
                   style={{
                     flex: 1,

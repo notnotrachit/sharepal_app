@@ -408,7 +408,43 @@ const groupsSlice = createSlice({
       state.userTransactions = [];
       state.currentTransaction = null;
       state.groupAnalytics = null;
+      state.groupMembers = [];
     },
+    // Reset all state when switching groups
+    resetGroupState: (state) => {
+      state.currentGroup = null;
+      state.groupMembers = [];
+      state.groupTransactions = [];
+      state.currentTransaction = null;
+      state.groupBalances = [];
+      state.groupSimplify = [];
+      state.groupAnalytics = null;
+      state.error = null;
+    },
+    // Clear navigation-specific state
+    clearNavigationState: (state) => {
+      state.currentTransaction = null;
+      state.error = null;
+    },
+    // Reset form-related state
+    clearFormState: (state) => {
+      state.error = null;
+      state.isLoading = false;
+    },
+    // Force refresh group members (useful when stale data is detected)
+    invalidateGroupMembers: (state, action: PayloadAction<string>) => {
+      const groupId = action.payload;
+      // Clear members for the specific group
+      if (state.currentGroup?.id === groupId) {
+        state.currentGroup.members = [];
+      }
+      const groupIndex = state.groups.findIndex(g => g.id === groupId);
+      if (groupIndex !== -1) {
+        state.groups[groupIndex].members = [];
+      }
+      state.groupMembers = [];
+    },
+    resetAllState: () => initialState,
   },
   extraReducers: (builder) => {
     builder
@@ -622,5 +658,15 @@ const groupsSlice = createSlice({
   },
 });
 
-export const { clearError, setCurrentGroup, clearCurrentTransaction, clearGroupData } = groupsSlice.actions;
+export const { 
+  clearError, 
+  setCurrentGroup, 
+  clearCurrentTransaction, 
+  clearGroupData, 
+  resetGroupState, 
+  clearNavigationState, 
+  clearFormState, 
+  invalidateGroupMembers,
+  resetAllState
+} = groupsSlice.actions;
 export default groupsSlice.reducer;

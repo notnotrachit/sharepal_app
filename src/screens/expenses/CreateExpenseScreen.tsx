@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -13,19 +13,28 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
 import {
   createExpenseTransaction,
   fetchGroupTransactions,
+  clearFormState,
+  clearNavigationState,
+  invalidateGroupMembers,
+  resetGroupState,
 } from "../../store/slices/groupsSlice";
 import { fetchGroups, fetchGroupMembers } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "../../constants/api";
 import { Group, User } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
+import {
+  logStateTransition,
+  validateGroupMembers,
+  validateSplitData,
+} from "../../utils/stateDebug";
 import InputGroup from "../../components/InputGroup";
-import AppModal from "../../components/AppModal";
 import PrimaryButton from "../../components/PrimaryButton";
 import SecondaryButton from "../../components/SecondaryButton";
 import {
@@ -63,8 +72,9 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
   const { groupId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
   const { colors, components } = useTheme();
-  const { isLoading } = useSelector((state: RootState) => state.groups);
-  const { groups } = useSelector((state: RootState) => state.groups);
+  const { isLoading, groups, groupMembers } = useSelector(
+    (state: RootState) => state.groups
+  );
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [formData, setFormData] = useState({
@@ -83,41 +93,141 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
   const [showSplitTypeModal, setShowSplitTypeModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
 
+  // Ref to track if we've already initialized splits for the current group
+  const initializedGroupRef = useRef<string | null>(null);
+  const fetchAttempts = useRef<{ [groupId: string]: number }>({});
+
   useEffect(() => {
     dispatch(fetchGroups());
-  }, []);
+  }, []); // Focus effect to handle state cleanup when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      logStateTransition("CreateExpenseScreen", "Focus Effect Started", {
+        groupId: formData.group_id,
+      });
 
+      // Clear any navigation state and form errors when screen is focused
+      dispatch(clearNavigationState());
+      dispatch(clearFormState());
+
+      // Clear fetch attempts to allow fresh fetching on focus
+      fetchAttempts.current = {};
+
+      // Cleanup function when leaving the screen
+      return () => {
+        logStateTransition("CreateExpenseScreen", "Focus Effect Cleanup");
+        dispatch(clearFormState());
+        dispatch(clearNavigationState());
+      };
+    }, [formData.group_id])
+  );
+
+  // Main effect to handle group initialization and member fetching
   useEffect(() => {
     if (formData.group_id) {
       const group = groups.find((g) => g.id === formData.group_id);
+
       if (group) {
         setSelectedGroup(group);
 
-        // Fetch complete group members if not already loaded
-        if (!group.members || group.members.length === 0) {
-          dispatch(fetchGroupMembers(formData.group_id));
-        } else {
-          initializeSplits(group);
+        // Check if we need to initialize splits
+        if (initializedGroupRef.current !== formData.group_id) {
+          logStateTransition("CreateExpenseScreen", "Initializing Group", {
+            groupId: group.id,
+            membersCount: group.members?.length,
+            membersType: Array.isArray(group.members)
+              ? typeof group.members[0]
+              : "undefined",
+            isInitialized: initializedGroupRef.current === formData.group_id,
+          });
+
+          // Try to initialize with current group data
+          if (group.members && group.members.length > 0) {
+            // Check if we have full user objects or just IDs
+            const hasFullUserData = group.members.some(
+              (member: any) =>
+                member &&
+                typeof member === "object" &&
+                (member.id || member._id)
+            );
+
+            if (!hasFullUserData) {
+              // We only have user IDs, try to fetch full member data (with cooldown)
+              const lastFetchTime = fetchAttempts.current[group.id] || 0;
+              const now = Date.now();
+              const FETCH_COOLDOWN = 5000; // 5 seconds cooldown
+
+              if (now - lastFetchTime > FETCH_COOLDOWN) {
+                fetchAttempts.current[group.id] = now;
+                logStateTransition(
+                  "CreateExpenseScreen",
+                  "Fetching Full Member Data",
+                  { groupId: group.id }
+                );
+                dispatch(fetchGroupMembers(group.id));
+              }
+            }
+
+            // Initialize splits with whatever data we have
+            initializeSplits(group);
+            initializedGroupRef.current = formData.group_id;
+          } else {
+            // Group has no members or empty members array
+            logStateTransition(
+              "CreateExpenseScreen",
+              "Group Has No Members - Using Current User Only",
+              { groupId: group.id }
+            );
+
+            // Initialize with just current user
+            if (user?.id) {
+              const fallbackSplits = [{ user_id: user.id, amount: 0 }];
+              const fallbackPayers = [{ user_id: user.id, amount: 0 }];
+              setSplits(fallbackSplits);
+              setPayers(fallbackPayers);
+              initializedGroupRef.current = formData.group_id;
+            }
+          }
         }
       }
     }
-  }, [formData.group_id]);
+  }, [formData.group_id, groups, user?.id]);
 
-  // Separate effect to handle when groups data changes (after fetchGroupMembers)
+  // Effect to handle when group members are updated after fetchGroupMembers
   useEffect(() => {
-    if (formData.group_id && selectedGroup) {
-      const updatedGroup = groups.find((g) => g.id === formData.group_id);
+    if (formData.group_id && groupMembers && groupMembers.length > 0) {
+      const currentGroup = groups.find((g) => g.id === formData.group_id);
       if (
-        updatedGroup &&
-        updatedGroup.members &&
-        updatedGroup.members.length > 0 &&
-        (!selectedGroup.members || selectedGroup.members.length === 0)
+        currentGroup &&
+        currentGroup.members &&
+        currentGroup.members.length > 0
       ) {
-        setSelectedGroup(updatedGroup);
-        initializeSplits(updatedGroup);
+        // Check if this group update has full user objects now
+        const hasFullUserData = currentGroup.members.some(
+          (member: any) =>
+            member && typeof member === "object" && (member.id || member._id)
+        );
+
+        if (
+          hasFullUserData &&
+          initializedGroupRef.current !== formData.group_id
+        ) {
+          logStateTransition(
+            "CreateExpenseScreen",
+            "Group Members Updated with Full Data - Reinitializing",
+            {
+              groupId: formData.group_id,
+              membersCount: currentGroup.members?.length,
+              groupMembersCount: groupMembers.length,
+            }
+          );
+          setSelectedGroup(currentGroup);
+          initializeSplits(currentGroup);
+          initializedGroupRef.current = formData.group_id;
+        }
       }
     }
-  }, [groups]);
+  }, [groupMembers]);
 
   useEffect(() => {
     if (
@@ -130,31 +240,43 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
   }, [formData.amount, formData.split_type, splits.length]);
 
   const initializeSplits = (group: Group) => {
+    logStateTransition("CreateExpenseScreen", "Initialize Splits Started", {
+      groupId: group.id,
+      membersCount: group.members?.length,
+    });
+    console.log(
+      "Initializing splits for group:",
+      group.id,
+      "with members:",
+      group.members
+    );
+
     const initialSplits: Split[] = [];
     const initialPayers: Payer[] = [];
     const addedUserIds = new Set<string>();
 
     // Add all group members to splits, avoiding duplicates
-    if (group.members && Array.isArray(group.members)) {
-      group.members.forEach((member) => {
-        if (!addedUserIds.has(member.id)) {
-          initialSplits.push({
-            user_id: member.id,
-            amount: 0,
-          });
-          addedUserIds.add(member.id);
-        }
-      });
-    } else {
-      // Fallback: add just current user if members are not properly loaded
-      if (user?.id && !addedUserIds.has(user.id)) {
+    group.members.forEach((member: any) => {
+      let userId: string;
+
+      // Handle both string (user ID) and object (full user data) formats
+      if (typeof member === "string") {
+        userId = member;
+      } else if (member && (member.id || member._id)) {
+        userId = member.id || member._id;
+      } else {
+        console.warn("Invalid member data:", member);
+        return;
+      }
+
+      if (!addedUserIds.has(userId)) {
         initialSplits.push({
-          user_id: user.id,
+          user_id: userId,
           amount: 0,
         });
-        addedUserIds.add(user.id);
+        addedUserIds.add(userId);
       }
-    }
+    });
 
     // Initialize payers - by default, current user pays the full amount
     if (user?.id) {
@@ -163,6 +285,22 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         amount: 0, // Will be set when amount is entered
       });
     }
+
+    // Validate the splits against the group members
+    if (!validateSplitData(initialSplits, group.members)) {
+      logStateTransition(
+        "CreateExpenseScreen",
+        "Split Data Validation Failed",
+        { initialSplits, groupMembers: group.members }
+      );
+    }
+
+    logStateTransition("CreateExpenseScreen", "Initialize Splits Completed", {
+      splitsCount: initialSplits.length,
+      payersCount: initialPayers.length,
+    });
+    console.log("Initialized splits:", initialSplits);
+    console.log("Initialized payers:", initialPayers);
 
     setSplits(initialSplits);
     setPayers(initialPayers);
@@ -329,78 +467,162 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     }
   };
 
-  const renderCategoryItem = ({ item }: { item: string }) => (
-    <TouchableOpacity
-      style={styles.modalItem}
-      onPress={() => {
-        setFormData((prev) => ({ ...prev, category: item }));
-        setShowCategoryModal(false);
-      }}
-    >
-      <Text style={styles.modalItemText}>{item}</Text>
-      {formData.category === item && (
-        <Ionicons name="checkmark" size={20} color={colors.primary} />
-      )}
-    </TouchableOpacity>
-  );
+  const renderCategoryItem = ({ item }: { item: string }) => {
+    const isSelected = formData.category === item;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.modalItem,
+          isSelected && { backgroundColor: colors.cardSecondary },
+        ]}
+        onPress={() => {
+          setFormData((prev) => ({ ...prev, category: item }));
+          setShowCategoryModal(false);
+        }}
+        activeOpacity={0.7}
+      >
+        <Text
+          style={[
+            styles.modalItemText,
+            isSelected && { color: colors.primary, fontWeight: "600" },
+          ]}
+        >
+          {item}
+        </Text>
+        {isSelected && (
+          <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
-  const renderSplitTypeItem = ({ item }: { item: string }) => (
-    <TouchableOpacity
-      style={styles.modalItem}
-      onPress={() => {
-        setFormData((prev) => ({ ...prev, split_type: item }));
-        setShowSplitTypeModal(false);
-        if (item === SPLIT_TYPES.EQUAL) {
-          calculateEqualSplit();
-        } else if (item === SPLIT_TYPES.PERCENTAGE) {
-          // Initialize percentage splits with equal percentages
-          const equalPercentage = 100 / splits.length;
-          const newSplits = splits.map((split) => ({
-            ...split,
-            amount: equalPercentage,
-          }));
-          setSplits(newSplits);
-        } else if (item === SPLIT_TYPES.EXACT) {
-          // Reset to zero amounts for exact input
-          const newSplits = splits.map((split) => ({
-            ...split,
-            amount: 0,
-          }));
-          setSplits(newSplits);
-        }
-      }}
-    >
-      <Text style={styles.modalItemText}>
-        {item.charAt(0).toUpperCase() + item.slice(1)}
-      </Text>
-      {formData.split_type === item && (
-        <Ionicons name="checkmark" size={20} color={colors.primary} />
-      )}
-    </TouchableOpacity>
-  );
+  const renderSplitTypeItem = ({ item }: { item: string }) => {
+    const isSelected = formData.split_type === item;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.modalItem,
+          isSelected && { backgroundColor: colors.cardSecondary },
+        ]}
+        onPress={() => {
+          setFormData((prev) => ({ ...prev, split_type: item }));
+          setShowSplitTypeModal(false);
+          if (item === SPLIT_TYPES.EQUAL) {
+            calculateEqualSplit();
+          } else if (item === SPLIT_TYPES.PERCENTAGE) {
+            // Initialize percentage splits with equal percentages
+            const equalPercentage = 100 / splits.length;
+            const newSplits = splits.map((split) => ({
+              ...split,
+              amount: equalPercentage,
+            }));
+            setSplits(newSplits);
+          } else if (item === SPLIT_TYPES.EXACT) {
+            // Reset to zero amounts for exact input
+            const newSplits = splits.map((split) => ({
+              ...split,
+              amount: 0,
+            }));
+            setSplits(newSplits);
+          }
+        }}
+        activeOpacity={0.7}
+      >
+        <Text
+          style={[
+            styles.modalItemText,
+            isSelected && { color: colors.primary, fontWeight: "600" },
+          ]}
+        >
+          {item.charAt(0).toUpperCase() + item.slice(1)}
+        </Text>
+        {isSelected && (
+          <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
-  const renderGroupItem = ({ item }: { item: Group }) => (
-    <TouchableOpacity
-      style={styles.modalItem}
-      onPress={() => {
-        setFormData((prev) => ({ ...prev, group_id: item.id }));
-        setShowGroupModal(false);
-      }}
-    >
-      <Text style={styles.modalItemText}>{item.name}</Text>
-      {formData.group_id === item.id && (
-        <Ionicons name="checkmark" size={20} color={colors.primary} />
-      )}
-    </TouchableOpacity>
-  );
+  const renderGroupItem = ({ item }: { item: Group }) => {
+    const isSelected = formData.group_id === item.id;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.modalItem,
+          isSelected && { backgroundColor: colors.cardSecondary },
+        ]}
+        onPress={() => {
+          setFormData((prev) => ({ ...prev, group_id: item.id }));
+          setShowGroupModal(false);
+        }}
+        activeOpacity={0.7}
+      >
+        <View style={{ flex: 1 }}>
+          <Text
+            style={[
+              styles.modalItemText,
+              isSelected && { color: colors.primary, fontWeight: "600" },
+            ]}
+          >
+            {item.name}
+          </Text>
+          {item.description && (
+            <Text
+              style={[
+                styles.modalItemText,
+                {
+                  color: colors.textSecondary,
+                  fontSize: 14,
+                  marginTop: 2,
+                },
+              ]}
+            >
+              {item.description}
+            </Text>
+          )}
+        </View>
+        {isSelected && (
+          <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   const getUserName = (userId: string) => {
     if (userId === user?.id) return "You";
+
+    // First, try to find the user in the selected group's members
     if (selectedGroup) {
-      const member = selectedGroup.members?.find((m) => m.id === userId);
-      return member?.name || "Unknown User";
+      const member = selectedGroup.members?.find((m: any) => {
+        // Handle both string (user ID) and object (full user data) formats
+        if (typeof m === "string") {
+          return m === userId;
+        }
+        return (m.id || m._id) === userId;
+      });
+
+      // If we found a member and it's a full user object, return the name
+      if (member && typeof member === "object") {
+        return (
+          (member as any)?.name ||
+          (member as any)?.email ||
+          `User ${userId.slice(-4)}`
+        );
+      }
     }
-    return "Unknown User";
+
+    // If we didn't find a full user object in the group, try the global groupMembers state
+    // This contains the full user objects fetched by fetchGroupMembers
+    if (groupMembers && groupMembers.length > 0) {
+      const member = groupMembers.find((m: any) => (m.id || m._id) === userId);
+
+      if (member) {
+        return member.name || member.email || `User ${userId.slice(-4)}`;
+      }
+    }
+
+    // Final fallback
+    return `User ${userId.slice(-4)}`;
   };
 
   useEffect(() => {
@@ -509,26 +731,63 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     },
     modalOverlay: {
       flex: 1,
-      backgroundColor: colors.overlay,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.lg,
+    },
+    modalContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      width: "90%",
+      maxWidth: 400,
+      maxHeight: "80%",
+      ...shadows.medium,
+      elevation: 10,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: borderRadius.lg,
+      borderTopRightRadius: borderRadius.lg,
+    },
+    modalTitle: {
+      ...typography.h3,
+      color: colors.text,
+      flex: 1,
+      fontWeight: "600",
+    },
+    modalCloseButton: {
+      padding: spacing.sm,
+      marginLeft: spacing.md,
+      borderRadius: borderRadius.full,
+      backgroundColor: colors.cardSecondary,
+      width: 36,
+      height: 36,
       justifyContent: "center",
       alignItems: "center",
     },
-    modalContent: {
-      backgroundColor: colors.surface,
-      borderRadius: borderRadius.lg,
-      padding: spacing.lg,
-      margin: spacing.lg,
-      maxHeight: "80%",
-      width: "90%",
+    modalList: {
+      maxHeight: 400,
     },
     modalItem: {
-      padding: spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: spacing.lg,
+      backgroundColor: colors.surface,
+      minHeight: 56,
     },
     modalItemText: {
       ...typography.body,
       color: colors.text,
+      flex: 1,
+      fontSize: 16,
     },
   });
 
@@ -726,41 +985,143 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       </View>
 
       {/* Modals */}
-      <AppModal
+      <Modal
         visible={showCategoryModal}
-        onClose={() => setShowCategoryModal(false)}
-        title="Select Category"
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowCategoryModal(false)}
       >
-        <FlatList
-          data={EXPENSE_CATEGORIES}
-          renderItem={renderCategoryItem}
-          keyExtractor={(item) => item}
-        />
-      </AppModal>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCategoryModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContainer}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Category</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowCategoryModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={EXPENSE_CATEGORIES}
+              renderItem={renderCategoryItem}
+              keyExtractor={(item) => item}
+              style={styles.modalList}
+              showsVerticalScrollIndicator={false}
+              ItemSeparatorComponent={() => (
+                <View
+                  style={{
+                    height: StyleSheet.hairlineWidth,
+                    backgroundColor: colors.border,
+                  }}
+                />
+              )}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
-      <AppModal
+      <Modal
         visible={showSplitTypeModal}
-        onClose={() => setShowSplitTypeModal(false)}
-        title="Select Split Type"
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowSplitTypeModal(false)}
       >
-        <FlatList
-          data={Object.values(SPLIT_TYPES)}
-          renderItem={renderSplitTypeItem}
-          keyExtractor={(item) => item}
-        />
-      </AppModal>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSplitTypeModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContainer}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Split Type</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowSplitTypeModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={Object.values(SPLIT_TYPES)}
+              renderItem={renderSplitTypeItem}
+              keyExtractor={(item) => item}
+              style={styles.modalList}
+              showsVerticalScrollIndicator={false}
+              ItemSeparatorComponent={() => (
+                <View
+                  style={{
+                    height: StyleSheet.hairlineWidth,
+                    backgroundColor: colors.border,
+                  }}
+                />
+              )}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
-      <AppModal
+      <Modal
         visible={showGroupModal}
-        onClose={() => setShowGroupModal(false)}
-        title="Select Group"
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowGroupModal(false)}
       >
-        <FlatList
-          data={groups}
-          renderItem={renderGroupItem}
-          keyExtractor={(item) => item.id}
-        />
-      </AppModal>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowGroupModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContainer}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Group</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowGroupModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={groups}
+              renderItem={renderGroupItem}
+              keyExtractor={(item) => item.id}
+              style={styles.modalList}
+              showsVerticalScrollIndicator={false}
+              ItemSeparatorComponent={() => (
+                <View
+                  style={{
+                    height: StyleSheet.hairlineWidth,
+                    backgroundColor: colors.border,
+                  }}
+                />
+              )}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }

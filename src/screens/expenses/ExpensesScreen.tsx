@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,14 @@ import {
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
-import { fetchUserTransactions } from "../../store/slices/groupsSlice";
+import {
+  fetchUserTransactions,
+  clearCurrentTransaction,
+  clearNavigationState,
+} from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { Transaction } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
@@ -131,6 +136,18 @@ export default function ExpensesScreen({ navigation }: Props) {
     (transaction) => transaction.type === "expense"
   );
 
+  // Clear stale state when returning to expenses list
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(clearCurrentTransaction());
+      dispatch(clearNavigationState());
+
+      return () => {
+        dispatch(clearNavigationState());
+      };
+    }, [])
+  );
+
   useEffect(() => {
     loadExpenses();
   }, []);
@@ -140,6 +157,10 @@ export default function ExpensesScreen({ navigation }: Props) {
   };
 
   const handleExpensePress = (expense: Transaction) => {
+    // Clear any stale state before navigating
+    dispatch(clearCurrentTransaction());
+    dispatch(clearNavigationState());
+
     // Handle both _id and id fields since different endpoints might return different field names
     const transactionId = (expense as any)._id || (expense as any).id;
     if (!transactionId) {
@@ -232,7 +253,11 @@ export default function ExpensesScreen({ navigation }: Props) {
             title="No Expenses Yet"
             subtitle="Start by adding your first expense to track your spending"
             buttonText="Add Your First Expense"
-            onButtonPress={() => navigation.navigate("CreateExpense", {})}
+            onButtonPress={() => {
+              dispatch(clearCurrentTransaction());
+              dispatch(clearNavigationState());
+              navigation.navigate("CreateExpense", {});
+            }}
           />
         ) : (
           <ListContainer
@@ -254,7 +279,11 @@ export default function ExpensesScreen({ navigation }: Props) {
           iconName="add"
           iconSize={28}
           iconColor={colors.surface}
-          onPress={() => navigation.navigate("CreateExpense", {})}
+          onPress={() => {
+            dispatch(clearCurrentTransaction());
+            dispatch(clearNavigationState());
+            navigation.navigate("CreateExpense", {});
+          }}
         />
       </View>
     </AnimatedScreen>

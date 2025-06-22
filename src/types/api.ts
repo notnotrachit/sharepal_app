@@ -43,7 +43,8 @@ export interface Group {
   description?: string;
   currency: string;
   creator_id: string;
-  members: User[];
+  created_by?: string; // Alternative field name for creator
+  members: User[] | string[]; // Allow both full user objects and user ID strings
   created_at: string;
   updated_at: string;
   is_active: boolean;

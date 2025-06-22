@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,9 +10,16 @@ import {
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
-import { fetchGroups, deleteGroup } from "../../store/slices/groupsSlice";
+import {
+  fetchGroups,
+  deleteGroup,
+  clearGroupData,
+  clearCurrentTransaction,
+  clearNavigationState,
+} from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { Group } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
@@ -144,6 +151,20 @@ export default function GroupsScreen({ navigation }: Props) {
     },
   });
 
+  // Focus effect to clear stale state when returning to groups list
+  useFocusEffect(
+    useCallback(() => {
+      // Clear any stale group-specific state when returning to groups list
+      dispatch(clearCurrentTransaction());
+      dispatch(clearNavigationState());
+
+      return () => {
+        // Clean up when leaving groups screen
+        dispatch(clearNavigationState());
+      };
+    }, [])
+  );
+
   useEffect(() => {
     loadGroups();
   }, []);
@@ -155,6 +176,10 @@ export default function GroupsScreen({ navigation }: Props) {
   };
 
   const handleGroupPress = (group: Group) => {
+    // Clear any stale state before navigating to group details
+    dispatch(clearGroupData());
+    dispatch(clearCurrentTransaction());
+    dispatch(clearNavigationState());
     navigation.navigate("GroupDetails", { groupId: group.id });
   };
 
