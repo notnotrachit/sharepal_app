@@ -13,7 +13,9 @@
       "backgroundColor": "#111135"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "bundleIdentifier": "com.notnotrachit.sharepalmobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +23,8 @@
         "backgroundColor": "#111135"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.notnotrachit.sharepalmobile"
+      "package": "com.notnotrachit.sharepalmobile",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,6 +39,9 @@
     },
     "updates": {
       "url": "https://u.expo.dev/af2b596c-1013-4062-adff-7d7d6d16f324"
-    }
+    },
+    "plugins": [
+      "@react-native-firebase/app"
+    ]
   }
 }

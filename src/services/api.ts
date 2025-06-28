@@ -283,6 +283,12 @@ class ApiService {
   async getUserAnalytics() {
     return this.request('GET', API_ENDPOINTS.USER_ANALYTICS);
   }
+
+  async updateFCMToken(fcmToken: string) {
+    const temp = this.request('PUT', API_ENDPOINTS.UPDATE_FCM_TOKEN, { fcm_token: fcmToken });
+    console.log(temp);
+    return temp;
+  }
 }
 
 export const apiService = new ApiService();

@@ -29,6 +29,10 @@ export const login = createAsyncThunk(
       await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.token.access.token);
       await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.token.refresh.token);
       await secureStorage.setItem(STORAGE_KEYS.USER, response.user);
+
+      // Request and send FCM token after successful login
+      const { notificationService } = await import('../../services/notificationService');
+      await notificationService.requestUserPermission();
       
       return response;
     } catch (error: any) {
@@ -47,6 +51,10 @@ export const register = createAsyncThunk(
       await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.token.access.token);
       await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.token.refresh.token);
       await secureStorage.setItem(STORAGE_KEYS.USER, response.user);
+
+      // Request and send FCM token after successful registration
+      const { notificationService } = await import('../../services/notificationService');
+      await notificationService.requestUserPermission();
       
       return response;
     } catch (error: any) {

@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
   LOGIN: '/auth/login',
   REFRESH: '/auth/refresh',
   ME: '/user/me',
+  UPDATE_FCM_TOKEN: '/user/fcm-token',
 
   // Friends
   FRIENDS: '/friends',
@@ -48,6 +49,7 @@ export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',
   REFRESH_TOKEN: 'refresh_token',
   USER: 'user',
+  FCM_TOKEN: 'fcm_token',
 };
 
 export const EXPENSE_CATEGORIES = [
