@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert, Image } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -46,6 +46,11 @@ export default function ProfileScreen({ navigation }: Props) {
       alignItems: "center",
       marginBottom: spacing.md,
       ...shadows.medium,
+    },
+    avatarImage: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
     },
     avatarText: {
       ...typography.h1,
@@ -107,7 +112,11 @@ export default function ProfileScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
-          <Ionicons name="person" size={40} color={colors.surface} />
+          {user.profile_pic_url ? (
+            <Image source={{ uri: user.profile_pic_url }} style={styles.avatarImage} />
+          ) : (
+            <Ionicons name="person" size={40} color={colors.surface} />
+          )}
         </View>
         <Text style={styles.userName}>{user.name}</Text>
         <Text style={styles.userEmail}>{user.email}</Text>

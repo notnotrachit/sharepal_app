@@ -13,7 +13,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { AppDispatch, RootState } from "../../store";
-import { login, clearError } from "../../store/slices/authSlice";
+import { login, clearError, googleSignIn } from "../../store/slices/authSlice";
 import { AuthStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
 import { spacing, borderRadius, typography } from "../../constants/theme";
@@ -47,6 +47,15 @@ export default function LoginScreen({ navigation }: Props) {
       await dispatch(login(formData)).unwrap();
     } catch (error: any) {
       Alert.alert("Login Failed", error);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await dispatch(googleSignIn()).unwrap();
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      Alert.alert("Google Sign-In Failed", error);
     }
   };
 
@@ -199,6 +208,16 @@ export default function LoginScreen({ navigation }: Props) {
             >
               <Text style={styles.primaryButtonText}>
                 {isLoading ? "Signing In..." : "Sign In"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <Text style={styles.secondaryButtonText}>
+                Sign In with Google
               </Text>
             </TouchableOpacity>
 

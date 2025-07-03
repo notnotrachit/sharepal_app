@@ -1,11 +1,13 @@
 // API Types for Sharepal App
 
 export interface User {
-  id: string;
-  name: string;
+  _id: string;
   email: string;
-  created_at: string;
-  updated_at: string;
+  name: string;
+  role: string;
+  mail_verified: boolean;
+  fcm_token: string;
+  profile_pic_url: string;
 }
 
 export interface LoginRequest {

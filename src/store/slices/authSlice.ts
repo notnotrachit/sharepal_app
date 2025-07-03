@@ -1,4 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { Platform } from 'react-native';
+import { signUpWithGoogle } from 'react-native-credentials-manager';
 import { apiService } from '../../services/api';
 import { User, LoginRequest, RegisterRequest, AuthResponse } from '../../types/api';
 import { STORAGE_KEYS } from '../../constants/api';
@@ -56,6 +58,33 @@ export const register = createAsyncThunk(
       const { notificationService } = await import('../../services/notificationService');
       await notificationService.requestUserPermission();
       
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const googleSignIn = createAsyncThunk(
+  'auth/googleSignIn',
+  async (_, { rejectWithValue }) => {
+    try {
+      if (Platform.OS !== 'android') {
+        throw new Error('Google Sign-In is only available on Android');
+      }
+      const credential = await signUpWithGoogle({
+        serverClientId: '592192215077-65mr9ldp221eo6qa454u47l8vhseikdk.apps.googleusercontent.com', // Replace with your actual client ID
+        autoSelectEnabled: true,
+      });
+
+      const response = await apiService.googleSignIn(credential.idToken) as AuthResponse;
+
+      await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.token.access.token);
+      await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.token.refresh.token);
+      await secureStorage.setItem(STORAGE_KEYS.USER, response.user);
+
+      const { notificationService } = await import('../../services/notificationService');
+      await notificationService.requestUserPermission();
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message);
@@ -156,6 +185,23 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(register.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+        state.isAuthenticated = false;
+      })
+
+      // Google Sign-In
+      .addCase(googleSignIn.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleSignIn.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(googleSignIn.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
         state.isAuthenticated = false;

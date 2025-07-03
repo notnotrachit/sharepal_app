@@ -116,6 +116,10 @@ class ApiService {
     return this.request('POST', API_ENDPOINTS.LOGIN, data);
   }
 
+  async googleSignIn(idToken: string) {
+    return this.request('POST', API_ENDPOINTS.GOOGLE_SIGNIN, { id_token: idToken });
+  }
+
   async getCurrentUser() {
     return this.request('GET', API_ENDPOINTS.ME);
   }

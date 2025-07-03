@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
   REGISTER: '/auth/register',
   LOGIN: '/auth/login',
   REFRESH: '/auth/refresh',
+  GOOGLE_SIGNIN: '/auth/google/signin',
   ME: '/user/me',
   UPDATE_FCM_TOKEN: '/user/fcm-token',
 
