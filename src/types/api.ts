@@ -7,7 +7,7 @@ export interface User {
   role: string;
   mail_verified: boolean;
   fcm_token: string;
-  profile_pic_url: string;
+  profile_pic_url?: string;
 }
 
 export interface LoginRequest {

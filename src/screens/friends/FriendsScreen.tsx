@@ -32,6 +32,7 @@ import LoadingState from "../../components/LoadingState";
 import SecondaryButton from "../../components/SecondaryButton";
 import Card from "../../components/Card";
 import AnimatedFAB from "../../components/AnimatedFAB";
+import UserAvatar from "../../components/UserAvatar";
 import {
   spacing,
   borderRadius,
@@ -383,7 +384,7 @@ export default function FriendsScreen({ navigation }: Props) {
         <Card.Header
           title={friendName}
           subtitle={friendEmail}
-          icon="person"
+          leftElement={<UserAvatar user={item} size="medium" />}
           rightElement={
             <SecondaryButton
               title=""
@@ -413,6 +414,17 @@ export default function FriendsScreen({ navigation }: Props) {
     const requesterEmail = item?.requester_email || "No email";
     const requestDate = item?.requested_at || item?.created_at;
 
+    // Create a user object for the avatar (friend requests don't have full user objects)
+    const requesterUser = {
+      _id: item?.requester_id || "",
+      name: requesterName,
+      email: requesterEmail,
+      role: "user",
+      mail_verified: false,
+      fcm_token: "",
+      profile_pic_url: undefined, // Friend requests typically don't include profile pics
+    };
+
     return (
       <Card>
         <Card.Header
@@ -420,7 +432,7 @@ export default function FriendsScreen({ navigation }: Props) {
           subtitle={`${requesterEmail} • ${
             requestDate ? new Date(requestDate).toLocaleDateString() : ""
           }`}
-          icon="person-add"
+          leftElement={<UserAvatar user={requesterUser} size="medium" fallbackIcon="person-add" />}
           rightElement={
             <View style={styles.requestActions}>
               <SecondaryButton
@@ -449,6 +461,17 @@ export default function FriendsScreen({ navigation }: Props) {
     const addresseeEmail = item?.addressee_email || "No email";
     const requestDate = item?.requested_at || item?.created_at;
 
+    // Create a user object for the avatar
+    const addresseeUser = {
+      _id: item?.addressee_id || "",
+      name: addresseeName,
+      email: addresseeEmail,
+      role: "user",
+      mail_verified: false,
+      fcm_token: "",
+      profile_pic_url: undefined,
+    };
+
     return (
       <Card>
         <Card.Header
@@ -456,7 +479,7 @@ export default function FriendsScreen({ navigation }: Props) {
           subtitle={`${addresseeEmail} • ${
             requestDate ? new Date(requestDate).toLocaleDateString() : "No date"
           }`}
-          icon="paper-plane"
+          leftElement={<UserAvatar user={addresseeUser} size="medium" fallbackIcon="paper-plane" />}
           rightElement={
             <View style={styles.pendingBadge}>
               <Text style={styles.pendingText}>Pending</Text>

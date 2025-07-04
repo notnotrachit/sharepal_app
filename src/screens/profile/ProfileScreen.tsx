@@ -1,14 +1,15 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Alert, Image } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
-import { logout } from "../../store/slices/authSlice";
+import { logout, getCurrentUser } from "../../store/slices/authSlice";
 import { RootStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
 import Card from "../../components/Card";
 import SecondaryButton from "../../components/SecondaryButton";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   spacing,
   borderRadius,
@@ -25,7 +26,12 @@ interface Props {
 export default function ProfileScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const { colors, components } = useTheme();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, isLoading } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    // Fetch latest user details when profile screen loads
+    dispatch(getCurrentUser());
+  }, [dispatch]);
 
   const styles = StyleSheet.create({
     container: {
@@ -112,14 +118,21 @@ export default function ProfileScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
-          {user.profile_pic_url ? (
-            <Image source={{ uri: user.profile_pic_url }} style={styles.avatarImage} />
+          {user?.profile_pic_url ? (
+            <Image 
+              source={{ uri: user.profile_pic_url }} 
+              style={styles.avatarImage}
+              onError={() => {
+                // Handle image loading error by falling back to icon
+                console.log('Failed to load profile image');
+              }}
+            />
           ) : (
             <Ionicons name="person" size={40} color={colors.surface} />
           )}
         </View>
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
+        <Text style={styles.userName}>{user?.name || "User"}</Text>
+        <Text style={styles.userEmail}>{user?.email || ""}</Text>
       </View>
 
       <View style={styles.menuSection}>

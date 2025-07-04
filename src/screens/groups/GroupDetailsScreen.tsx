@@ -43,6 +43,7 @@ import SecondaryButton from "../../components/SecondaryButton";
 import AnimatedFAB from "../../components/AnimatedFAB";
 import EmptyState from "../../components/EmptyState";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import UserAvatar from "../../components/UserAvatar";
 import {
   spacing,
   borderRadius,
@@ -483,10 +484,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       justifyContent: "space-between",
       alignItems: "center",
       width: "100%",
+      gap: spacing.sm,
     },
     detailTextContainer: {
       flex: 1,
-      marginRight: spacing.sm,
+      marginLeft: spacing.sm,
     },
   });
 
@@ -756,6 +758,10 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     );
   };
 
+  const getUserObject = (userId: string) => {
+    return groupMembers?.find((m: any) => m.id === userId || m.user_id === userId);
+  };
+
   const getSettlementParticipants = (transaction: any) => {
     // For settlements, we can get payer/payee info from multiple places
     if (transaction.payer_id && transaction.payee_id) {
@@ -916,12 +922,16 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     // Create detailed balance breakdown
     const detailedBalances = userSettlements.map((settlement) => {
       const isUserPayer = settlement.payer_id === user?.id;
+      const otherUserId = isUserPayer ? settlement.payee_id : settlement.payer_id;
       const otherUserName = isUserPayer
-        ? settlement.payee_name || "Someone"
-        : settlement.payer_name || "Someone";
+        ? settlement.payee_name || getUserName(otherUserId)
+        : settlement.payer_name || getUserName(otherUserId);
+      const otherUserObject = getUserObject(otherUserId);
 
       return {
         otherUser: otherUserName,
+        otherUserId: otherUserId,
+        otherUserObject: otherUserObject,
         amount: settlement.amount || 0,
         currency: settlement.currency || "INR",
         isDebt: isUserPayer, // true if user owes money, false if user is owed money
@@ -1026,6 +1036,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
                         ]}
                       >
                         <View style={styles.detailRow}>
+                          <UserAvatar 
+                            user={detail.otherUserObject} 
+                            size="small" 
+                            fallbackIcon="person"
+                          />
                           <View style={styles.detailTextContainer}>
                             <Text style={styles.detailText}>
                               {detail.isDebt ? (

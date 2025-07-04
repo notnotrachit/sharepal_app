@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Image,
 } from "react-native";
 import {
   DrawerContentScrollView,
@@ -145,7 +146,18 @@ export default function CustomDrawerContent(
       {/* Header with user info */}
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
-          <Ionicons name="person" size={32} color={colors.surface} />
+          {user?.profile_pic_url ? (
+            <Image 
+              source={{ uri: user.profile_pic_url }} 
+              style={{ width: 80, height: 80, borderRadius: 40 }} 
+              onError={() => {
+                // Handle image loading error by falling back to icon
+                console.log('Failed to load profile image in drawer');
+              }}
+            />
+          ) : (
+            <Ionicons name="person" size={32} color={colors.surface} />
+          )}
         </View>
         <Text style={styles.userName}>{user?.name || "User"}</Text>
         <Text style={styles.userEmail}>{user?.email || ""}</Text>
