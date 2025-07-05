@@ -38,6 +38,8 @@ import TransactionDetailsScreen from "../screens/transactions/TransactionDetails
 import FriendsScreen from "../screens/friends/FriendsScreen";
 import AddFriendScreen from "../screens/friends/AddFriendScreen";
 import SettlementsScreen from "../screens/settlements/SettlementsScreen";
+import ProfileScreen from "../screens/profile/ProfileScreen";
+import EditProfileScreen from "../screens/profile/EditProfileScreen";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -60,7 +62,13 @@ export type MainTabParamList = {
 export type MainDrawerParamList = {
   MainTabs: undefined;
   Profile: undefined;
+  EditProfile: undefined;
   Settings: undefined;
+};
+
+export type ProfileStackParamList = {
+  ProfileMain: undefined;
+  EditProfile: undefined;
 };
 
 export type GroupsStackParamList = {
@@ -90,6 +98,7 @@ const MainTab = createBottomTabNavigator<MainTabParamList>();
 const GroupsStack = createStackNavigator<GroupsStackParamList>();
 const ExpensesStack = createStackNavigator<ExpensesStackParamList>();
 const FriendsStack = createStackNavigator<FriendsStackParamList>();
+const ProfileStack = createStackNavigator<ProfileStackParamList>();
 
 function AuthNavigator() {
   const { colors } = useTheme();
@@ -251,6 +260,46 @@ function FriendsNavigator() {
   );
 }
 
+function ProfileNavigator() {
+  const { colors } = useTheme();
+
+  return (
+    <ProfileStack.Navigator
+      screenOptions={{
+        headerShown: true,
+        cardStyle: { backgroundColor: colors.background },
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          fontWeight: "600",
+        },
+        ...TransitionPresets.SlideFromRightIOS,
+        gestureEnabled: true,
+      }}
+    >
+      <ProfileStack.Screen
+        name="ProfileMain"
+        component={ProfileScreen}
+        options={{
+          title: "Profile",
+          headerShown: false,
+        }}
+      />
+      <ProfileStack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{
+          title: "Edit Profile",
+          presentation: "modal",
+          ...TransitionPresets.ModalSlideFromBottomIOS,
+        }}
+      />
+    </ProfileStack.Navigator>
+  );
+}
+
 function MainTabNavigator() {
   const { colors } = useTheme();
 
@@ -344,6 +393,26 @@ function MainNavigator() {
           return {
             headerTitle: routeName,
           };
+        }}
+      />
+      <MainDrawer.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          headerTitle: "Profile",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <MainDrawer.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{
+          headerTitle: "Edit Profile",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="person-circle-outline" size={size} color={color} />
+          ),
         }}
       />
     </MainDrawer.Navigator>

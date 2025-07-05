@@ -220,7 +220,11 @@ const authSlice = createSlice({
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
-        state.isAuthenticated = false;
+        if (state.isAuthenticated) {
+          console.warn("getCurrentUser failed, clearing auth state:", action.payload);
+          state.user = null;
+          state.isAuthenticated = false;
+        }
       })
       
       // Load stored auth

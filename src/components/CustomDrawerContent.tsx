@@ -25,6 +25,7 @@ export default function CustomDrawerContent(
   const dispatch = useDispatch<AppDispatch>();
   const { colors, components } = useTheme();
   const { user } = useSelector((state: RootState) => state.auth);
+  const actualUser = user?.user || user;
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -129,9 +130,38 @@ export default function CustomDrawerContent(
       fontWeight: "600",
       marginLeft: spacing.md,
     },
+    logoutIconButton: {
+      position: "absolute",
+      top: spacing.md,
+      right: spacing.md,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.background,
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1,
+      ...shadows.small,
+    },
   });
 
   const currentRoute = props.state.routes[props.state.index]?.name;
+
+  const handleNavigation = (routeName: string) => {
+    if (routeName === "Home") {
+      props.navigation.navigate("MainTabs");
+    } else if (routeName === "Profile") {
+      props.navigation.navigate("Profile");
+    } else if (routeName === "EditProfile") {
+      props.navigation.navigate("EditProfile");
+    }
+  };
+
+  const navigationItems = [
+    { name: "Home", icon: "home-outline", route: "Home" },
+    { name: "Profile", icon: "person-outline", route: "Profile" },
+    { name: "Edit Profile", icon: "person-circle-outline", route: "EditProfile" },
+  ];
 
   const profileItems = [
     { name: "Payment Methods", icon: "card-outline" },
@@ -145,10 +175,14 @@ export default function CustomDrawerContent(
     <View style={styles.container}>
       {/* Header with user info */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.logoutIconButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={24} color={colors.text} />
+        </TouchableOpacity>
+
         <View style={styles.avatarContainer}>
-          {user?.profile_pic_url ? (
+          {actualUser?.profile_pic_url ? (
             <Image 
-              source={{ uri: user.profile_pic_url }} 
+              source={{ uri: actualUser.profile_pic_url }} 
               style={{ width: 80, height: 80, borderRadius: 40 }} 
               onError={() => {
                 // Handle image loading error by falling back to icon
@@ -159,15 +193,54 @@ export default function CustomDrawerContent(
             <Ionicons name="person" size={32} color={colors.surface} />
           )}
         </View>
-        <Text style={styles.userName}>{user?.name || "User"}</Text>
-        <Text style={styles.userEmail}>{user?.email || ""}</Text>
+        <TouchableOpacity onPress={() => handleNavigation("Profile")}>
+          <Text style={styles.userName}>
+            {actualUser?.name || actualUser?.displayName || actualUser?.full_name || "User"}
+          </Text>
+          <Text style={styles.userEmail}>
+            {actualUser?.email || actualUser?.emailAddress || ""}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.navigationSection}>
-        {/* Profile Section */}
+        <Text style={styles.sectionHeader}>Navigation</Text>
+        {navigationItems.map((item) => {
+          const isActive = item.route && (currentRoute === item.route || 
+            (item.route === "Home" && currentRoute === "MainTabs"));
+          return (
+            <TouchableOpacity 
+              key={item.name} 
+              style={[styles.navItem, isActive && styles.activeNavItem]}
+              onPress={() => handleNavigation(item.route)}
+            >
+              <View style={styles.navIcon}>
+                <Ionicons
+                  name={item.icon as any}
+                  size={24}
+                  color={isActive ? colors.primary : colors.textSecondary}
+                />
+              </View>
+              <Text style={[styles.navText, isActive && styles.activeNavText]}>
+                {item.name}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={colors.textTertiary}
+              />
+            </TouchableOpacity>
+          );
+        })}
+
+        {/* Account Section */}
         <Text style={styles.sectionHeader}>Account</Text>
         {profileItems.map((item) => (
-          <TouchableOpacity key={item.name} style={styles.navItem}>
+          <TouchableOpacity 
+            key={item.name} 
+            style={styles.navItem}
+            onPress={() => undefined}
+          >
             <View style={styles.navIcon}>
               <Ionicons
                 name={item.icon as any}
@@ -175,7 +248,9 @@ export default function CustomDrawerContent(
                 color={colors.textSecondary}
               />
             </View>
-            <Text style={styles.navText}>{item.name}</Text>
+            <Text style={styles.navText}>
+              {item.name}
+            </Text>
             <Ionicons
               name="chevron-forward"
               size={16}
@@ -184,14 +259,6 @@ export default function CustomDrawerContent(
           </TouchableOpacity>
         ))}
       </ScrollView>
-
-      {/* Bottom Section with Logout */}
-      <View style={styles.bottomSection}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={24} color={colors.surface} />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }

@@ -293,6 +293,22 @@ class ApiService {
     console.log(temp);
     return temp;
   }
+
+  async updateProfile(data: { name: string; email: string }) {
+    return this.request('PUT', API_ENDPOINTS.UPDATE_PROFILE, data);
+  }
+
+  async getPresignedUploadUrl(data: { file_name: string }) {
+    return this.request('POST', API_ENDPOINTS.PRESIGNED_UPLOAD_URL, data);
+  }
+
+  async confirmUpload(data: { s3_key: string }) {
+    return this.request('POST', API_ENDPOINTS.CONFIRM_UPLOAD, data);
+  }
+
+  async deleteProfilePicture() {
+    return this.request('DELETE', API_ENDPOINTS.DELETE_PROFILE_PICTURE);
+  }
 }
 
 export const apiService = new ApiService();

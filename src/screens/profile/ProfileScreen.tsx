@@ -1,7 +1,8 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, Alert, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, Alert, Image, ScrollView, RefreshControl } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
+// import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
 import { logout, getCurrentUser } from "../../store/slices/authSlice";
@@ -27,11 +28,18 @@ export default function ProfileScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const { colors, components } = useTheme();
   const { user, isLoading } = useSelector((state: RootState) => state.auth);
-
-  useEffect(() => {
-    // Fetch latest user details when profile screen loads
-    dispatch(getCurrentUser());
-  }, [dispatch]);
+  const [refreshing, setRefreshing] = useState(false);
+  const actualUser = user?.user || user;
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(getCurrentUser()).unwrap();
+    } catch (error) {
+      console.error("Error refreshing profile:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -105,8 +113,11 @@ export default function ProfileScreen({ navigation }: Props) {
       },
     ]);
   };
+  if (isLoading) {
+    return <LoadingSpinner message="Loading profile..." />;
+  }
 
-  if (!user) {
+  if (!user && !isLoading) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>User not found</Text>
@@ -115,12 +126,22 @@ export default function ProfileScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[colors.primary]}
+          tintColor={colors.primary}
+        />
+      }
+    >
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
-          {user?.profile_pic_url ? (
+          {actualUser?.profile_pic_url ? (
             <Image 
-              source={{ uri: user.profile_pic_url }} 
+              source={{ uri: actualUser.profile_pic_url }} 
               style={styles.avatarImage}
               onError={() => {
                 // Handle image loading error by falling back to icon
@@ -131,15 +152,22 @@ export default function ProfileScreen({ navigation }: Props) {
             <Ionicons name="person" size={40} color={colors.surface} />
           )}
         </View>
-        <Text style={styles.userName}>{user?.name || "User"}</Text>
-        <Text style={styles.userEmail}>{user?.email || ""}</Text>
+        <Text style={styles.userName}>
+          {actualUser?.name || "User"}
+        </Text>
+        <Text style={styles.userEmail}>
+          {actualUser?.email || "No email"}
+        </Text>
       </View>
 
       <View style={styles.menuSection}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
 
-          <Card style={styles.menuItem}>
+          <Card 
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("EditProfile" as never)}
+          >
             <Card.Header
               title="Edit Profile"
               icon="person-circle-outline"
@@ -222,6 +250,6 @@ export default function ProfileScreen({ navigation }: Props) {
           style={{ margin: spacing.lg }}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }

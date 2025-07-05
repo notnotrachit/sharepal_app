@@ -8,6 +8,7 @@ export interface User {
   mail_verified: boolean;
   fcm_token: string;
   profile_pic_url?: string;
+  user?: User; // For nested user objects
 }
 
 export interface LoginRequest {
@@ -282,4 +283,31 @@ export interface BalanceHistory {
   group_id: string;
   currency: string;
   history: BalanceHistoryEntry[];
+}
+
+export interface UpdateProfileRequest {
+  name: string;
+  email: string;
+}
+
+export interface UpdateProfileResponse {
+  user: User;
+}
+
+export interface PresignedUploadRequest {
+  file_name: string;
+}
+
+export interface PresignedUploadResponse {
+  upload_url: string;
+  s3_key: string;
+  expires_at: number;
+}
+
+export interface ConfirmUploadRequest {
+  s3_key: string;
+}
+
+export interface ConfirmUploadResponse {
+  profile_pic_url: string;
 }

@@ -41,6 +41,12 @@ export const API_ENDPOINTS = {
   USER_TRANSACTIONS: '/users/me/transactions',
   USER_BALANCES: '/users/me/balances',
   USER_ANALYTICS: '/users/me/analytics',
+  UPDATE_PROFILE: '/user/profile',
+
+  // Media
+  PRESIGNED_UPLOAD_URL: '/media/presigned-upload-url',
+  CONFIRM_UPLOAD: '/media/confirm-upload',
+  DELETE_PROFILE_PICTURE: '/media/profile-picture',
 
   // Utility
   PING: '/ping',

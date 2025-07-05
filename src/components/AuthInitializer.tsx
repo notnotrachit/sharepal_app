@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
-import { loadStoredAuth } from "../store/slices/authSlice";
+import { loadStoredAuth, getCurrentUser } from "../store/slices/authSlice";
 
 interface Props {
   children: React.ReactNode;
@@ -13,8 +13,20 @@ export default function AuthInitializer({ children }: Props) {
   const { isLoading } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    dispatch(loadStoredAuth());
-  }, []);
+    const initializeAuth = async () => {
+      try {
+        const storedAuthResult = await dispatch(loadStoredAuth()).unwrap();
+        if (storedAuthResult) {
+          console.log("Found stored auth, fetching fresh user data...");
+          await dispatch(getCurrentUser()).unwrap();
+        }
+      } catch (error) {
+        console.log("Auth initialization failed:", error);
+      }
+    };
+
+    initializeAuth();
+  }, [dispatch]);
 
   if (isLoading) {
     return (
