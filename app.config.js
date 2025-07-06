@@ -3,7 +3,7 @@ export default ({ config }) => ({
   expo: {
     name: "sharepal-mobile",
     slug: "sharepal-mobile",
-    version: "1.3.0",
+    version: "1.3.2",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
