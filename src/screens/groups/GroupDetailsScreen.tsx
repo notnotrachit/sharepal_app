@@ -185,6 +185,9 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       ...components.card,
       margin: spacing.lg,
       marginBottom: spacing.sm,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
     },
     groupInfo: {
       flex: 1,
@@ -192,11 +195,46 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     groupName: {
       ...typography.h2,
       color: colors.text,
+      marginBottom: spacing.xs,
     },
     memberCount: {
       ...typography.body,
       color: colors.textSecondary,
-      marginTop: spacing.xs,
+    },
+    membersPreview: {
+      alignItems: 'flex-end',
+    },
+    memberAvatars: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    memberAvatarContainer: {
+      marginLeft: -spacing.sm,
+      borderWidth: 2,
+      borderColor: colors.surface,
+      borderRadius: 20,
+    },
+    moreMembers: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: -spacing.sm,
+      borderWidth: 2,
+      borderColor: colors.surface,
+    },
+    moreMembersText: {
+      ...typography.caption,
+      color: colors.surface,
+      fontWeight: '600',
+      fontSize: 10,
+    },
+    loadingMembers: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
     },
     tabs: {
       flexDirection: "row",
@@ -1136,14 +1174,37 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      {/* <View style={styles.header}>
+      <View style={styles.header}>
         <View style={styles.groupInfo}>
-          <Text style={styles.groupName}>{currentGroup?.name}</Text>
+          <Text style={styles.groupName}>{currentGroup?.name || 'Loading...'}</Text>
           <Text style={styles.memberCount}>
             {currentGroup?.members?.length || 0} members
           </Text>
         </View>
-      </View> */}
+        {/* Members Preview */}
+        <View style={styles.membersPreview}>
+          {groupMembers && groupMembers.length > 0 ? (
+            <View style={styles.memberAvatars}>
+              {groupMembers.slice(0, 4).map((member: any, index: number) => (
+                <View key={member.id || member._id || index} style={[styles.memberAvatarContainer, { zIndex: 4 - index }]}>
+                  <UserAvatar 
+                    user={member} 
+                    size="small" 
+                    fallbackIcon="person"
+                  />
+                </View>
+              ))}
+              {groupMembers.length > 4 && (
+                <View style={styles.moreMembers}>
+                  <Text style={styles.moreMembersText}>+{groupMembers.length - 4}</Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <Text style={styles.loadingMembers}>Loading members...</Text>
+          )}
+        </View>
+      </View>
 
       {/* Tabs */}
       <View style={styles.tabs}>

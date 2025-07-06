@@ -29,11 +29,6 @@ import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "../../constants/api";
 import { Group, User } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
-import {
-  logStateTransition,
-  validateGroupMembers,
-  validateSplitData,
-} from "../../utils/stateDebug";
 import InputGroup from "../../components/InputGroup";
 import PrimaryButton from "../../components/PrimaryButton";
 import SecondaryButton from "../../components/SecondaryButton";
@@ -102,9 +97,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
   }, []); // Focus effect to handle state cleanup when screen is focused
   useFocusEffect(
     useCallback(() => {
-      logStateTransition("CreateExpenseScreen", "Focus Effect Started", {
-        groupId: formData.group_id,
-      });
 
       // Clear any navigation state and form errors when screen is focused
       dispatch(clearNavigationState());
@@ -115,7 +107,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
       // Cleanup function when leaving the screen
       return () => {
-        logStateTransition("CreateExpenseScreen", "Focus Effect Cleanup");
         dispatch(clearFormState());
         dispatch(clearNavigationState());
       };
@@ -132,14 +123,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
         // Check if we need to initialize splits
         if (initializedGroupRef.current !== formData.group_id) {
-          logStateTransition("CreateExpenseScreen", "Initializing Group", {
-            groupId: group.id,
-            membersCount: group.members?.length,
-            membersType: Array.isArray(group.members)
-              ? typeof group.members[0]
-              : "undefined",
-            isInitialized: initializedGroupRef.current === formData.group_id,
-          });
 
           // Try to initialize with current group data
           if (group.members && group.members.length > 0) {
@@ -159,11 +142,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
               if (now - lastFetchTime > FETCH_COOLDOWN) {
                 fetchAttempts.current[group.id] = now;
-                logStateTransition(
-                  "CreateExpenseScreen",
-                  "Fetching Full Member Data",
-                  { groupId: group.id }
-                );
                 dispatch(fetchGroupMembers(group.id));
               }
             }
@@ -173,11 +151,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
             initializedGroupRef.current = formData.group_id;
           } else {
             // Group has no members or empty members array
-            logStateTransition(
-              "CreateExpenseScreen",
-              "Group Has No Members - Using Current User Only",
-              { groupId: group.id }
-            );
 
             // Initialize with just current user
             if (user?.id) {
@@ -212,15 +185,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
           hasFullUserData &&
           initializedGroupRef.current !== formData.group_id
         ) {
-          logStateTransition(
-            "CreateExpenseScreen",
-            "Group Members Updated with Full Data - Reinitializing",
-            {
-              groupId: formData.group_id,
-              membersCount: currentGroup.members?.length,
-              groupMembersCount: groupMembers.length,
-            }
-          );
           setSelectedGroup(currentGroup);
           initializeSplits(currentGroup);
           initializedGroupRef.current = formData.group_id;
@@ -240,10 +204,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
   }, [formData.amount, formData.split_type, splits.length]);
 
   const initializeSplits = (group: Group) => {
-    logStateTransition("CreateExpenseScreen", "Initialize Splits Started", {
-      groupId: group.id,
-      membersCount: group.members?.length,
-    });
 
     const initialSplits: Split[] = [];
     const initialPayers: Payer[] = [];
@@ -280,18 +240,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     }
 
     // Validate the splits against the group members
-    if (!validateSplitData(initialSplits, group.members)) {
-      logStateTransition(
-        "CreateExpenseScreen",
-        "Split Data Validation Failed",
-        { initialSplits, groupMembers: group.members }
-      );
-    }
 
-    logStateTransition("CreateExpenseScreen", "Initialize Splits Completed", {
-      splitsCount: initialSplits.length,
-      payersCount: initialPayers.length,
-    });
 
     setSplits(initialSplits);
     setPayers(initialPayers);
