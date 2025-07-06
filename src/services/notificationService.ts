@@ -9,6 +9,18 @@ class NotificationService {
     this.setupNotificationListeners();
   }
 
+  public async checkPermissionStatus(): Promise<boolean> {
+    try {
+      const authStatus = await messaging().hasPermission();
+      return (
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL
+      );
+    } catch (error) {
+      return false;
+    }
+  }
+
   public async requestUserPermission() {
     const authStatus = await messaging().requestPermission();
     const enabled =

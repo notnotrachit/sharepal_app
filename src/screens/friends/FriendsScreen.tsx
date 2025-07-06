@@ -26,7 +26,7 @@ import {
 } from "../../store/slices/friendsSlice";
 import { FriendsStackParamList } from "../../navigation/AppNavigator";
 import { User, FriendRequest } from "../../types/api";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import EmptyState from "../../components/EmptyState";
 import LoadingState from "../../components/LoadingState";
 import SecondaryButton from "../../components/SecondaryButton";

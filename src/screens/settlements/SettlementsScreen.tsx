@@ -7,7 +7,7 @@ import { AppDispatch, RootState } from "../../store";
 import { fetchGroupTransactions } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { Transaction } from "../../types/api";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
 import EmptyState from "../../components/EmptyState";
 import Card from "../../components/Card";

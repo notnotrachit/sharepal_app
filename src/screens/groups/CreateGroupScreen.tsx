@@ -19,7 +19,7 @@ import { fetchFriends } from "../../store/slices/friendsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { CURRENCIES } from "../../constants/api";
 import { User } from "../../types/api";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import InputGroup from "../../components/InputGroup";
 import AppModal from "../../components/AppModal";
 import PrimaryButton from "../../components/PrimaryButton";

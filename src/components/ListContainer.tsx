@@ -1,6 +1,6 @@
 import React from "react";
 import { FlatList, RefreshControl, StyleSheet } from "react-native";
-import { useTheme } from "../constants/ThemeProvider";
+import { useTheme } from "../contexts/ThemeContext";
 import { spacing } from "../constants/theme";
 
 interface ListContainerProps<T> {

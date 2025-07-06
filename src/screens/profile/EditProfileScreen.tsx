@@ -16,7 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { AppDispatch, RootState } from "../../store";
 import { getCurrentUser, setUser } from "../../store/slices/authSlice";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import { apiService } from "../../services/api";
 import { API_BASE_URL, STORAGE_KEYS } from "../../constants/api";
 import { secureStorage } from "../../utils/secureStorage";

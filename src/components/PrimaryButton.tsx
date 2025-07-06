@@ -5,7 +5,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { useTheme } from "../constants/ThemeProvider";
+import { useTheme } from "../contexts/ThemeContext";
 import { spacing, borderRadius, typography } from "../constants/theme";
 
 interface PrimaryButtonProps {

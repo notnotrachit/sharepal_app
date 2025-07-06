@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
-import { useTheme } from "../constants/ThemeProvider";
+import { useTheme } from "../contexts/ThemeContext";
 import { spacing, typography } from "../constants/theme";
 
 interface LoadingSpinnerProps {

@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../constants/ThemeProvider";
+import { useTheme } from "../contexts/ThemeContext";
 import { spacing, borderRadius, typography, shadows } from "../constants/theme";
 
 interface AppModalProps {

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../constants/ThemeProvider";
+import { useTheme } from "../contexts/ThemeContext";
 import { spacing, borderRadius, typography } from "../constants/theme";
 
 interface EmptyStateProps {

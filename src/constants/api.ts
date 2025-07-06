@@ -1,6 +1,6 @@
 // API Constants for Sharepal App
 
-export const API_BASE_URL = 'https://sharepal.rachitkhurana.tech/v1';
+export const API_BASE_URL = 'https://8080.rachitkhurana.tech/v1';
 
 export const API_ENDPOINTS = {
   // Auth

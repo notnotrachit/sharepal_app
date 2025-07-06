@@ -19,7 +19,7 @@ import {
 } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { Transaction } from "../../types/api";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
 import AnimatedScreen from "../../components/AnimatedScreen";
 import AnimatedFAB from "../../components/AnimatedFAB";

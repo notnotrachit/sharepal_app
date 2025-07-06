@@ -22,7 +22,7 @@ import {
   removeGroupMember,
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import { apiService } from "../../services/api";
 import Card from "../../components/Card";
 import InputGroup from "../../components/InputGroup";

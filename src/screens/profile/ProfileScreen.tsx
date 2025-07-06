@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../../store";
 import { logout, getCurrentUser } from "../../store/slices/authSlice";
 import { RootStackParamList } from "../../navigation/AppNavigator";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import Card from "../../components/Card";
 import SecondaryButton from "../../components/SecondaryButton";
 import LoadingSpinner from "../../components/LoadingSpinner";

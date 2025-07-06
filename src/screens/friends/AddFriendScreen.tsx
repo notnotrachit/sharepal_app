@@ -5,7 +5,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { AppDispatch } from "../../store";
 import { sendFriendRequest } from "../../store/slices/friendsSlice";
 import { FriendsStackParamList } from "../../navigation/AppNavigator";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import AnimatedScreen from "../../components/AnimatedScreen";
 import InputGroup from "../../components/InputGroup";
 import PrimaryButton from "../../components/PrimaryButton";

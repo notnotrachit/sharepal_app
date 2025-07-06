@@ -28,7 +28,7 @@ import { fetchGroups, fetchGroupMembers } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "../../constants/api";
 import { Group, User } from "../../types/api";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
 import InputGroup from "../../components/InputGroup";
 import PrimaryButton from "../../components/PrimaryButton";

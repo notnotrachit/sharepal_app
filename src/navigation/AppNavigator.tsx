@@ -23,7 +23,7 @@ import Animated, {
 
 import { RootState } from "../store";
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
-import { useTheme } from "../constants/ThemeProvider";
+import { useTheme } from "../contexts/ThemeContext";
 import CustomDrawerContent from "../components/CustomDrawerContent";
 import AnimatedTabIcon from "../components/AnimatedTabIcon";
 import LoginScreen from "../screens/auth/LoginScreen";
@@ -41,6 +41,7 @@ import AddFriendScreen from "../screens/friends/AddFriendScreen";
 import SettlementsScreen from "../screens/settlements/SettlementsScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
 import EditProfileScreen from "../screens/profile/EditProfileScreen";
+import SettingsScreen from "../screens/settings/SettingsScreen";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -422,6 +423,16 @@ function MainNavigator() {
           headerTitle: "Edit Profile",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="person-circle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <MainDrawer.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          headerTitle: "Settings",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="settings-outline" size={size} color={color} />
           ),
         }}
       />

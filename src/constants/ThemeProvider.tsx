@@ -21,12 +21,9 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// This file is deprecated - use src/contexts/ThemeContext.tsx instead
 export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
+  throw new Error("Please import useTheme from '../../contexts/ThemeContext' instead");
 };
 
 interface ThemeProviderProps {

@@ -36,7 +36,7 @@ import {
   clearCurrentTransaction,
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
 import LoadingState from "../../components/LoadingState";
 import Card from "../../components/Card";

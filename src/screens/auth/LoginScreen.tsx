@@ -15,7 +15,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { AppDispatch, RootState } from "../../store";
 import { login, clearError, googleSignIn } from "../../store/slices/authSlice";
 import { AuthStackParamList } from "../../navigation/AppNavigator";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import { spacing, borderRadius, typography } from "../../constants/theme";
 
 type LoginScreenNavigationProp = StackNavigationProp<

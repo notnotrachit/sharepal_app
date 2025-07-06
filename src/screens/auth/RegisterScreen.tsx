@@ -15,7 +15,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { AppDispatch, RootState } from "../../store";
 import { register, clearError } from "../../store/slices/authSlice";
 import { AuthStackParamList } from "../../navigation/AppNavigator";
-import { useTheme } from "../../constants/ThemeProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 import {
   spacing,
   borderRadius,

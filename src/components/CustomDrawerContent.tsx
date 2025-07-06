@@ -16,7 +16,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Ionicons } from "@expo/vector-icons";
 import { AppDispatch, RootState } from "../store";
 import { logout } from "../store/slices/authSlice";
-import { useTheme } from "../constants/ThemeProvider";
+import { useTheme } from "../contexts/ThemeContext";
 import { spacing, borderRadius, typography, shadows } from "../constants/theme";
 
 export default function CustomDrawerContent(
@@ -154,6 +154,8 @@ export default function CustomDrawerContent(
       props.navigation.navigate("Profile");
     } else if (routeName === "EditProfile") {
       props.navigation.navigate("EditProfile");
+    } else if (routeName === "Settings") {
+      props.navigation.navigate("Settings");
     }
   };
 
@@ -161,12 +163,11 @@ export default function CustomDrawerContent(
     { name: "Home", icon: "home-outline", route: "Home" },
     { name: "Profile", icon: "person-outline", route: "Profile" },
     { name: "Edit Profile", icon: "person-circle-outline", route: "EditProfile" },
+    { name: "Settings", icon: "settings-outline", route: "Settings" },
   ];
 
   const profileItems = [
     { name: "Payment Methods", icon: "card-outline" },
-    { name: "Notifications", icon: "notifications-outline" },
-    { name: "Settings", icon: "settings-outline" },
     { name: "Help & Support", icon: "help-circle-outline" },
     { name: "Terms & Privacy", icon: "document-text-outline" },
   ];
@@ -232,8 +233,8 @@ export default function CustomDrawerContent(
           );
         })}
 
-        {/* Account Section */}
-        <Text style={styles.sectionHeader}>Account</Text>
+        {/* Other Options */}
+        <Text style={styles.sectionHeader}>More</Text>
         {profileItems.map((item) => (
           <TouchableOpacity 
             key={item.name} 
