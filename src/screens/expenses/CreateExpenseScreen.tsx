@@ -30,6 +30,7 @@ import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "../../constants/api";
 import { Group, User } from "../../types/api";
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
+import CreateExpenseSkeleton from "../../components/skeletons/CreateExpenseSkeleton";
 import InputGroup from "../../components/InputGroup";
 import PrimaryButton from "../../components/PrimaryButton";
 import SecondaryButton from "../../components/SecondaryButton";

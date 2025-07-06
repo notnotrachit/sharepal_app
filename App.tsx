@@ -5,7 +5,7 @@ import { Provider } from "react-redux";
 import { store } from "./src/store";
 import AppNavigator from "./src/navigation/AppNavigator";
 import AuthInitializer from "./src/components/AuthInitializer";
-import { ThemeProvider } from "./src/constants/ThemeProvider";
+import { ThemeProvider } from "./src/contexts/ThemeContext";
 import { notificationService } from "./src/services/notificationService";
 
 export default function App() {

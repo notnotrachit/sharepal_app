@@ -29,6 +29,7 @@ import { User, FriendRequest } from "../../types/api";
 import { useTheme } from "../../contexts/ThemeContext";
 import EmptyState from "../../components/EmptyState";
 import LoadingState from "../../components/LoadingState";
+import FriendsListSkeleton from "../../components/skeletons/FriendsListSkeleton";
 import SecondaryButton from "../../components/SecondaryButton";
 import Card from "../../components/Card";
 import AnimatedFAB from "../../components/AnimatedFAB";
@@ -489,7 +490,7 @@ export default function FriendsScreen({ navigation }: Props) {
     return (
       <View style={styles.tabPage}>
         {isLoading && friends.length === 0 ? (
-          <LoadingState message="Loading friends..." />
+          <FriendsListSkeleton count={6} />
         ) : friends.length === 0 ? (
           <EmptyState
             iconName="people-outline"
@@ -521,7 +522,7 @@ export default function FriendsScreen({ navigation }: Props) {
     return (
       <View style={styles.tabPage}>
         {isLoading && validSentRequests.length === 0 ? (
-          <LoadingState message="Loading sent requests..." />
+          <FriendsListSkeleton count={3} />
         ) : validSentRequests.length === 0 ? (
           <EmptyState
             iconName="paper-plane-outline"

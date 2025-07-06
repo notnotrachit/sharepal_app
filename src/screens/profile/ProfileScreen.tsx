@@ -11,6 +11,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import Card from "../../components/Card";
 import SecondaryButton from "../../components/SecondaryButton";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import ProfileSkeleton from "../../components/skeletons/ProfileSkeleton";
 import {
   spacing,
   borderRadius,
@@ -113,7 +114,7 @@ export default function ProfileScreen({ navigation }: Props) {
     ]);
   };
   if (isLoading) {
-    return <LoadingSpinner message="Loading profile..." />;
+    return <ProfileSkeleton />;
   }
 
   if (!user && !isLoading) {

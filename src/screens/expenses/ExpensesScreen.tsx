@@ -25,6 +25,7 @@ import AnimatedScreen from "../../components/AnimatedScreen";
 import AnimatedFAB from "../../components/AnimatedFAB";
 import EmptyState from "../../components/EmptyState";
 import LoadingState from "../../components/LoadingState";
+import TransactionListSkeleton from "../../components/skeletons/TransactionListSkeleton";
 import ListContainer from "../../components/ListContainer";
 import {
   spacing,
@@ -240,7 +241,7 @@ export default function ExpensesScreen({ navigation }: Props) {
     <AnimatedScreen animationType="slideUp" duration={400}>
       <View style={styles.container}>
         {isLoading && expenses.length === 0 ? (
-          <LoadingState message="Loading expenses..." />
+          <TransactionListSkeleton count={8} />
         ) : expenses.length === 0 ? (
           <EmptyState
             iconName="receipt-outline"

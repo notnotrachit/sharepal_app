@@ -16,6 +16,7 @@ import {
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
+import TransactionDetailsSkeleton from "../../components/skeletons/TransactionDetailsSkeleton";
 import {
   spacing,
   borderRadius,

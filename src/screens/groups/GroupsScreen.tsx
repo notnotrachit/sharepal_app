@@ -27,6 +27,7 @@ import AnimatedScreen from "../../components/AnimatedScreen";
 import AnimatedFAB from "../../components/AnimatedFAB";
 import EmptyState from "../../components/EmptyState";
 import LoadingState from "../../components/LoadingState";
+import GroupListSkeleton from "../../components/skeletons/GroupListSkeleton";
 import ListContainer from "../../components/ListContainer";
 import {
   spacing,
@@ -269,7 +270,7 @@ export default function GroupsScreen({ navigation }: Props) {
     <AnimatedScreen animationType="slideUp" duration={400}>
       <View style={styles.container}>
         {isLoading && groups.length === 0 ? (
-          <LoadingState message="Loading groups..." />
+          <GroupListSkeleton count={5} />
         ) : groups.length === 0 ? (
           <EmptyState
             iconName="people-outline"

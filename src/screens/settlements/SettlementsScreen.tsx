@@ -9,6 +9,7 @@ import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { Transaction } from "../../types/api";
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
+import SettlementsSkeleton from "../../components/skeletons/SettlementsSkeleton";
 import EmptyState from "../../components/EmptyState";
 import Card from "../../components/Card";
 import { spacing, typography } from "../../constants/theme";
@@ -108,7 +109,9 @@ export default function SettlementsScreen({ navigation, route }: Props) {
 
   return (
     <View style={styles.container}>
-      {settlementTransactions.length === 0 && !isLoading ? (
+      {isLoading && settlementTransactions.length === 0 ? (
+        <SettlementsSkeleton count={4} />
+      ) : settlementTransactions.length === 0 ? (
         <EmptyState
           iconName="checkmark-circle-outline"
           title="No Settlements"

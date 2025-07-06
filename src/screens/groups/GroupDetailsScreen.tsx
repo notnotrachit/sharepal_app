@@ -45,6 +45,8 @@ import AnimatedFAB from "../../components/AnimatedFAB";
 import EmptyState from "../../components/EmptyState";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import UserAvatar from "../../components/UserAvatar";
+import TransactionListSkeleton from "../../components/skeletons/TransactionListSkeleton";
+import GroupDetailsSkeleton from "../../components/skeletons/GroupDetailsSkeleton";
 import {
   spacing,
   borderRadius,
@@ -839,7 +841,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       <View style={styles.tabPage}>
         <View style={styles.tabContent}>
           {isLoading && displayTransactions.length === 0 ? (
-            <LoadingState message="Loading transactions..." />
+            <TransactionListSkeleton count={6} />
           ) : !displayTransactions ||
             !Array.isArray(displayTransactions) ||
             displayTransactions.length === 0 ? (
@@ -984,7 +986,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       <View style={styles.tabPage}>
         <View style={styles.tabContent}>
           {isLoading && (!groupBalances || groupBalances.length === 0) ? (
-            <LoadingState message="Loading balances..." />
+            <TransactionListSkeleton count={4} />
           ) : !currentUserBalance ||
             getBalanceAmount(currentUserBalance) === 0 ? (
             <EmptyState
@@ -1169,7 +1171,7 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
   };
 
   if (!currentGroup) {
-    return <LoadingSpinner message="Loading group details..." />;
+    return <GroupDetailsSkeleton />;
   }
 
   return (
