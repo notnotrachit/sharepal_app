@@ -37,6 +37,7 @@ import {
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
+import { formatCurrency } from "../../utils/currency";
 import LoadingState from "../../components/LoadingState";
 import Card from "../../components/Card";
 import SecondaryButton from "../../components/SecondaryButton";
@@ -235,6 +236,11 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       ...typography.caption,
       color: colors.textSecondary,
       fontStyle: 'italic',
+    },
+    settingsButton: {
+      padding: spacing.sm,
+      borderRadius: borderRadius.md,
+      backgroundColor: `${colors.primary}15`,
     },
     tabs: {
       flexDirection: "row",
@@ -760,11 +766,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    const safeAmount =
-      typeof amount === "number" && !isNaN(amount) ? amount : 0;
-    return `${currency} ${safeAmount.toFixed(2)}`;
-  };
 
   const getBalanceColor = (balance: number) => {
     if (balance < 0) return colors.error; // Red for negative (you owe money)
@@ -1181,6 +1182,13 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
             {currentGroup?.members?.length || 0} members
           </Text>
         </View>
+        {/* Group Settings Button */}
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => navigation.navigate("GroupSettings", { groupId })}
+        >
+          <Ionicons name="settings-outline" size={24} color={colors.primary} />
+        </TouchableOpacity>
         {/* Members Preview */}
         <View style={styles.membersPreview}>
           {groupMembers && groupMembers.length > 0 ? (

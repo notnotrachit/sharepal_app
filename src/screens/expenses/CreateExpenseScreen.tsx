@@ -29,6 +29,7 @@ import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "../../constants/api";
 import { Group, User } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
+import { formatCurrency } from "../../utils/currency";
 import InputGroup from "../../components/InputGroup";
 import PrimaryButton from "../../components/PrimaryButton";
 import SecondaryButton from "../../components/SecondaryButton";
@@ -847,7 +848,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
                 </Text>
                 {formData.split_type === SPLIT_TYPES.EQUAL ? (
                   <Text style={styles.splitAmount}>
-                    {selectedGroup?.currency} {split.amount.toFixed(2)}
+                    {formatCurrency(split.amount, selectedGroup?.currency || 'INR')}
                   </Text>
                 ) : formData.split_type === SPLIT_TYPES.PERCENTAGE ? (
                   <View style={styles.percentageInputContainer}>
@@ -869,11 +870,10 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
                     </View>
                     {formData.amount && parseFloat(formData.amount) > 0 && (
                       <Text style={styles.calculatedAmount}>
-                        {selectedGroup?.currency}{" "}
-                        {(
-                          (split.amount / 100) *
-                          parseFloat(formData.amount)
-                        ).toFixed(2)}
+                        {formatCurrency(
+                          (split.amount / 100) * parseFloat(formData.amount),
+                          selectedGroup?.currency || 'INR'
+                        )}
                       </Text>
                     )}
                   </View>

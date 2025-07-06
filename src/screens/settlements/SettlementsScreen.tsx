@@ -8,6 +8,7 @@ import { fetchGroupTransactions } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { Transaction } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
+import { formatCurrency } from "../../utils/currency";
 import EmptyState from "../../components/EmptyState";
 import Card from "../../components/Card";
 import { spacing, typography } from "../../constants/theme";
@@ -58,9 +59,6 @@ export default function SettlementsScreen({ navigation, route }: Props) {
     setRefreshing(false);
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return `${currency} ${amount.toFixed(2)}`;
-  };
 
   const renderSettlementItem = ({ item }: { item: Transaction }) => (
     <Card>

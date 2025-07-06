@@ -20,6 +20,7 @@ import {
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { Transaction } from "../../types/api";
 import { useTheme } from "../../constants/ThemeProvider";
+import { formatCurrency } from "../../utils/currency";
 import AnimatedScreen from "../../components/AnimatedScreen";
 import AnimatedFAB from "../../components/AnimatedFAB";
 import EmptyState from "../../components/EmptyState";
@@ -187,12 +188,6 @@ export default function ExpensesScreen({ navigation }: Props) {
     return categoryMap[lowerCategory] || categoryMap.other;
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    if (amount === undefined || amount === null || isNaN(amount)) {
-      return `${currency || "USD"} 0.00`;
-    }
-    return `${currency || "USD"} ${amount.toFixed(2)}`;
-  };
 
   const renderExpenseItem = ({ item }: { item: Transaction }) => {
     // Force extract values to variables

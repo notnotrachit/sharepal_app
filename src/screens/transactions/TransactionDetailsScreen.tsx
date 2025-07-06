@@ -15,6 +15,7 @@ import {
 } from "../../store/slices/groupsSlice";
 import { GroupsStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
+import { formatCurrency } from "../../utils/currency";
 import {
   spacing,
   borderRadius,
@@ -306,12 +307,6 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
     );
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    if (amount === undefined || amount === null || isNaN(amount)) {
-      return `${currency} 0.00`;
-    }
-    return `${currency} ${amount.toFixed(2)}`;
-  };
 
   const getUserName = (userId: string) => {
     if (userId === user?.id) return "You";

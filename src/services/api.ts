@@ -166,6 +166,10 @@ class ApiService {
     return this.request('GET', API_ENDPOINTS.GROUP(id));
   }
 
+  async updateGroup(id: string, data: any) {
+    return this.request('PUT', API_ENDPOINTS.GROUP(id), data);
+  }
+
   async deleteGroup(id: string) {
     return this.request('DELETE', API_ENDPOINTS.GROUP(id));
   }

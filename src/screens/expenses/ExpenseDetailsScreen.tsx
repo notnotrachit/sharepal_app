@@ -12,6 +12,7 @@ import {
 } from "../../store/slices/groupsSlice";
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../constants/ThemeProvider";
+import { formatCurrency } from "../../utils/currency";
 import LoadingState from "../../components/LoadingState";
 import Card from "../../components/Card";
 import PrimaryButton from "../../components/PrimaryButton";
@@ -183,12 +184,6 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
     );
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    if (amount === undefined || amount === null || isNaN(amount)) {
-      return `${currency} 0.00`;
-    }
-    return `${currency} ${amount.toFixed(2)}`;
-  };
 
   if (isLoading) {
     return <LoadingState message="Loading expense details..." />;

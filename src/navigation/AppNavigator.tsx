@@ -30,6 +30,7 @@ import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import GroupsScreen from "../screens/groups/GroupsScreen";
 import GroupDetailsScreen from "../screens/groups/GroupDetailsScreen";
+import GroupSettingsScreen from "../screens/groups/GroupSettingsScreen";
 import CreateGroupScreen from "../screens/groups/CreateGroupScreen";
 import ExpensesScreen from "../screens/expenses/ExpensesScreen";
 import CreateExpenseScreen from "../screens/expenses/CreateExpenseScreen";
@@ -74,6 +75,7 @@ export type ProfileStackParamList = {
 export type GroupsStackParamList = {
   GroupsList: undefined;
   GroupDetails: { groupId: string };
+  GroupSettings: { groupId: string };
   CreateGroup: undefined;
   CreateExpense: { groupId?: string };
   Settlements: { groupId: string };
@@ -141,6 +143,14 @@ function GroupsNavigator() {
         component={GroupDetailsScreen}
         options={{
           title: "Group Details",
+          ...TransitionPresets.SlideFromRightIOS,
+        }}
+      />
+      <GroupsStack.Screen
+        name="GroupSettings"
+        component={GroupSettingsScreen}
+        options={{
+          title: "Group Settings",
           ...TransitionPresets.SlideFromRightIOS,
         }}
       />
