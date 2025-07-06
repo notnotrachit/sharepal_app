@@ -6,6 +6,7 @@ import { store } from "./src/store";
 import AppNavigator from "./src/navigation/AppNavigator";
 import AuthInitializer from "./src/components/AuthInitializer";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
+import { GlobalOverlayProvider } from "./src/components/PortalLongPressMenu";
 import { notificationService } from "./src/services/notificationService";
 
 export default function App() {
@@ -16,10 +17,12 @@ export default function App() {
   return (
     <Provider store={store}>
       <ThemeProvider>
-        <AuthInitializer>
-          <StatusBar style="auto" />
-          <AppNavigator />
-        </AuthInitializer>
+        <GlobalOverlayProvider>
+          <AuthInitializer>
+            <StatusBar style="auto" />
+            <AppNavigator />
+          </AuthInitializer>
+        </GlobalOverlayProvider>
       </ThemeProvider>
     </Provider>
   );

@@ -28,6 +28,9 @@ import AnimatedFAB from "../../components/AnimatedFAB";
 import EmptyState from "../../components/EmptyState";
 import LoadingState from "../../components/LoadingState";
 import GroupListSkeleton from "../../components/skeletons/GroupListSkeleton";
+import PullToRefresh from "../../components/PullToRefresh";
+import EmptyStateIllustration from "../../components/EmptyStateIllustration";
+import SwipeableRow from "../../components/SwipeableRow";
 import ListContainer from "../../components/ListContainer";
 import {
   spacing,
@@ -171,6 +174,28 @@ export default function GroupsScreen({ navigation }: Props) {
     dispatch(fetchGroups());
   };
 
+  const handleRefresh = async () => {
+    await dispatch(fetchGroups());
+  };
+
+  const handleLeaveGroup = (group: any) => {
+    Alert.alert(
+      "Leave Group",
+      `Are you sure you want to leave "${group.name}"? You won't be able to see group expenses anymore.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: () => {
+            // Implement leave group logic
+            Alert.alert("Pending", "Leave Group logic will be implemented soon.");
+          },
+        },
+      ]
+    );
+  };
+
   const handleGroupPress = (group: Group) => {
     // Clear any stale state before navigating to group details
     dispatch(clearGroupData());
@@ -223,10 +248,29 @@ export default function GroupsScreen({ navigation }: Props) {
     const { icon, color } = getGroupIcon(item.name);
 
     return (
-      <TouchableOpacity
-        style={styles.groupCard}
+      <SwipeableRow
         onPress={() => handleGroupPress(item)}
+        rightActions={[
+          {
+            text: "Settings",
+            icon: "settings-sharp",
+            color: colors.text,
+            backgroundColor: colors.surface,
+            onPress: () =>
+              navigation.navigate("GroupSettings", { groupId: item.id }),
+          },
+          {
+            text: "Leave",
+            icon: "exit-outline",
+            color: colors.text,
+            backgroundColor: colors.surface,
+            onPress: () => handleLeaveGroup(item),
+          },
+        ]}
       >
+          <View
+            style={styles.groupCard}
+          >
         <View style={styles.cardHeader}>
           <View style={styles.groupIconContainer}>
             <View style={[styles.groupIcon, { backgroundColor: color }]}>
@@ -239,16 +283,6 @@ export default function GroupsScreen({ navigation }: Props) {
               )}
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteGroup(item.id)}
-          >
-            <Ionicons
-              name="ellipsis-horizontal"
-              size={20}
-              color={colors.textMuted}
-            />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.groupStats}>
@@ -262,7 +296,8 @@ export default function GroupsScreen({ navigation }: Props) {
             <Text style={styles.currencyText}>{item.currency}</Text>
           </View>
         </View>
-      </TouchableOpacity>
+          </View>
+      </SwipeableRow>
     );
   };
 

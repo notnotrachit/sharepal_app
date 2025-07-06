@@ -2,6 +2,7 @@ import React from "react";
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
+import { hapticPress } from "../utils/haptics";
 import { spacing, borderRadius, typography } from "../constants/theme";
 
 interface SecondaryButtonProps {
@@ -91,7 +92,7 @@ export default function SecondaryButton({
         disabled && styles.disabled,
         style,
       ]}
-      onPress={onPress}
+      onPress={() => hapticPress(onPress, 'light')}
       disabled={disabled}
       activeOpacity={0.7}
     >

@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
+import { hapticPress } from "../utils/haptics";
 import { spacing, borderRadius, typography } from "../constants/theme";
 
 interface PrimaryButtonProps {
@@ -57,7 +58,7 @@ export default function PrimaryButton({
         (disabled || loading) && styles.buttonDisabled,
         style,
       ]}
-      onPress={onPress}
+      onPress={() => hapticPress(onPress, 'medium')}
       disabled={disabled || loading}
     >
       {loading ? (

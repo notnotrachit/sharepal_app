@@ -83,6 +83,12 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     groupTransactions,
     groupAnalytics,
   } = useSelector((state: RootState) => state.groups);
+  console.log("Group Details Screen - groupTransactions:", groupTransactions);
+  console.log("Group Details Screen - groupBalances:", groupBalances);
+  console.log("Group Details Screen - groupSimplify:", groupSimplify);
+  console.log("Group Details Screen - groupMembers:", groupMembers);
+
+  
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [activeTab, setActiveTab] = useState<"transactions" | "balances">(
