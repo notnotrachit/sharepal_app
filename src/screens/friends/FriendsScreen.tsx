@@ -142,7 +142,6 @@ export default function FriendsScreen({ navigation }: Props) {
   };
 
   // Debug modal state
-  console.log("Modal state:", showReceivedRequestsModal);
 
   const styles = StyleSheet.create({
     container: {
@@ -359,19 +358,15 @@ export default function FriendsScreen({ navigation }: Props) {
   };
 
   const handleViewReceivedRequests = () => {
-    console.log("Friend request button clicked!", receivedRequests.length);
-    console.log("Current modal state:", showReceivedRequestsModal);
 
     if (receivedRequests.length === 0) {
       Alert.alert("Debug", "No received requests found");
     }
 
-    console.log("Setting modal to true...");
     setShowReceivedRequestsModal(true);
 
     // Add a timeout to check if state was set
     setTimeout(() => {
-      console.log("Modal state after setting:", showReceivedRequestsModal);
     }, 100);
   };
 
@@ -609,9 +604,7 @@ export default function FriendsScreen({ navigation }: Props) {
         <TouchableOpacity
           style={styles.floatingRequestButton}
           onPress={() => {
-            console.log("Setting modal to true directly");
             setShowReceivedRequestsModal((prev) => {
-              console.log("Previous state:", prev);
               return true;
             });
           }}

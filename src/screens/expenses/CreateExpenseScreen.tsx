@@ -244,12 +244,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       groupId: group.id,
       membersCount: group.members?.length,
     });
-    console.log(
-      "Initializing splits for group:",
-      group.id,
-      "with members:",
-      group.members
-    );
 
     const initialSplits: Split[] = [];
     const initialPayers: Payer[] = [];
@@ -265,7 +259,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       } else if (member && (member.id || member._id)) {
         userId = member.id || member._id;
       } else {
-        console.warn("Invalid member data:", member);
         return;
       }
 
@@ -299,8 +292,6 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       splitsCount: initialSplits.length,
       payersCount: initialPayers.length,
     });
-    console.log("Initialized splits:", initialSplits);
-    console.log("Initialized payers:", initialPayers);
 
     setSplits(initialSplits);
     setPayers(initialPayers);

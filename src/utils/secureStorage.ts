@@ -6,7 +6,6 @@ export const secureStorage = {
       const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
       await SecureStore.setItemAsync(key, stringValue);
     } catch (error) {
-      console.error(`Error storing ${key}:`, error);
       throw error;
     }
   },
@@ -15,7 +14,6 @@ export const secureStorage = {
     try {
       return await SecureStore.getItemAsync(key);
     } catch (error) {
-      console.error(`Error retrieving ${key}:`, error);
       return null;
     }
   },
@@ -24,7 +22,6 @@ export const secureStorage = {
     try {
       await SecureStore.deleteItemAsync(key);
     } catch (error) {
-      console.error(`Error removing ${key}:`, error);
       throw error;
     }
   },
@@ -34,7 +31,6 @@ export const secureStorage = {
       const value = await this.getItem(key);
       return value ? JSON.parse(value) : null;
     } catch (error) {
-      console.error(`Error parsing JSON for ${key}:`, error);
       return null;
     }
   },

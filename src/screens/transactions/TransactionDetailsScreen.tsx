@@ -271,7 +271,6 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
     }
     // Fetch the transaction
     dispatch(fetchTransaction(transactionId));
-    console.log("Fetching transaction with ID:", transactionId);
   }, [transactionId]);
 
   useEffect(() => {

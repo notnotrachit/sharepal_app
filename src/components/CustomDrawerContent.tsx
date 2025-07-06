@@ -186,7 +186,6 @@ export default function CustomDrawerContent(
               style={{ width: 80, height: 80, borderRadius: 40 }} 
               onError={() => {
                 // Handle image loading error by falling back to icon
-                console.log('Failed to load profile image in drawer');
               }}
             />
           ) : (

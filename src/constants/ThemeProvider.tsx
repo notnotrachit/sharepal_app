@@ -38,11 +38,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     Appearance.getColorScheme()
   );
 
-  console.log("ThemeProvider - Initial colorScheme:", colorScheme);
 
   useEffect(() => {
     const subscription = Appearance.addChangeListener(({ colorScheme }) => {
-      console.log("ThemeProvider - Appearance changed to:", colorScheme);
       setColorScheme(colorScheme);
     });
 
@@ -52,11 +50,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const colors = getColors(colorScheme);
   const components = getComponents(colors);
 
-  console.log("ThemeProvider - Current theme:", {
-    colorScheme,
-    backgroundColor: colors.background,
-    textColor: colors.text,
-  });
 
   const value = {
     colors,

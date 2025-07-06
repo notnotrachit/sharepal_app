@@ -542,9 +542,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       );
 
       if (!hasFullUserData) {
-        console.log(
-          "Group members are just IDs, fetching full data before navigation"
-        );
         dispatch(fetchGroupMembers(groupId));
       }
     }
@@ -658,7 +655,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
         [{ text: "OK" }]
       );
     } catch (error: any) {
-      console.error("❌ Error in handleMarkAsPaid:", error);
       let errorMessage = "Failed to complete payment. Please try again.";
 
       // Try to extract meaningful error message
@@ -1143,7 +1139,6 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
       {/* <View style={styles.header}>
         <View style={styles.groupInfo}>
           <Text style={styles.groupName}>{currentGroup?.name}</Text>
-          {console.log("Group Details:", currentGroup)}
           <Text style={styles.memberCount}>
             {currentGroup?.members?.length || 0} members
           </Text>

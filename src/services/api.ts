@@ -290,7 +290,6 @@ class ApiService {
 
   async updateFCMToken(fcmToken: string) {
     const temp = this.request('PUT', API_ENDPOINTS.UPDATE_FCM_TOKEN, { fcm_token: fcmToken });
-    console.log(temp);
     return temp;
   }
 

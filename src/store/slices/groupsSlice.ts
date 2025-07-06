@@ -59,11 +59,9 @@ export const fetchGroups = createAsyncThunk<Group[]>(
       } else if (response?.data?.groups && Array.isArray(response.data.groups)) {
         return response.data.groups as Group[];
       } else {
-        console.warn('fetchGroups: Unexpected response structure, returning empty array');
         return [];
       }
     } catch (error: any) {
-      console.error('fetchGroups error:', error);
       return rejectWithValue(error.message);
     }
   }
@@ -83,11 +81,9 @@ export const fetchGroup = createAsyncThunk<Group, string>(
       } else if (response?.id || response?._id) {
         return response as Group;
       } else {
-        console.error('fetchGroup: Invalid response structure');
         return rejectWithValue('Invalid group data received');
       }
     } catch (error: any) {
-      console.error('fetchGroup error:', error);
       return rejectWithValue(error.message);
     }
   }
@@ -107,11 +103,9 @@ export const createGroup = createAsyncThunk<Group, CreateGroupRequest>(
       } else if (response?.id || response?._id) {
         return response as Group;
       } else {
-        console.error('createGroup: Invalid response structure');
         return rejectWithValue('Invalid group data received');
       }
     } catch (error: any) {
-      console.error('createGroup error:', error);
       return rejectWithValue(error.message);
     }
   }
@@ -342,7 +336,6 @@ export const fetchUserTransactions = createAsyncThunk<Transaction[], { params?: 
       } else if (Array.isArray(response)) {
         return response;
       } else {
-        console.warn('Unexpected user transactions response format:', response);
         return [];
       }
     } catch (error: any) {
@@ -359,7 +352,6 @@ export const fetchTransaction = createAsyncThunk<Transaction, string>(
       if (response?.data?.transaction) {
         return response.data.transaction;
       } else if (response?.transaction) {
-        console.log('fetchTransaction response:', response.transaction.splits);
         return response.transaction;
       } else if (response?.data) {
         return response.data;

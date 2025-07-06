@@ -4,16 +4,13 @@
 
 export const logStateTransition = (screenName: string, action: string, additionalData?: any) => {
   if (__DEV__) {
-    console.log(`[STATE DEBUG] ${screenName} - ${action}`, additionalData);
   }
 };
 
 export const validateGroupMembers = (groupId: string, members: any[], userId?: string) => {
   if (__DEV__) {
-    console.log(`[VALIDATION] Group ${groupId} members:`, members);
     
     if (!members || !Array.isArray(members) || members.length === 0) {
-      console.warn(`[VALIDATION] Group ${groupId} has no valid members`);
       return false;
     }
     
@@ -26,13 +23,11 @@ export const validateGroupMembers = (groupId: string, members: any[], userId?: s
     );
     
     if (!isStringArray && !isObjectArray) {
-      console.warn(`[VALIDATION] Group ${groupId} has mixed or invalid member data:`, members);
       return false;
     }
     
     // If it's a string array (just user IDs), we need to fetch full member data
     if (isStringArray) {
-      console.warn(`[VALIDATION] Group ${groupId} has only user IDs, need to fetch full member data`);
       return false; // This will trigger a refetch of group members
     }
     
@@ -45,7 +40,6 @@ export const validateGroupMembers = (groupId: string, members: any[], userId?: s
       );
       
       if (!hasValidMembers) {
-        console.warn(`[VALIDATION] Group ${groupId} member objects missing required properties:`, members);
         return false;
       }
     }
@@ -58,12 +52,10 @@ export const validateGroupMembers = (groupId: string, members: any[], userId?: s
           );
       
       if (!currentUserInGroup) {
-        console.warn(`[VALIDATION] Current user ${userId} not found in group ${groupId} members`);
         return false;
       }
     }
     
-    console.log(`[VALIDATION] Group ${groupId} members are valid`);
     return true;
   }
   
@@ -72,17 +64,12 @@ export const validateGroupMembers = (groupId: string, members: any[], userId?: s
 
 export const validateSplitData = (splits: any[], groupMembers: any[]) => {
   if (__DEV__) {
-    console.log(`[VALIDATION] Checking splits against group members`);
-    console.log('Splits:', splits);
-    console.log('Group members:', groupMembers);
     
     if (!splits || !Array.isArray(splits) || splits.length === 0) {
-      console.warn(`[VALIDATION] Invalid splits data`);
       return false;
     }
     
     if (!groupMembers || !Array.isArray(groupMembers) || groupMembers.length === 0) {
-      console.warn(`[VALIDATION] Invalid group members data`);
       return false;
     }
     
@@ -99,12 +86,9 @@ export const validateSplitData = (splits: any[], groupMembers: any[]) => {
     );
     
     if (unknownUsers.length > 0) {
-      console.warn(`[VALIDATION] Found unknown users in splits:`, unknownUsers);
-      console.warn(`[VALIDATION] Available member IDs:`, memberIds);
       return false;
     }
     
-    console.log(`[VALIDATION] All split users are valid group members`);
     return true;
   }
   
@@ -113,7 +97,5 @@ export const validateSplitData = (splits: any[], groupMembers: any[]) => {
 
 export const clearDebugConsole = () => {
   if (__DEV__) {
-    console.clear();
-    console.log('[STATE DEBUG] Console cleared');
   }
 };

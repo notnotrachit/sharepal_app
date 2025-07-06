@@ -35,7 +35,6 @@ export default function ProfileScreen({ navigation }: Props) {
     try {
       await dispatch(getCurrentUser()).unwrap();
     } catch (error) {
-      console.error("Error refreshing profile:", error);
     } finally {
       setRefreshing(false);
     }
@@ -145,7 +144,6 @@ export default function ProfileScreen({ navigation }: Props) {
               style={styles.avatarImage}
               onError={() => {
                 // Handle image loading error by falling back to icon
-                console.log('Failed to load profile image');
               }}
             />
           ) : (

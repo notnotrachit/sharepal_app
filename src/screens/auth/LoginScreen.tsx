@@ -54,7 +54,6 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       await dispatch(googleSignIn()).unwrap();
     } catch (error: any) {
-      console.error("Google Sign-In Error:", error);
       Alert.alert("Google Sign-In Failed", error);
     }
   };

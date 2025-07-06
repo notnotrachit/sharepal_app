@@ -85,10 +85,8 @@ const darkColors = {
 // Get colors based on system theme
 export const getColors = (colorScheme?: string | null) => {
   const scheme = colorScheme || Appearance.getColorScheme();
-  console.log('getColors - Using colorScheme:', scheme);
   
   const selectedColors = scheme === 'dark' ? darkColors : lightColors;
-  console.log('getColors - Selected background:', selectedColors.background);
   
   return selectedColors;
 };

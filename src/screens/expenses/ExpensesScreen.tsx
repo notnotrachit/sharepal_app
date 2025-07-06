@@ -164,7 +164,6 @@ export default function ExpensesScreen({ navigation }: Props) {
     // Handle both _id and id fields since different endpoints might return different field names
     const transactionId = (expense as any)._id || (expense as any).id;
     if (!transactionId) {
-      console.error("Transaction ID is missing:", expense);
       return;
     }
     navigation.navigate("ExpenseDetails", { expenseId: transactionId });

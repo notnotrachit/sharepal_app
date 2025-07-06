@@ -302,22 +302,16 @@ export default function EditProfileScreen({ navigation }: Props) {
 
       return manipulatedImage.uri;
     } catch (error) {
-      console.error("Error processing image:", error);
       throw new Error("Failed to process image");
     }
   };
 
   const uploadWithoutCustomHeaders = async (imageUri: string, uploadUrl: string) => {
     try {
-      console.log("Uploading to S3 with optimized method...");
       
       const response = await fetch(imageUri);
       const blob = await response.blob();
       
-      console.log("Upload details:", {
-        blobSize: blob.size,
-        blobType: blob.type
-      });
       
       // Simple PUT request without custom headers - this works!
       const uploadResponse = await fetch(uploadUrl, {
@@ -325,17 +319,13 @@ export default function EditProfileScreen({ navigation }: Props) {
         body: blob,
       });
 
-      console.log("S3 upload response status:", uploadResponse.status);
       
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
-        console.error("S3 upload error:", errorText);
         throw new Error(`Upload failed with status: ${uploadResponse.status}`);
       }
       
-      console.log("S3 upload successful!");
     } catch (error) {
-      console.error("Error uploading to S3:", error);
       throw error;
     }
   };
@@ -395,29 +385,21 @@ export default function EditProfileScreen({ navigation }: Props) {
 
       // Get presigned URL
       const fileName = `profile_${Date.now()}.jpg`;
-      console.log("Requesting presigned URL for:", fileName);
       
       const presignedResponse = await apiService.getPresignedUploadUrl({
         file_name: fileName,
       });
       
-      console.log("Presigned URL response:", {
-        s3_key: presignedResponse.s3_key,
-        expires_at: presignedResponse.expires_at,
-        url_preview: presignedResponse.upload_url.substring(0, 100) + "..."
-      });
 
       // Upload to S3 using the optimized method
       await uploadWithoutCustomHeaders(processedUri, presignedResponse.upload_url);
 
       // Confirm upload with backend
-      console.log("Confirming upload with s3_key:", presignedResponse.s3_key);
       
       const confirmResponse = await apiService.confirmUpload({
         s3_key: presignedResponse.s3_key,
       });
       
-      console.log("Confirm upload response:", confirmResponse);
       
       // Update user in Redux store - maintain the nested structure if it exists
       const updatedUserData = { ...actualUser!, profile_pic_url: confirmResponse.profile_pic_url };
@@ -429,7 +411,6 @@ export default function EditProfileScreen({ navigation }: Props) {
 
       // This code is now moved inside the try block above
     } catch (error: any) {
-      console.error("Error uploading image:", error);
       Alert.alert("Error", error.message || "Failed to upload image");
       setTempImageUri(null);
     } finally {
@@ -503,7 +484,6 @@ export default function EditProfileScreen({ navigation }: Props) {
                   source={{ uri: getAvatarSource()! }}
                   style={styles.avatarImage}
                   onError={() => {
-                    console.log("Failed to load profile image");
                   }}
                 />
               ) : (

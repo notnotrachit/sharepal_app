@@ -51,11 +51,6 @@ export default function GroupsScreen({ navigation }: Props) {
     (state: RootState) => state.groups
   );
 
-  console.log("GroupsScreen - Theme info:", {
-    colorScheme,
-    backgroundColor: colors.background,
-    textColor: colors.text,
-  });
 
   const styles = StyleSheet.create({
     container: {

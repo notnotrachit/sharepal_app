@@ -17,11 +17,9 @@ export default function AuthInitializer({ children }: Props) {
       try {
         const storedAuthResult = await dispatch(loadStoredAuth()).unwrap();
         if (storedAuthResult) {
-          console.log("Found stored auth, fetching fresh user data...");
           await dispatch(getCurrentUser()).unwrap();
         }
       } catch (error) {
-        console.log("Auth initialization failed:", error);
       }
     };
 

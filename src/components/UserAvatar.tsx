@@ -54,7 +54,6 @@ export default function UserAvatar({
           source={{ uri: user.profile_pic_url }}
           style={imageStyle}
           onError={() => {
-            console.log(`Failed to load profile image for user: ${user.name}`);
           }}
         />
       ) : (
