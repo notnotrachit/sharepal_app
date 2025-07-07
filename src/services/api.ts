@@ -292,9 +292,20 @@ class ApiService {
     return this.request('GET', API_ENDPOINTS.USER_ANALYTICS);
   }
 
-  async updateFCMToken(fcmToken: string) {
-    const temp = this.request('PUT', API_ENDPOINTS.UPDATE_FCM_TOKEN, { fcm_token: fcmToken });
-    return temp;
+  async updatePushSubscription(subscriptionData: {
+    endpoint: string;
+    keys: { auth: string; p256dh: string };
+  }) {
+    return this.request('POST', API_ENDPOINTS.UPDATE_PUSH_SUBSCRIPTION, {
+      endpoint: subscriptionData.endpoint,
+      keys: subscriptionData.keys,
+    });
+  }
+
+  async removePushSubscription(endpoint: string) {
+    return this.request('DELETE', API_ENDPOINTS.REMOVE_PUSH_SUBSCRIPTION, {
+      endpoint,
+    });
   }
 
   async updateProfile(data: { name: string; email: string }) {

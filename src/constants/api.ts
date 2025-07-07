@@ -9,7 +9,8 @@ export const API_ENDPOINTS = {
   REFRESH: '/auth/refresh',
   GOOGLE_SIGNIN: '/auth/google/signin',
   ME: '/user/me',
-  UPDATE_FCM_TOKEN: '/user/fcm-token',
+  UPDATE_PUSH_SUBSCRIPTION: '/user/push-subscription',
+  REMOVE_PUSH_SUBSCRIPTION: '/user/push-subscription',
 
   // Friends
   FRIENDS: '/friends',
@@ -56,7 +57,8 @@ export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',
   REFRESH_TOKEN: 'refresh_token',
   USER: 'user',
-  FCM_TOKEN: 'fcm_token',
+  PUSH_ENDPOINT: 'push_endpoint',
+  PUSH_KEYS: 'push_keys',
 };
 
 export const EXPENSE_CATEGORIES = [

@@ -15,7 +15,6 @@ export default ({ config }) => ({
     },
     ios: {
       supportsTablet: true,
-      googleServicesFile: "./GoogleService-Info.plist",
       bundleIdentifier: "com.notnotrachit.sharepalmobile",
     },
     android: {
@@ -25,8 +24,6 @@ export default ({ config }) => ({
       },
       edgeToEdgeEnabled: true,
       package: "com.notnotrachit.sharepalmobile",
-      googleServicesFile:
-        process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
     },
     web: {
       favicon: "./assets/favicon.png",
@@ -35,6 +32,7 @@ export default ({ config }) => ({
       eas: {
         projectId: "af2b596c-1013-4062-adff-7d7d6d16f324",
       },
+      EXPO_PUBLIC_SERVER_VAPID_KEY: process.env.EXPO_PUBLIC_SERVER_VAPID_KEY,
     },
     runtimeVersion: {
       policy: "appVersion",
@@ -42,6 +40,6 @@ export default ({ config }) => ({
     updates: {
       url: "https://u.expo.dev/af2b596c-1013-4062-adff-7d7d6d16f324",
     },
-    plugins: ["@react-native-firebase/app"],
+    plugins: [],
   },
 });

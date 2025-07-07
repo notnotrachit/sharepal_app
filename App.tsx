@@ -7,11 +7,17 @@ import AppNavigator from "./src/navigation/AppNavigator";
 import AuthInitializer from "./src/components/AuthInitializer";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
 import { GlobalOverlayProvider } from "./src/components/PortalLongPressMenu";
-import { notificationService } from "./src/services/notificationService";
+import { unifiedPushService } from "./src/services/unifiedPushService";
 
 export default function App() {
   useEffect(() => {
-    notificationService.requestUserPermission();
+    // Initialize UnifiedPush for Android devices
+    unifiedPushService.requestUserPermission();
+    
+    // Cleanup on unmount
+    return () => {
+      unifiedPushService.cleanup();
+    };
   }, []);
 
   return (

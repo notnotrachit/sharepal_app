@@ -1,92 +1,36 @@
-import messaging from '@react-native-firebase/messaging';
-import { Platform } from 'react-native';
-import { apiService } from './api';
-import { secureStorage } from '../utils/secureStorage';
-import { STORAGE_KEYS } from '../constants/api';
+// Legacy notification service - now using UnifiedPush
+// This file is kept for backward compatibility but delegates to UnifiedPush
+import { unifiedPushService } from './unifiedPushService';
 
 class NotificationService {
   constructor() {
-    this.setupNotificationListeners();
+    // No setup needed - UnifiedPush service handles everything
   }
 
   public async checkPermissionStatus(): Promise<boolean> {
-    try {
-      const authStatus = await messaging().hasPermission();
-      return (
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL
-      );
-    } catch (error) {
-      return false;
-    }
+    return unifiedPushService.checkPermissionStatus();
   }
 
-  public async requestUserPermission() {
-    const authStatus = await messaging().requestPermission();
-    const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-    if (enabled) {
-      await this.getAndSendFCMToken();
-    } else {
-    }
-    return enabled;
+  public async requestUserPermission(): Promise<boolean> {
+    return unifiedPushService.requestUserPermission();
   }
 
+  // Legacy method - now delegates to UnifiedPush
   public async getAndSendFCMToken() {
-    try {
-      let fcmToken = await secureStorage.getItem(STORAGE_KEYS.FCM_TOKEN);
-
-      if (!fcmToken) {
-        fcmToken = await messaging().getToken();
-        if (fcmToken) {
-          await secureStorage.setItem(STORAGE_KEYS.FCM_TOKEN, fcmToken);
-          await this.sendFCMTokenToBackend(fcmToken);
-        } else {
-        }
-      } else {
-        // Always attempt to send the token to the backend on app start if it exists
-        // This ensures the backend has the latest active token for the user.
-        await this.sendFCMTokenToBackend(fcmToken);
-      }
-    } catch (error) {
-    }
+    // This method is deprecated but kept for compatibility
+    // UnifiedPush handles registration automatically
+    await unifiedPushService.registerDevice();
   }
 
+  // Legacy method - now delegates to UnifiedPush
   private async sendFCMTokenToBackend(token: string) {
-    try {
-      await apiService.updateFCMToken(token);
-    } catch (error: any) { // Explicitly type error as 'any'
-    }
+    // This is handled automatically by UnifiedPush service
+    console.log('FCM token handling is now managed by UnifiedPush service');
   }
 
+  // Legacy method - UnifiedPush handles listeners automatically
   private setupNotificationListeners() {
-    // Handle foreground messages
-    messaging().onMessage(async remoteMessage => {
-      // You can display a local notification here if needed
-    });
-
-    // Handle background/quit messages (when app is in background or closed)
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
-      // Perform background tasks
-    });
-
-    // Handle notification opened from a quit state
-    messaging().getInitialNotification().then(remoteMessage => {
-      if (remoteMessage) {
-      }
-    });
-
-    // Handle notification opened from a background state
-    messaging().onNotificationOpenedApp(remoteMessage => {
-    });
-
-    // Handle token refresh
-    messaging().onTokenRefresh(async token => {
-      await secureStorage.setItem(STORAGE_KEYS.FCM_TOKEN, token);
-      await this.sendFCMTokenToBackend(token);
-    });
+    // UnifiedPush service sets up all listeners automatically
   }
 }
 
