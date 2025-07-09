@@ -65,6 +65,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       // Request permission
       try {
         const granted = await notificationService.requestUserPermission();
+        console.log('Notification permission granted:', granted);
         if (granted) {
           setNotificationsEnabled(true);
           Alert.alert(

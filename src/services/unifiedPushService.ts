@@ -3,31 +3,26 @@ import ExpoUnifiedPush, {
   requestPermissions,
   showLocalNotification,
 } from 'expo-unified-push';
-import { subscribeDistributorMessages } from "expo-unified-push";
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { apiService } from './api';
-import { secureStorage } from '../utils/secureStorage';
-import { STORAGE_KEYS } from '../constants/api';
+import { debugLogger } from './debugLogger';
 
 class UnifiedPushService {
-  private unsubscribe: (() => void) | null = null;
-  private SERVER_VAPID_KEY: string | undefined;
-
   constructor() {
-    this.SERVER_VAPID_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_SERVER_VAPID_KEY;
-    this.setupNotificationListeners();
+    debugLogger.info('UnifiedPush', 'Legacy service initialized - use usePushNotifications hook for full functionality', { 
+      platform: Platform.OS
+    });
   }
 
   public async checkPermissionStatus(): Promise<boolean> {
     try {
       if (Platform.OS !== 'android') {
-        // UnifiedPush only works on Android
         return false;
       }
-      return await checkPermissions();
+      const hasPermission = await checkPermissions();
+      debugLogger.info('Permissions', 'Permission check result', { hasPermission });
+      return hasPermission;
     } catch (error) {
-      console.error('Error checking permissions:', error);
+      debugLogger.error('Permissions', 'Error checking permissions', error);
       return false;
     }
   }
@@ -35,200 +30,66 @@ class UnifiedPushService {
   public async requestUserPermission(): Promise<boolean> {
     try {
       if (Platform.OS !== 'android') {
-        // UnifiedPush only works on Android
+        debugLogger.warn('UnifiedPush', 'Platform not supported', { platform: Platform.OS });
         return false;
       }
 
+      debugLogger.info('Permissions', 'Checking current permissions');
       const granted = await checkPermissions();
+      debugLogger.info('Permissions', 'Current permission status', { granted });
+      
       if (granted) {
-        await this.registerDevice();
+        debugLogger.success('Permissions', 'Permissions already granted');
         return true;
       } else {
+        debugLogger.info('Permissions', 'Requesting permissions');
         const state = await requestPermissions();
+        debugLogger.info('Permissions', 'Permission request result', { state });
+        
         if (state === 'granted') {
-          await this.registerDevice();
+          debugLogger.success('Permissions', 'Permissions granted');
           return true;
         } else {
+          debugLogger.error('Permissions', 'Permissions denied', { state });
           return false;
         }
       }
     } catch (error) {
+      debugLogger.error('Permissions', 'Error in requestUserPermission', error);
       return false;
-    }
-  }
-
-  public async registerDevice() {
-    try {
-      if (!this.SERVER_VAPID_KEY) {
-        throw new Error('SERVER_VAPID_KEY is not set in environment variables');
-      }
-
-      if (Platform.OS !== 'android') {
-        return;
-      }
-
-      // Check if a distributor is already saved
-      const savedDistributor = ExpoUnifiedPush.getSavedDistributor();
-      // console.log('Saved UnifiedPush distributor:', savedDistributor);
-      const distributors = ExpoUnifiedPush.getDistributors();
-      console.log('number of available UnifiedPush distributors:', distributors.length);
-      console.log(distributors[0].name)
-      // ExpoUnifiedPush.saveDistributor(distributors[0]?.id || null);
-
-      if (!savedDistributor) {
-        // Auto-select the first available distributor
-        const distributors = ExpoUnifiedPush.getDistributors();
-        console.log('Available UnifiedPush distributors:', distributors);
-        if (distributors.length > 0) {
-          // Prefer internal distributor if available, otherwise use the first one
-          const preferredDistributor = distributors.find(d => d.isInternal) || distributors[0];
-          ExpoUnifiedPush.saveDistributor(preferredDistributor.id);
-          console.log('Auto-selected distributor:', preferredDistributor.name);
-        } else {
-          console.warn('No UnifiedPush distributors available. Please install a distributor app.');
-          return;
-        }
-      }
-
-      await ExpoUnifiedPush.registerDevice(this.SERVER_VAPID_KEY);
-      console.log('UnifiedPush device registration initiated');
-    } catch (error) {
-      console.error('Error registering device:', error);
-    }
-  }
-
-  public async unregisterDevice() {
-    try {
-      if (Platform.OS !== 'android') {
-        return;
-      }
-
-      await ExpoUnifiedPush.unregisterDevice();
-      
-      // Clear stored push data
-      await secureStorage.removeItem(STORAGE_KEYS.PUSH_ENDPOINT);
-      await secureStorage.removeItem(STORAGE_KEYS.PUSH_KEYS);
-      
-      console.log('UnifiedPush device unregistered');
-    } catch (error) {
-      console.error('Error unregistering device:', error);
-    }
-  }
-
-  private async sendPushRegistrationToBackend(registrationData: {
-    endpoint: string;
-    keys: { auth: string; p256dh: string };
-  }) {
-    try {
-      await apiService.updatePushSubscription(registrationData);
-      
-      // Store the registration data locally
-      await secureStorage.setItem(STORAGE_KEYS.PUSH_ENDPOINT, registrationData.endpoint);
-      await secureStorage.setItem(STORAGE_KEYS.PUSH_KEYS, JSON.stringify(registrationData.keys));
-      
-      console.log('Push subscription sent to backend successfully');
-    } catch (error) {
-      console.error('Error sending push subscription to backend:', error);
-    }
-  }
-
-  private async removePushRegistrationFromBackend() {
-    try {
-      const endpoint = await secureStorage.getItem(STORAGE_KEYS.PUSH_ENDPOINT);
-      if (endpoint) {
-        await apiService.removePushSubscription(endpoint);
-        console.log('Push subscription removed from backend');
-      }
-    } catch (error) {
-      console.error('Error removing push subscription from backend:', error);
-    }
-  }
-
-  private setupNotificationListeners() {
-    if (Platform.OS !== 'android') {
-      return;
-    }
-
-    this.unsubscribe = subscribeDistributorMessages(async ({ action, data }) => {
-
-      switch (action) {
-        case 'registered':
-          const registrationPayload = {
-            endpoint: data.url,
-            keys: {
-              auth: data.auth,
-              p256dh: data.pubKey,
-            },
-          };
-          await this.sendPushRegistrationToBackend(registrationPayload);
-          break;
-
-        case 'unregistered':
-          await this.removePushRegistrationFromBackend();
-          break;
-
-        case 'message':
-          await this.handleIncomingMessage(data);
-          break;
-
-        case 'error':
-          console.error('UnifiedPush error:', data);
-          break;
-
-        default:
-          console.log('Unknown UnifiedPush action:', action);
-      }
-    });
-  }
-
-  private async handleIncomingMessage(messageData: any) {
-    try {
-      // Parse the message data if it's a string
-      let parsedData = messageData;
-      if (typeof messageData === 'string') {
-        try {
-          parsedData = JSON.parse(messageData);
-        } catch (e) {
-          // If parsing fails, treat as plain text
-          parsedData = { body: messageData };
-        }
-      }
-
-      // Extract notification details
-      const title = parsedData.title || parsedData.notification?.title || 'SharePal';
-      const body = parsedData.body || parsedData.notification?.body || 'You have a new notification';
-      const data = parsedData.data || {};
-
-      // Show local notification
-      await showLocalNotification({
-        id: Date.now(),
-        title,
-        body,
-        data,
-      });
-
-      console.log('Local notification displayed');
-    } catch (error) {
-      console.error('Error handling incoming message:', error);
-      
-      // Fallback notification
-      await showLocalNotification({
-        id: Date.now(),
-        title: 'SharePal',
-        body: 'You have a new notification',
-      });
     }
   }
 
   public async sendTestNotification() {
     try {
+      console.log('=== Sending Test Notification ===');
+      
+      // Check permissions first
+      const hasPermission = await checkPermissions();
+      console.log('Current notification permission:', hasPermission);
+      
+      if (!hasPermission) {
+        console.log('No notification permissions, requesting...');
+        const granted = await requestPermissions();
+        console.log('Permission request result:', granted);
+        
+        if (granted !== 'granted') {
+          throw new Error('Notification permissions not granted');
+        }
+      }
+      
+      console.log('Displaying test notification...');
       await showLocalNotification({
         id: Date.now(),
         title: 'Test Notification',
         body: 'This is a test notification from SharePal',
       });
+      
+      console.log('SUCCESS: Test notification sent');
+      console.log('================================');
     } catch (error) {
-      console.error('Error sending test notification:', error);
+      console.error('ERROR: Failed to send test notification:', error);
+      throw error;
     }
   }
 
@@ -236,28 +97,38 @@ class UnifiedPushService {
     if (Platform.OS !== 'android') {
       return [];
     }
-    return ExpoUnifiedPush.getDistributors();
+    const distributors = ExpoUnifiedPush.getDistributors();
+    console.log('Getting available distributors:', distributors.length);
+    return distributors;
   }
 
   public getSavedDistributor() {
     if (Platform.OS !== 'android') {
       return null;
     }
-    return ExpoUnifiedPush.getSavedDistributor();
+    const saved = ExpoUnifiedPush.getSavedDistributor();
+    console.log('Getting saved distributor:', saved);
+    return saved;
   }
 
   public saveDistributor(distributorId: string | null) {
     if (Platform.OS !== 'android') {
       return;
     }
+    console.log('Saving distributor:', distributorId);
     ExpoUnifiedPush.saveDistributor(distributorId);
   }
 
+  public async registerDevice() {
+    // This method is kept for backward compatibility
+    // The actual registration is now handled by the usePushNotifications hook
+    debugLogger.info('UnifiedPush', 'Legacy registerDevice called - registration is now handled by the hook');
+    console.log('Device registration is now handled automatically by the usePushNotifications hook');
+  }
+
   public cleanup() {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
-    }
+    debugLogger.warn('UnifiedPush', 'Legacy cleanup called - this method is deprecated');
+    debugLogger.info('UnifiedPush', 'The usePushNotifications hook now handles all registration and cleanup');
   }
 }
 

@@ -7,17 +7,25 @@ import AppNavigator from "./src/navigation/AppNavigator";
 import AuthInitializer from "./src/components/AuthInitializer";
 import { ThemeProvider } from "./src/contexts/ThemeContext";
 import { GlobalOverlayProvider } from "./src/components/PortalLongPressMenu";
-import { unifiedPushService } from "./src/services/unifiedPushService";
+import { backgroundNotificationHandler } from "./src/services/backgroundNotificationHandler";
+import { usePushNotifications } from "./src/hooks/usePushNotifications";
+
+// Component to handle push notifications after auth is initialized
+function PushNotificationHandler() {
+  usePushNotifications();
+  return null;
+}
 
 export default function App() {
   useEffect(() => {
-    // Initialize UnifiedPush for Android devices
-    unifiedPushService.requestUserPermission();
-    
-    // Cleanup on unmount
-    return () => {
-      unifiedPushService.cleanup();
-    };
+    // Initialize background notification tracking
+    // backgroundNotificationHandler is automatically initialized
+    // DON'T cleanup ANYTHING on unmount - we need ALL listeners to persist for background notifications
+    // This includes both UnifiedPush listeners AND background state monitoring
+    // Cleaning up ANY part can break background notification debugging/functionality
+    // return () => {
+    //   backgroundNotificationHandler.cleanup(); // This would stop background state monitoring
+    // };
   }, []);
 
   return (
@@ -25,6 +33,7 @@ export default function App() {
       <ThemeProvider>
         <GlobalOverlayProvider>
           <AuthInitializer>
+            <PushNotificationHandler />
             <StatusBar style="auto" />
             <AppNavigator />
           </AuthInitializer>

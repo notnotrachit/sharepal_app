@@ -42,6 +42,7 @@ import SettlementsScreen from "../screens/settlements/SettlementsScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
 import EditProfileScreen from "../screens/profile/EditProfileScreen";
 import SettingsScreen from "../screens/settings/SettingsScreen";
+import { UnifiedPushDebugScreen } from "../screens/UnifiedPushDebugScreen";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -434,6 +435,16 @@ function MainNavigator() {
           headerTitle: "Settings",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <MainDrawer.Screen
+        name="UnifiedPushDebug"
+        component={UnifiedPushDebugScreen}
+        options={{
+          headerTitle: "Push Notifications Debug",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="notifications-outline" size={size} color={color} />
           ),
         }}
       />

@@ -1,22 +1,29 @@
 {
   "cli": {
-    "version": ">= 16.10.1",
-    "appVersionSource": "remote"
+    "version": ">= 7.8.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SERVER_VAPID_KEY": "BNbN3OiAQo7FYQVqvzDoHiUQVuLkdOcmvp4xDP05v6twLWGRBXvdkLM6EgIahtR5WOhHXfpQUjSrOBmKikhHVrI"
+      }
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SERVER_VAPID_KEY": "BNbN3OiAQo7FYQVqvzDoHiUQVuLkdOcmvp4xDP05v6twLWGRBXvdkLM6EgIahtR5WOhHXfpQUjSrOBmKikhHVrI"
+      }
+    },
+    "production": {
       "android": {
         "buildType": "apk"
       },
-      "autoIncrement": true
-    },
-    "production": {
-      "autoIncrement": true
+      "env": {
+        "EXPO_PUBLIC_SERVER_VAPID_KEY": "BNbN3OiAQo7FYQVqvzDoHiUQVuLkdOcmvp4xDP05v6twLWGRBXvdkLM6EgIahtR5WOhHXfpQUjSrOBmKikhHVrI"
+      }
     }
   },
   "submit": {

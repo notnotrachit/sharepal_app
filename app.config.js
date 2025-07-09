@@ -1,7 +1,7 @@
 // app.config.js
 export default ({ config }) => ({
   expo: {
-    name: "sharepal-mobile",
+    name: "SharePal",
     slug: "sharepal-mobile",
     version: "1.6.1",
     orientation: "portrait",
@@ -32,7 +32,7 @@ export default ({ config }) => ({
       eas: {
         projectId: "af2b596c-1013-4062-adff-7d7d6d16f324",
       },
-      EXPO_PUBLIC_SERVER_VAPID_KEY: process.env.EXPO_PUBLIC_SERVER_VAPID_KEY,
+      EXPO_PUBLIC_SERVER_VAPID_KEY: process.env.EXPO_PUBLIC_SERVER_VAPID_KEY || "BNbN3OiAQo7FYQVqvzDoHiUQVuLkdOcmvp4xDP05v6twLWGRBXvdkLM6EgIahtR5WOhHXfpQUjSrOBmKikhHVrI",
     },
     runtimeVersion: {
       policy: "appVersion",

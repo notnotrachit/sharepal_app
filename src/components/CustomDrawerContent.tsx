@@ -156,6 +156,8 @@ export default function CustomDrawerContent(
       props.navigation.navigate("EditProfile");
     } else if (routeName === "Settings") {
       props.navigation.navigate("Settings");
+    } else if (routeName === "UnifiedPushDebug") {
+      props.navigation.navigate("UnifiedPushDebug");
     }
   };
 
@@ -164,6 +166,7 @@ export default function CustomDrawerContent(
     { name: "Profile", icon: "person-outline", route: "Profile" },
     { name: "Edit Profile", icon: "person-circle-outline", route: "EditProfile" },
     { name: "Settings", icon: "settings-outline", route: "Settings" },
+    { name: "Push Debug", icon: "notifications-outline", route: "UnifiedPushDebug" },
   ];
 
   const profileItems = [

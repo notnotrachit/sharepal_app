@@ -32,9 +32,8 @@ export const login = createAsyncThunk(
       await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.token.refresh.token);
       await secureStorage.setItem(STORAGE_KEYS.USER, response.user);
 
-      // Request and send push subscription after successful login
-      const { notificationService } = await import('../../services/notificationService');
-      await notificationService.requestUserPermission();
+      // Push notifications will be handled by the usePushNotifications hook
+      // after authentication state changes
       
       return response;
     } catch (error: any) {
@@ -54,9 +53,8 @@ export const register = createAsyncThunk(
       await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.token.refresh.token);
       await secureStorage.setItem(STORAGE_KEYS.USER, response.user);
 
-      // Request and send push subscription after successful registration
-      const { notificationService } = await import('../../services/notificationService');
-      await notificationService.requestUserPermission();
+      // Push notifications will be handled by the usePushNotifications hook
+      // after authentication state changes
       
       return response;
     } catch (error: any) {
@@ -83,8 +81,8 @@ export const googleSignIn = createAsyncThunk(
       await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.token.refresh.token);
       await secureStorage.setItem(STORAGE_KEYS.USER, response.user);
 
-      const { notificationService } = await import('../../services/notificationService');
-      await notificationService.requestUserPermission();
+      // Push notifications will be handled by the usePushNotifications hook
+      // after authentication state changes
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message);

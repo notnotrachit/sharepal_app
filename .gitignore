@@ -35,8 +35,12 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
-android/
+# android/
 ios/
-google-services.json
+# google-services.json
 GoogleService-Info.plist
 .env
+*.apk
+*.aab
+android/app/debug.keystore
+android/*
