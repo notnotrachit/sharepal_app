@@ -39,12 +39,12 @@ async function handleIncomingMessage(messageData: any) {
     debugLogger.info('Notifications', 'Notification details', { title, body, data: notificationData });
 
     // Show local notification
-    await showLocalNotification({
-      id: Date.now(),
-      title,
-      body,
-      ...(Object.keys(notificationData).length > 0 && { data: notificationData }),
-    });
+    // await showLocalNotification({
+    //   id: Date.now(),
+    //   title,
+    //   body,
+    //   ...(Object.keys(notificationData).length > 0 && { data: notificationData }),
+    // });
 
     debugLogger.success('Notifications', 'Local notification displayed successfully');
   } catch (error) {
