@@ -4,13 +4,10 @@ import ExpoUnifiedPush, {
   showLocalNotification,
 } from 'expo-unified-push';
 import { Platform } from 'react-native';
-import { debugLogger } from './debugLogger';
 
 class UnifiedPushService {
   constructor() {
-    debugLogger.info('UnifiedPush', 'Legacy service initialized - use usePushNotifications hook for full functionality', { 
-      platform: Platform.OS
-    });
+    // Legacy service - use usePushNotifications hook for full functionality
   }
 
   public async checkPermissionStatus(): Promise<boolean> {
@@ -19,10 +16,9 @@ class UnifiedPushService {
         return false;
       }
       const hasPermission = await checkPermissions();
-      debugLogger.info('Permissions', 'Permission check result', { hasPermission });
       return hasPermission;
     } catch (error) {
-      debugLogger.error('Permissions', 'Error checking permissions', error);
+      console.error('Error checking permissions:', error);
       return false;
     }
   }
@@ -30,32 +26,25 @@ class UnifiedPushService {
   public async requestUserPermission(): Promise<boolean> {
     try {
       if (Platform.OS !== 'android') {
-        debugLogger.warn('UnifiedPush', 'Platform not supported', { platform: Platform.OS });
+        console.log('UnifiedPush is only supported on Android');
         return false;
       }
 
-      debugLogger.info('Permissions', 'Checking current permissions');
       const granted = await checkPermissions();
-      debugLogger.info('Permissions', 'Current permission status', { granted });
       
       if (granted) {
-        debugLogger.success('Permissions', 'Permissions already granted');
         return true;
       } else {
-        debugLogger.info('Permissions', 'Requesting permissions');
         const state = await requestPermissions();
-        debugLogger.info('Permissions', 'Permission request result', { state });
         
         if (state === 'granted') {
-          debugLogger.success('Permissions', 'Permissions granted');
           return true;
         } else {
-          debugLogger.error('Permissions', 'Permissions denied', { state });
           return false;
         }
       }
     } catch (error) {
-      debugLogger.error('Permissions', 'Error in requestUserPermission', error);
+      console.error('Error in requestUserPermission:', error);
       return false;
     }
   }
@@ -122,14 +111,31 @@ class UnifiedPushService {
   public async registerDevice() {
     // This method is kept for backward compatibility
     // The actual registration is now handled by the usePushNotifications hook
-    debugLogger.info('UnifiedPush', 'Legacy registerDevice called - registration is now handled by the hook');
+    console.log('Legacy registerDevice called - registration is now handled by the hook');
     console.log('Device registration is now handled automatically by the usePushNotifications hook');
   }
 
-  public cleanup() {
-    debugLogger.warn('UnifiedPush', 'Legacy cleanup called - this method is deprecated');
-    debugLogger.info('UnifiedPush', 'The usePushNotifications hook now handles all registration and cleanup');
+  public async unregisterDevice() {
+    try {
+      if (Platform.OS !== 'android') {
+        console.log('Unregister skipped - not Android platform');
+        return;
+      }
+
+      console.log('Unregistering device from UnifiedPush');
+      await ExpoUnifiedPush.unregisterDevice();
+      console.log('Device unregistered successfully');
+    } catch (error) {
+      console.error('Error unregistering device:', error);
+      throw error;
+    }
   }
+
+  public cleanup() {
+    console.log('Legacy cleanup called - this method is deprecated');
+    console.log('The usePushNotifications hook now handles all registration and cleanup');
+  }
+
 }
 
 export const unifiedPushService = new UnifiedPushService();

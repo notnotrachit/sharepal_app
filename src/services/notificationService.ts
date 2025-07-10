@@ -1,7 +1,6 @@
 // Legacy notification service - now using UnifiedPush hook
 // This file is kept for backward compatibility but delegates to UnifiedPush
 import { unifiedPushService } from './unifiedPushService';
-import { debugLogger } from './debugLogger';
 
 class NotificationService {
   constructor() {
@@ -13,16 +12,7 @@ class NotificationService {
   }
 
   public async requestUserPermission(): Promise<boolean> {
-    debugLogger.info('NotificationService', 'requestUserPermission called - delegating to UnifiedPush service');
-    const result = await unifiedPushService.requestUserPermission();
-    
-    if (result) {
-      debugLogger.success('NotificationService', 'UnifiedPush registration initiated - backend registration will happen automatically via hook');
-    } else {
-      debugLogger.error('NotificationService', 'UnifiedPush registration failed');
-    }
-    
-    return result;
+    return unifiedPushService.requestUserPermission();
   }
 
   // Legacy method - now delegates to UnifiedPush hook

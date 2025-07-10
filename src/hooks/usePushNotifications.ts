@@ -13,20 +13,19 @@ import { RootState } from '../store';
 import { apiService } from '../services/api';
 import { secureStorage } from '../utils/secureStorage';
 import { STORAGE_KEYS } from '../constants/api';
-import { debugLogger } from '../services/debugLogger';
 
 async function handleIncomingMessage(messageData: any) {
   try {
-    debugLogger.info('Notifications', 'Processing incoming message', messageData);
+    console.log('Processing incoming message:', messageData);
     
     // Parse the message data if it's a string
     let parsedData = messageData;
     if (typeof messageData === 'string') {
       try {
         parsedData = JSON.parse(messageData);
-        debugLogger.info('Notifications', 'Parsed JSON data', parsedData);
+        console.log('Parsed JSON data:', parsedData);
       } catch (e) {
-        debugLogger.warn('Notifications', 'Failed to parse as JSON, treating as plain text');
+        console.log('Failed to parse as JSON, treating as plain text');
         parsedData = { body: messageData };
       }
     }
@@ -36,19 +35,19 @@ async function handleIncomingMessage(messageData: any) {
     const body = parsedData.body || parsedData.notification?.body || parsedData.message || 'You have a new notification';
     const notificationData = parsedData.data || {};
 
-    debugLogger.info('Notifications', 'Notification details', { title, body, data: notificationData });
+    console.log('Notification details:', { title, body, data: notificationData });
 
     // Show local notification
-    // await showLocalNotification({
-    //   id: Date.now(),
-    //   title,
-    //   body,
-    //   ...(Object.keys(notificationData).length > 0 && { data: notificationData }),
-    // });
+    await showLocalNotification({
+      id: Date.now(),
+      title,
+      body,
+      data: notificationData,
+    });
 
-    debugLogger.success('Notifications', 'Local notification displayed successfully');
+    console.log('Local notification displayed successfully');
   } catch (error) {
-    debugLogger.error('Notifications', 'Failed to handle incoming message', error);
+    console.error('Failed to handle incoming message:', error);
     
     // Fallback notification
     try {
@@ -57,9 +56,9 @@ async function handleIncomingMessage(messageData: any) {
         title: 'SharePal',
         body: 'You have a new notification',
       });
-      debugLogger.success('Notifications', 'Fallback notification displayed');
+      console.log('Fallback notification displayed');
     } catch (fallbackError) {
-      debugLogger.error('Notifications', 'Even fallback notification failed', fallbackError);
+      console.error('Even fallback notification failed:', fallbackError);
     }
   }
 }
@@ -94,32 +93,32 @@ async function registerUnifiedPush(authToken: string, data: RegisteredPayload) {
       },
     };
     
-    debugLogger.info('UnifiedPush', 'Registering with backend', registrationPayload);
+    console.log('Registering with backend:', registrationPayload);
     await apiService.updatePushSubscription(registrationPayload);
     
     // Store the registration data locally
     await secureStorage.setItem(STORAGE_KEYS.PUSH_ENDPOINT, data.url);
     await secureStorage.setItem(STORAGE_KEYS.PUSH_KEYS, JSON.stringify(registrationPayload.keys));
     
-    debugLogger.success('UnifiedPush', 'Successfully registered with backend');
+    console.log('Successfully registered with backend');
   } catch (error) {
-    debugLogger.error('UnifiedPush', 'Failed to register with backend', error);
+    console.error('Failed to register with backend:', error);
     throw error;
   }
 }
 
 async function unregisterUnifiedPush(authToken: string, data: RegisteredPayload) {
   try {
-    debugLogger.info('UnifiedPush', 'Unregistering from backend', { url: data.url });
+    console.log('Unregistering from backend:', { url: data.url });
     await apiService.removePushSubscription(data.url);
     
     // Clear stored push data
     await secureStorage.removeItem(STORAGE_KEYS.PUSH_ENDPOINT);
     await secureStorage.removeItem(STORAGE_KEYS.PUSH_KEYS);
     
-    debugLogger.success('UnifiedPush', 'Successfully unregistered from backend');
+    console.log('Successfully unregistered from backend');
   } catch (error) {
-    debugLogger.error('UnifiedPush', 'Failed to unregister from backend', error);
+    console.error('Failed to unregister from backend:', error);
     throw error;
   }
 }
@@ -127,37 +126,34 @@ async function unregisterUnifiedPush(authToken: string, data: RegisteredPayload)
 async function notificationCleanup({ deleteExpo = false, deleteUP = false }) {
   try {
     if (deleteExpo) {
-      // Clean up any Expo push tokens if needed
-      debugLogger.info('Cleanup', 'Cleaning up Expo push tokens');
+      console.log('Cleaning up Expo push tokens');
     }
     
     if (deleteUP) {
-      // Clean up UnifiedPush registration
-      debugLogger.info('Cleanup', 'Cleaning up UnifiedPush registration');
+      console.log('Cleaning up UnifiedPush registration');
       await secureStorage.removeItem(STORAGE_KEYS.PUSH_ENDPOINT);
       await secureStorage.removeItem(STORAGE_KEYS.PUSH_KEYS);
     }
   } catch (error) {
-    debugLogger.error('Cleanup', 'Error during notification cleanup', error);
+    console.error('Error during notification cleanup:', error);
   }
 }
 
 export function usePushNotifications() {
   const auth = useSelector((state: RootState) => state.auth);
   const isAuthenticated = auth.isAuthenticated;
-  const userId = auth.user?.user?.id;
-  console.log(auth.user?.user)
   const isLoading = auth.isLoading;
   
+  const userId = auth.user?.user?.id || auth.user?.id || auth.user?._id || auth.user?.user?._id ;
   const SERVER_VAPID_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_SERVER_VAPID_KEY;
 
   useEffect(() => {
     if (Platform.OS !== 'android') {
-      debugLogger.info('UnifiedPush', 'Skipping setup - not Android platform');
+      console.log('UnifiedPush: Skipping setup - not Android platform');
       return;
     }
 
-    debugLogger.info('UnifiedPush', 'Starting notification setup', { 
+    console.log('UnifiedPush: Starting notification setup', { 
       isDev: __DEV__,
       isAuthenticated,
       isLoading,
@@ -167,17 +163,35 @@ export function usePushNotifications() {
 
     // Don't proceed if auth is still loading or if we don't have a user ID yet
     if (isLoading) {
-      debugLogger.info('UnifiedPush', 'Auth still loading, waiting...');
+      console.log('UnifiedPush: Auth still loading, waiting...');
       return;
     }
 
     if (!isAuthenticated) {
-      debugLogger.info('UnifiedPush', 'User not authenticated, skipping registration');
+      console.log('UnifiedPush: User not authenticated, checking if we need to unregister');
+      
+      // If user was previously authenticated and now is not, unregister
+      const handleLogout = async () => {
+        const storedEndpoint = await secureStorage.getItem(STORAGE_KEYS.PUSH_ENDPOINT);
+        if (storedEndpoint) {
+          console.log('UnifiedPush: Found stored endpoint, unregistering from backend');
+          try {
+            await ExpoUnifiedPush.unregisterDevice();
+            await secureStorage.removeItem(STORAGE_KEYS.PUSH_ENDPOINT);
+            await secureStorage.removeItem(STORAGE_KEYS.PUSH_KEYS);
+            console.log('UnifiedPush: Successfully unregistered after logout');
+          } catch (error) {
+            console.error('UnifiedPush: Failed to unregister after logout:', error);
+          }
+        }
+      };
+      
+      handleLogout();
       return;
     }
 
     if (!userId) {
-      debugLogger.error('UnifiedPush', 'User authenticated but no userId available - this should not happen!');
+      console.error('UnifiedPush: User authenticated but no userId available - this should not happen!');
       return;
     }
 
@@ -191,7 +205,7 @@ export function usePushNotifications() {
           return state === "granted";
         }
       } catch (error) {
-        debugLogger.error('Permissions', 'Error checking/requesting permissions', error);
+        console.error('Error checking/requesting permissions:', error);
         return false;
       }
     }
@@ -205,15 +219,15 @@ export function usePushNotifications() {
       if (distributors.length > 0) {
         const preferredDistributor = distributors.find(d => d.isInternal) || distributors[0];
         saveDistributor(preferredDistributor.id);
-        debugLogger.info('UnifiedPush', 'Auto-selected distributor', { name: preferredDistributor.name });
+        console.log('UnifiedPush: Auto-selected distributor:', preferredDistributor.name);
       } else {
-        debugLogger.warn('UnifiedPush', 'No distributors available');
+        console.warn('UnifiedPush: No distributors available');
         return;
       }
     }
     
     if (userId && SERVER_VAPID_KEY) {
-      debugLogger.info('UnifiedPush', 'All requirements met, proceeding with registration', {
+      console.log('UnifiedPush: All requirements met, proceeding with registration', {
         userId,
         hasVapidKey: !!SERVER_VAPID_KEY,
         vapidKeyPreview: SERVER_VAPID_KEY?.substring(0, 20) + '...'
@@ -224,16 +238,16 @@ export function usePushNotifications() {
         notificationCleanup({ deleteExpo: true, deleteUP: false });
         
         if (granted) {
-          debugLogger.info('UnifiedPush', 'Permissions granted, registering device', { userId, isDev: __DEV__ });
+          console.log('UnifiedPush: Permissions granted, registering device', { userId, isDev: __DEV__ });
           await registerDevice(SERVER_VAPID_KEY, userId);
         } else {
-          debugLogger.error('UnifiedPush', 'Notification permissions not granted');
+          console.error('UnifiedPush: Notification permissions not granted');
         }
       }).catch((error) => {
-        debugLogger.error('UnifiedPush', 'Error in permission check/registration flow', error);
+        console.error('UnifiedPush: Error in permission check/registration flow:', error);
       });
     } else {
-      debugLogger.warn('UnifiedPush', 'Missing required data for registration', { 
+      console.warn('UnifiedPush: Missing required data for registration', { 
         hasUserId: !!userId, 
         hasVapidKey: !!SERVER_VAPID_KEY,
         isAuthenticated,
@@ -247,7 +261,7 @@ export function usePushNotifications() {
       return;
     }
 
-    debugLogger.info('UnifiedPush', 'Setting up message listeners', { 
+    console.log('UnifiedPush: Setting up message listeners', { 
       isDev: __DEV__,
       isAuthenticated,
       hasUserId: !!userId,
@@ -258,7 +272,7 @@ export function usePushNotifications() {
     // Set up message listeners regardless of auth state to catch all events
     // but only process registration messages when authenticated and user data is available
     const unsubscribe = subscribeDistributorMessages(async (message) => {
-      debugLogger.info('UnifiedPush', '🔔 RAW distributor message received', { 
+      console.log('UnifiedPush: RAW distributor message received', { 
         action: message.action, 
         data: message.data,
         isAuthenticated,
@@ -269,7 +283,7 @@ export function usePushNotifications() {
       // For registration events, we need both authentication and user data
       if (message.action === 'registered' || message.action === 'unregistered') {
         if (!isAuthenticated || !userId || isLoading) {
-          debugLogger.warn('UnifiedPush', `${message.action} event received but auth not ready`, { 
+          console.warn('UnifiedPush: Registration event received but auth not ready', { 
             isAuthenticated, 
             hasUserId: !!userId, 
             isLoading,
@@ -283,15 +297,15 @@ export function usePushNotifications() {
         // Get the current auth token from secure storage
         const authToken = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
         if (!authToken) {
-          debugLogger.warn('UnifiedPush', 'No access token found in storage');
+          console.warn('UnifiedPush: No access token found in storage');
           return;
         }
 
-        debugLogger.info('UnifiedPush', 'Processing authenticated message', { action: message.action });
+        console.log('UnifiedPush: Processing authenticated message', { action: message.action });
 
         if (message.action === 'registered') {
-          debugLogger.success('UnifiedPush', `🎉 REGISTERED! User ${message.data.instance} with url ${message.data.url}`);
-          debugLogger.info('UnifiedPush', 'Registration data details', { 
+          console.log('UnifiedPush: REGISTERED! User', message.data.instance, 'with url', message.data.url);
+          console.log('UnifiedPush: Registration data details', { 
             url: message.data.url,
             auth: message.data.auth ? 'present' : 'missing',
             pubKey: message.data.pubKey ? 'present' : 'missing',
@@ -299,7 +313,7 @@ export function usePushNotifications() {
           });
           
           const storedEndpoint = await secureStorage.getItem(STORAGE_KEYS.PUSH_ENDPOINT);
-          debugLogger.info('UnifiedPush', 'Stored endpoint check', { 
+          console.log('UnifiedPush: Stored endpoint check', { 
             storedEndpoint, 
             newEndpoint: message.data.url,
             shouldUpdate: !storedEndpoint || storedEndpoint !== message.data.url
@@ -307,16 +321,16 @@ export function usePushNotifications() {
           
           // Only register if this is a new endpoint or we don't have one stored
           if (!storedEndpoint || storedEndpoint !== message.data.url) {
-            debugLogger.info('UnifiedPush', '📤 Sending registration to backend...');
+            console.log('UnifiedPush: Sending registration to backend...');
             await registerUnifiedPush(authToken, message.data);
-            debugLogger.success('UnifiedPush', '✅ Backend registration completed!');
+            console.log('UnifiedPush: Backend registration completed!');
           } else {
-            debugLogger.info('UnifiedPush', '⏭️ Registration data unchanged, skipping backend update');
+            console.log('UnifiedPush: Registration data unchanged, skipping backend update');
           }
         }
         
         if (message.action === 'unregistered') {
-          debugLogger.info('UnifiedPush', `Unregistered user ${message.data.instance}`);
+          console.log('UnifiedPush: Unregistered user', message.data.instance);
           const storedEndpoint = await secureStorage.getItem(STORAGE_KEYS.PUSH_ENDPOINT);
           if (storedEndpoint) {
             const upData = { url: storedEndpoint, auth: '', pubKey: '', instance: message.data.instance };
@@ -325,25 +339,25 @@ export function usePushNotifications() {
         }
         
         if (message.action === 'error') {
-          debugLogger.error('UnifiedPush', 'Distributor error', message.data);
+          console.error('UnifiedPush: Distributor error', message.data);
         }
         
         if (message.action === 'registrationFailed') {
-          debugLogger.error('UnifiedPush', 'Registration failed', message.data);
+          console.error('UnifiedPush: Registration failed', message.data);
         }
         
         if (message.action === 'message') {
-          debugLogger.info('UnifiedPush', 'Received push message', message);
+          console.log('UnifiedPush: Received push message', message);
           // Handle the incoming push message
           await handleIncomingMessage(message.data);
         }
       } catch (error) {
-        debugLogger.error('UnifiedPush', 'Error processing distributor message', error);
+        console.error('UnifiedPush: Error processing distributor message', error);
       }
     });
 
     return () => {
-      debugLogger.info('UnifiedPush', 'Cleaning up message listeners');
+      console.log('UnifiedPush: Cleaning up message listeners');
       unsubscribe?.();
     };
   }, [isAuthenticated, userId, isLoading]);
@@ -358,7 +372,7 @@ export function usePushNotifications() {
     manualRegister: async () => {
       if (Platform.OS !== 'android') return false;
       if (!userId || !SERVER_VAPID_KEY) {
-        debugLogger.error('UnifiedPush', 'Manual register failed - missing userId or VAPID key', {
+        console.error('UnifiedPush: Manual register failed - missing userId or VAPID key', {
           hasUserId: !!userId,
           hasVapidKey: !!SERVER_VAPID_KEY,
           isAuthenticated,
@@ -369,17 +383,17 @@ export function usePushNotifications() {
       }
       
       try {
-        debugLogger.info('UnifiedPush', 'Manual registration triggered');
+        console.log('UnifiedPush: Manual registration triggered');
         await registerDevice(SERVER_VAPID_KEY, userId);
         return true;
       } catch (error) {
-        debugLogger.error('UnifiedPush', 'Manual registration failed', error);
+        console.error('UnifiedPush: Manual registration failed', error);
         return false;
       }
     },
     // Debug helper
     debugAuthState: () => {
-      debugLogger.info('UnifiedPush', 'Current auth state', {
+      console.log('UnifiedPush: Current auth state', {
         isAuthenticated,
         isLoading,
         hasUserId: !!userId,

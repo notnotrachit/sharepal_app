@@ -1,5 +1,4 @@
 import { Platform, AppState } from 'react-native';
-import { debugLogger } from './debugLogger';
 
 class BackgroundNotificationHandler {
   private appStateSubscription: any = null;
@@ -13,18 +12,15 @@ class BackgroundNotificationHandler {
       return;
     }
 
-    debugLogger.info('Background', 'Setting up app state listener for background notification tracking');
+    console.log('Setting up app state listener for background notification tracking');
 
     this.appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
-      debugLogger.info('Background', 'App state changed', { 
-        state: nextAppState,
-        timestamp: new Date().toISOString()
-      });
+      console.log('App state changed:', nextAppState);
 
       if (nextAppState === 'background') {
-        debugLogger.info('Background', 'App moved to background - UnifiedPush listeners should remain active');
+        console.log('App moved to background - UnifiedPush listeners should remain active');
       } else if (nextAppState === 'active') {
-        debugLogger.info('Background', 'App became active - checking for missed notifications');
+        console.log('App became active - checking for missed notifications');
       }
     });
   }

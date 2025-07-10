@@ -8,11 +8,13 @@ import {
   Switch,
   Alert,
   Linking,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import { notificationService } from "../../services/notificationService";
+import { unifiedPushService } from "../../services/unifiedPushService";
 import Card from "../../components/Card";
 import {
   spacing,
@@ -32,16 +34,27 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<ThemeOption>('system');
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
+  const [distributors, setDistributors] = useState<any[]>([]);
+  const [selectedDistributor, setSelectedDistributor] = useState<string | null>(null);
 
   useEffect(() => {
     checkNotificationPermissions();
     loadThemePreference();
+    loadUnifiedPushDistributors();
   }, []);
+
+  const loadUnifiedPushDistributors = () => {
+    if (Platform.OS === 'android') {
+      const availableDistributors = unifiedPushService.getAvailableDistributors();
+      const savedDistributor = unifiedPushService.getSavedDistributor();
+      setDistributors(availableDistributors);
+      setSelectedDistributor(savedDistributor);
+    }
+  };
 
   const checkNotificationPermissions = async () => {
     try {
       setIsCheckingPermissions(true);
-      // Check if notifications are currently enabled
       const hasPermission = await notificationService.checkPermissionStatus();
       setNotificationsEnabled(hasPermission);
     } catch (error) {
@@ -53,7 +66,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
   const loadThemePreference = async () => {
     try {
-      // Use the current theme mode from context
       setSelectedTheme(themeMode);
     } catch (error) {
       console.error('Error loading theme preference:', error);
@@ -62,10 +74,8 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
   const handleNotificationToggle = async (value: boolean) => {
     if (value) {
-      // Request permission
       try {
         const granted = await notificationService.requestUserPermission();
-        console.log('Notification permission granted:', granted);
         if (granted) {
           setNotificationsEnabled(true);
           Alert.alert(
@@ -88,7 +98,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         Alert.alert("Error", "Failed to enable notifications. Please try again.");
       }
     } else {
-      // Disable notifications
       Alert.alert(
         "Disable Notifications",
         "You can disable notifications in your device settings. Would you like to open settings?",
@@ -103,18 +112,31 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const handleThemeChange = async (theme: ThemeOption) => {
     try {
       setSelectedTheme(theme);
-      
-      // Apply theme change using context
       await setThemeMode(theme);
-      
       Alert.alert(
         "Theme Changed",
         `Theme set to ${theme}. ${theme === 'system' ? 'The app will follow your device theme.' : `The app will use ${theme} theme.`}`
       );
-      
     } catch (error) {
       console.error('Error saving theme preference:', error);
       Alert.alert("Error", "Failed to save theme preference.");
+    }
+  };
+
+  const handleDistributorChange = (distributorId: string) => {
+    try {
+      unifiedPushService.saveDistributor(distributorId);
+      setSelectedDistributor(distributorId);
+      
+      const distributor = distributors.find(d => d.id === distributorId);
+      Alert.alert(
+        "Distributor Changed",
+        `Push notifications will now use ${distributor?.name}. You may need to re-register for notifications.`
+      );
+      
+      loadUnifiedPushDistributors();
+    } catch (error) {
+      Alert.alert("Error", "Failed to change distributor. Please try again.");
     }
   };
 
@@ -301,6 +323,80 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       textAlign: 'center',
       lineHeight: 18,
     },
+    distributorHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+      paddingBottom: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    distributorHeaderContent: {
+      flex: 1,
+    },
+    distributorHeaderTitle: {
+      ...typography.body,
+      color: colors.text,
+      fontWeight: '600',
+      marginBottom: spacing.xs,
+    },
+    distributorHeaderSubtitle: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    distributorOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      borderRadius: borderRadius.md,
+      marginBottom: spacing.sm,
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    selectedDistributorOption: {
+      backgroundColor: `${colors.primary}10`,
+      borderColor: colors.primary,
+    },
+    distributorContent: {
+      flex: 1,
+    },
+    distributorTitle: {
+      ...typography.body,
+      color: colors.text,
+      fontWeight: '600',
+      marginBottom: spacing.xs,
+    },
+    selectedDistributorText: {
+      color: colors.primary,
+    },
+    distributorDescription: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    selectedDistributorDescription: {
+      color: colors.primary,
+    },
+    distributorInfo: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      padding: spacing.md,
+      backgroundColor: `${colors.primary}05`,
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: `${colors.primary}20`,
+      marginTop: spacing.md,
+    },
+    distributorInfoText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginLeft: spacing.sm,
+      flex: 1,
+      lineHeight: 16,
+    },
   });
 
   return (
@@ -327,7 +423,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
               />
             )}
             
-            {/* Permission Status Indicator */}
             <View style={styles.permissionStatus}>
               <Ionicons 
                 name={notificationsEnabled ? "checkmark-circle" : "close-circle"} 
@@ -345,25 +440,70 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         </Card>
       </View>
 
+      {/* UnifiedPush Distributor Section */}
+      {Platform.OS === 'android' && distributors.length > 1 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Push Provider</Text>
+          <Card>
+            <Card.Content>
+              <View style={styles.distributorHeader}>
+                <View style={styles.distributorHeaderContent}>
+                  <Text style={styles.distributorHeaderTitle}>Notification Provider</Text>
+                  <Text style={styles.distributorHeaderSubtitle}>
+                    Choose how you want to receive push notifications
+                  </Text>
+                </View>
+                <Ionicons name="server-outline" size={24} color={colors.primary} />
+              </View>
+              
+              {distributors.map((distributor) => (
+                <TouchableOpacity
+                  key={distributor.id}
+                  style={[
+                    styles.distributorOption,
+                    selectedDistributor === distributor.id && styles.selectedDistributorOption
+                  ]}
+                  onPress={() => handleDistributorChange(distributor.id)}
+                >
+                  <View style={styles.distributorContent}>
+                    <Text style={[
+                      styles.distributorTitle,
+                      selectedDistributor === distributor.id && styles.selectedDistributorText
+                    ]}>
+                      {distributor.name}
+                    </Text>
+                    <Text style={[
+                      styles.distributorDescription,
+                      selectedDistributor === distributor.id && styles.selectedDistributorDescription
+                    ]}>
+                      {distributor.isInternal ? 'Built-in distributor' : 'External app'} - 
+                      {distributor.isConnected ? ' Connected' : ' Available'}
+                    </Text>
+                  </View>
+                  {selectedDistributor === distributor.id && (
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+              
+              <View style={styles.distributorInfo}>
+                <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+                <Text style={styles.distributorInfoText}>
+                  UnifiedPush allows you to choose your preferred notification provider for better privacy and control.
+                </Text>
+              </View>
+            </Card.Content>
+          </Card>
+        </View>
+      )}
+
       {/* Theme Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Appearance</Text>
         <View style={styles.themeSection}>
-          {renderThemeOption(
-            'light',
-            'Light',
-            'Always use light theme'
-          )}
-          {renderThemeOption(
-            'dark',
-            'Dark',
-            'Always use dark theme'
-          )}
-          {renderThemeOption(
-            'system',
-            'System',
-            'Follow device theme settings'
-          )}
+          {renderThemeOption('light', 'Light', 'Always use light theme')}
+          {renderThemeOption('dark', 'Dark', 'Always use dark theme')}
+          {renderThemeOption('system', 'System', 'Follow device theme settings')}
         </View>
       </View>
 
