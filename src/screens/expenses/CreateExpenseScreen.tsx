@@ -8,8 +8,10 @@ import {
   Alert,
   Modal,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -17,6 +19,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppDispatch, RootState } from "../../store";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   createExpenseTransaction,
   fetchGroupTransactions,
@@ -31,10 +34,10 @@ import { EXPENSE_CATEGORIES, SPLIT_TYPES } from "../../constants/api";
 import { Group, User } from "../../types/api";
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
-import CreateExpenseSkeleton from "../../components/skeletons/CreateExpenseSkeleton";
-import InputGroup from "../../components/InputGroup";
-import PrimaryButton from "../../components/PrimaryButton";
-import SecondaryButton from "../../components/SecondaryButton";
+import UserAvatar from "../../components/UserAvatar";
+import ModernInputField from "../../components/ModernInputField";
+import TransactionTypeToggle from "../../components/TransactionTypeToggle";
+import ExpenseSplitModal from "../../components/ExpenseSplitModal";
 import {
   spacing,
   borderRadius,
@@ -66,57 +69,69 @@ interface Payer {
   amount: number;
 }
 
-export default function CreateExpenseScreen({ navigation, route }: Props) {
+export default function CreateExpenseScreenImproved({
+  navigation,
+  route,
+}: Props) {
   const { groupId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
   const { colors, components } = useTheme();
   const { isLoading, groups, groupMembers } = useSelector(
-    (state: RootState) => state.groups
+    (state: RootState) => state.groups,
   );
   const { user } = useSelector((state: RootState) => state.auth);
 
+  const [transactionType, setTransactionType] = useState<"spend" | "income">(
+    "spend",
+  );
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
     category: EXPENSE_CATEGORIES[0].name,
-    split_type: SPLIT_TYPES.EQUAL as string,
+    split_type: SPLIT_TYPES.EQUAL as "equal" | "exact" | "percentage",
     group_id: groupId || "",
     notes: "",
+    tags: "",
+    paidTo: "",
   });
 
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [splits, setSplits] = useState<Split[]>([]);
   const [payers, setPayers] = useState<Payer[]>([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showSplitTypeModal, setShowSplitTypeModal] = useState(false);
+  const [showSplitModal, setShowSplitModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(
+    new Date().toLocaleString(),
+  );
 
-  // Ref to track if we've already initialized splits for the current group
+  // New state for handling splits
+  const [splitMembers, setSplitMembers] = useState<User[]>([]);
+
   const initializedGroupRef = useRef<string | null>(null);
   const fetchAttempts = useRef<{ [groupId: string]: number }>({});
 
   useEffect(() => {
     dispatch(fetchGroups());
-  }, []); // Focus effect to handle state cleanup when screen is focused
+    const interval = setInterval(() => {
+      setCurrentDateTime(new Date().toLocaleString());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-
-      // Clear any navigation state and form errors when screen is focused
       dispatch(clearNavigationState());
       dispatch(clearFormState());
-
-      // Clear fetch attempts to allow fresh fetching on focus
       fetchAttempts.current = {};
 
-      // Cleanup function when leaving the screen
       return () => {
         dispatch(clearFormState());
         dispatch(clearNavigationState());
       };
-    }, [formData.group_id])
+    }, [formData.group_id]),
   );
 
-  // Main effect to handle group initialization and member fetching
   useEffect(() => {
     if (formData.group_id) {
       const group = groups.find((g) => g.id === formData.group_id);
@@ -124,24 +139,19 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       if (group) {
         setSelectedGroup(group);
 
-        // Check if we need to initialize splits
         if (initializedGroupRef.current !== formData.group_id) {
-
-          // Try to initialize with current group data
           if (group.members && group.members.length > 0) {
-            // Check if we have full user objects or just IDs
             const hasFullUserData = group.members.some(
               (member: any) =>
                 member &&
                 typeof member === "object" &&
-                (member.id || member._id)
+                (member.id || member._id),
             );
 
             if (!hasFullUserData) {
-              // We only have user IDs, try to fetch full member data (with cooldown)
               const lastFetchTime = fetchAttempts.current[group.id] || 0;
               const now = Date.now();
-              const FETCH_COOLDOWN = 5000; // 5 seconds cooldown
+              const FETCH_COOLDOWN = 5000;
 
               if (now - lastFetchTime > FETCH_COOLDOWN) {
                 fetchAttempts.current[group.id] = now;
@@ -149,16 +159,12 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
               }
             }
 
-            // Initialize splits with whatever data we have
             initializeSplits(group);
             initializedGroupRef.current = formData.group_id;
           } else {
-            // Group has no members or empty members array
-
-            // Initialize with just current user
-            if (user?.id) {
-              const fallbackSplits = [{ user_id: user.id, amount: 0 }];
-              const fallbackPayers = [{ user_id: user.id, amount: 0 }];
+            if (user?._id) {
+              const fallbackSplits = [{ user_id: user._id, amount: 0 }];
+              const fallbackPayers = [{ user_id: user._id, amount: 0 }];
               setSplits(fallbackSplits);
               setPayers(fallbackPayers);
               initializedGroupRef.current = formData.group_id;
@@ -167,9 +173,8 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         }
       }
     }
-  }, [formData.group_id, groups, user?.id]);
+  }, [formData.group_id, groups, user?._id]);
 
-  // Effect to handle when group members are updated after fetchGroupMembers
   useEffect(() => {
     if (formData.group_id && groupMembers && groupMembers.length > 0) {
       const currentGroup = groups.find((g) => g.id === formData.group_id);
@@ -178,10 +183,9 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         currentGroup.members &&
         currentGroup.members.length > 0
       ) {
-        // Check if this group update has full user objects now
         const hasFullUserData = currentGroup.members.some(
           (member: any) =>
-            member && typeof member === "object" && (member.id || member._id)
+            member && typeof member === "object" && (member.id || member._id),
         );
 
         if (
@@ -206,17 +210,60 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     }
   }, [formData.amount, formData.split_type, splits.length]);
 
-  const initializeSplits = (group: Group) => {
+  // Update split members when group changes
+  useEffect(() => {
+    if (selectedGroup && selectedGroup.members) {
+      const members = selectedGroup.members.map((member: any) => {
+        if (typeof member === "string") {
+          // Try to find the full user object in groupMembers
+          const found = groupMembers?.find((u: any) => u.id === member);
+          if (found) {
+            return {
+              id: found.id,
+              name: found.name || found.email || `User ${found.id.slice(-4)}`,
+              email: found.email || "",
+              role: found.role || "",
+              mail_verified: found.mail_verified || false,
+              fcm_token: found.fcm_token || "",
+              profile_pic_url: found.profile_pic_url || "",
+            };
+          }
+          // Fallback to just user ID
+          return {
+            id: member,
+            name: `User ${member.slice(-4)}`,
+            email: "",
+            role: "",
+            mail_verified: false,
+            fcm_token: "",
+            profile_pic_url: "",
+          };
+        }
+        return {
+          id: member.id || member._id,
+          name:
+            member.name ||
+            member.email ||
+            `User ${(member.id || member._id).slice(-4)}`,
+          email: member.email || "",
+          role: member.role || "",
+          mail_verified: member.mail_verified || false,
+          fcm_token: member.fcm_token || "",
+          profile_pic_url: member.profile_pic_url || "",
+        };
+      });
+      setSplitMembers(members);
+    }
+  }, [selectedGroup, groupMembers]);
 
+  const initializeSplits = (group: Group) => {
     const initialSplits: Split[] = [];
     const initialPayers: Payer[] = [];
     const addedUserIds = new Set<string>();
 
-    // Add all group members to splits, avoiding duplicates
     group.members.forEach((member: any) => {
       let userId: string;
 
-      // Handle both string (user ID) and object (full user data) formats
       if (typeof member === "string") {
         userId = member;
       } else if (member && (member.id || member._id)) {
@@ -234,16 +281,12 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       }
     });
 
-    // Initialize payers - by default, current user pays the full amount
-    if (user?.id) {
+    if (user?._id) {
       initialPayers.push({
-        user_id: user.id,
-        amount: 0, // Will be set when amount is entered
+        user_id: user._id,
+        amount: 0,
       });
     }
-
-    // Validate the splits against the group members
-
 
     setSplits(initialSplits);
     setPayers(initialPayers);
@@ -267,9 +310,9 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     }));
 
     let newPayers: Payer[] = [];
-    
-    if (user?.id) {
-      newPayers = [{ user_id: user.id, amount: totalAmount }];
+
+    if (user?._id) {
+      newPayers = [{ user_id: user._id, amount: totalAmount }];
     } else {
       if (splits.length > 0) {
         newPayers = [{ user_id: splits[0].user_id, amount: totalAmount }];
@@ -280,930 +323,691 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
     setPayers(newPayers);
   };
 
-  const updateSplitAmount = (userId: string, amount: number) => {
-    setSplits((prev) =>
-      prev.map((split) =>
-        split.user_id === userId ? { ...split, amount } : split
-      )
-    );
-  };
-
-  const updateSplitPercentage = (userId: string, percentage: number) => {
-    setSplits((prev) =>
-      prev.map((split) =>
-        split.user_id === userId ? { ...split, amount: percentage } : split
-      )
-    );
-  };
-
-  const calculatePercentageSplit = () => {
-    if (!formData.amount || splits.length === 0) {
-      return;
+  const getUserName = (userId: string): string => {
+    if (userId === user?._id) {
+      return "You";
     }
-
-    const totalAmount = parseFloat(formData.amount);
-    if (isNaN(totalAmount) || totalAmount <= 0) {
-      return;
+    const member = splitMembers.find((m) => m.id === userId);
+    if (member) {
+      if (member.name && member.name.trim().length > 0) return member.name;
+      if (member.email && member.email.trim().length > 0) return member.email;
     }
-
-    // Convert percentages to actual amounts
-    const newSplits = splits.map((split) => ({
-      ...split,
-      amount: (split.amount / 100) * totalAmount,
-    }));
-
-    setSplits(newSplits);
-  };
-
-  const updatePayerAmount = (userId: string, amount: number) => {
-    setPayers((prev) =>
-      prev.map((payer) =>
-        payer.user_id === userId ? { ...payer, amount } : payer
-      )
-    );
-  };
-
-  const validatePayersAndSplits = () => {
-    const totalAmount = parseFloat(formData.amount);
-    let currentPayers = [...payers];
-    
-    if (formData.split_type === SPLIT_TYPES.EQUAL) {
-      if (currentPayers.length === 0 && splits.length > 0) {
-        // Create a payer using the first split user
-        currentPayers = [{ user_id: splits[0].user_id, amount: totalAmount }];
-      } else if (currentPayers.length > 0) {
-        // Update existing payer amounts to match total (fix stale state)
-        currentPayers = currentPayers.map(payer => ({
-          ...payer,
-          amount: totalAmount // For equal split, one person pays the full amount
-        }));
-      }
-    }
-    const payerTotal = currentPayers.reduce((sum, payer) => sum + payer.amount, 0);
-
-    // Validate that payer total equals the expense amount
-    const payerDifference = Math.abs(totalAmount - payerTotal);
-    if (payerDifference > 0.01) {
-      return false;
-    }
-    console.log('[PASS] Payer validation passed');
-    
-    // Update the actual payers state if we created an emergency payer
-    if (currentPayers !== payers && currentPayers.length > 0) {
-      setPayers(currentPayers);
-    }
-
-    // Validate splits based on split type
-    if (formData.split_type === SPLIT_TYPES.EXACT) {
-      const splitTotal = splits.reduce((sum, split) => sum + split.amount, 0);
-      const splitDifference = Math.abs(totalAmount - splitTotal);
-      const isValid = splitDifference < 0.01;
-      return isValid;
-    }
-
-    if (formData.split_type === SPLIT_TYPES.EQUAL) {
-      const splitTotal = splits.reduce((sum, split) => sum + split.amount, 0);
-      const splitDifference = Math.abs(totalAmount - splitTotal);
-      // Use a more lenient tolerance for equal splits due to floating point precision
-      const tolerance = 0.02; // 2 cents tolerance
-      const isValid = splitDifference < tolerance;
-      return isValid;
-    }
-
-    if (formData.split_type === SPLIT_TYPES.PERCENTAGE) {
-      // For percentage validation, we need to check the original percentages
-      const percentageTotal = splits.reduce((sum, split) => {
-        // During percentage input, split.amount stores the percentage
-        return sum + split.amount;
-      }, 0);
-      const percentageDifference = Math.abs(percentageTotal - 100);
-      const isValid = percentageDifference < 0.01;
-      return isValid;
-    }
-
-    return true;
+    return `User ${userId.slice(-4)}`;
   };
 
   const handleCreateExpense = async () => {
-    if (!formData.description.trim()) {
-      Alert.alert("Error", "Please enter a description");
+    console.log("formData:", formData);
+    console.log("selectedGroup:", selectedGroup);
+
+    if (
+      !formData.description.trim() ||
+      !formData.amount.trim() ||
+      !selectedGroup
+    ) {
+      Alert.alert("Error", "Please fill in all required fields");
       return;
     }
 
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount) || amount <= 0) {
       Alert.alert("Error", "Please enter a valid amount");
       return;
     }
 
-    if (!formData.group_id) {
-      Alert.alert("Error", "Please select a group");
-      return;
-    }
-
-    if (!validatePayersAndSplits()) {
-      let errorMessage = "Split amounts do not match the total expense amount";
-      if (formData.split_type === SPLIT_TYPES.PERCENTAGE) {
-        errorMessage = "Split percentages do not add up to 100%";
-      }
-      Alert.alert("Error", errorMessage);
-      return;
-    }
-
     try {
-      // Prepare splits for submission
-      let finalSplits = splits;
-
-      // For percentage splits, convert percentages to actual amounts
-      if (formData.split_type === SPLIT_TYPES.PERCENTAGE) {
-        const totalAmount = parseFloat(formData.amount);
-        finalSplits = splits.map((split) => ({
-          ...split,
-          amount: (split.amount / 100) * totalAmount,
-        }));
-      }
-
       const expenseData = {
-        group_id: formData.group_id,
-        description: formData.description.trim(),
-        amount: parseFloat(formData.amount),
-        currency: selectedGroup?.currency || "USD",
+        description: formData.description,
+        amount: amount,
         category: formData.category,
-        split_type: formData.split_type as any,
+        split_type: formData.split_type,
+        group_id: formData.group_id,
+        notes: formData.notes,
+        splits: splits,
         payers: payers,
-        splits: finalSplits,
-        notes: formData.notes.trim() || undefined,
+        currency: selectedGroup?.currency || "INR",
       };
-      
 
-      const newExpense = await dispatch(
-        createExpenseTransaction(expenseData)
-      ).unwrap();
+      await dispatch(createExpenseTransaction(expenseData)).unwrap();
 
-      // Refresh group transactions
-      dispatch(fetchGroupTransactions({ groupId: formData.group_id }));
-
-      navigation.goBack();
+      Alert.alert("Success", "Expense created successfully", [
+        {
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
+      ]);
     } catch (error: any) {
-      Alert.alert("Error", error.message || error.toString() || "Unknown error occurred");
+      Alert.alert("Error", error.message || "Failed to create expense");
     }
   };
 
-  const renderCategoryItem = ({ item }: { item: any }) => {
-    const isSelected = formData.category === item.name;
+  const handleSaveAndAddAnother = async () => {
+    await handleCreateExpense();
+    // Reset form for new expense
+    setFormData({
+      description: "",
+      amount: "",
+      category: EXPENSE_CATEGORIES[0].name,
+      split_type: SPLIT_TYPES.EQUAL as "equal" | "exact" | "percentage",
+      group_id: groupId || "",
+      notes: "",
+      tags: "",
+      paidTo: "",
+    });
+    if (selectedGroup) {
+      initializeSplits(selectedGroup);
+    }
+  };
+
+  const renderSplitPreview = () => {
+    if (!selectedGroup || splits.length === 0) return null;
+
     return (
       <TouchableOpacity
-        style={[
-          styles.categoryGridItem,
-          isSelected && styles.selectedCategoryItem,
-        ]}
-        onPress={() => {
-          setFormData((prev) => ({ ...prev, category: item.name }));
-          setShowCategoryModal(false);
-        }}
-        activeOpacity={0.7}
+        style={styles.splitPreviewContainer}
+        onPress={() => setShowSplitModal(true)}
       >
-        <LinearGradient
-          colors={item.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[
-            styles.categoryIconContainer,
-            isSelected && styles.selectedCategoryIcon,
-          ]}
-        >
-          <Ionicons name={item.icon as any} size={24} color="#fff" />
-        </LinearGradient>
-        <Text
-          style={[
-            styles.categoryName,
-            isSelected && { color: colors.primary, fontWeight: "600" },
-          ]}
-        >
-          {item.name}
-        </Text>
-        {isSelected && (
-          <View style={styles.selectedBadge}>
-            <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+        <View style={styles.splitHeader}>
+          <View style={styles.splitIconContainer}>
+            <Ionicons name="people" size={20} color={colors.primary} />
           </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  const renderSplitTypeItem = ({ item }: { item: string }) => {
-    const isSelected = formData.split_type === item;
-    return (
-      <TouchableOpacity
-        style={[
-          styles.modalItem,
-          isSelected && { backgroundColor: colors.cardSecondary },
-        ]}
-        onPress={() => {
-          setFormData((prev) => ({ ...prev, split_type: item }));
-          setShowSplitTypeModal(false);
-          if (item === SPLIT_TYPES.EQUAL) {
-            calculateEqualSplit();
-          } else if (item === SPLIT_TYPES.PERCENTAGE) {
-            // Initialize percentage splits with equal percentages
-            const equalPercentage = 100 / splits.length;
-            const newSplits = splits.map((split) => ({
-              ...split,
-              amount: equalPercentage,
-            }));
-            setSplits(newSplits);
-          } else if (item === SPLIT_TYPES.EXACT) {
-            // Reset to zero amounts for exact input
-            const newSplits = splits.map((split) => ({
-              ...split,
-              amount: 0,
-            }));
-            setSplits(newSplits);
-          }
-        }}
-        activeOpacity={0.7}
-      >
-        <Text
-          style={[
-            styles.modalItemText,
-            isSelected && { color: colors.primary, fontWeight: "600" },
-          ]}
-        >
-          {item.charAt(0).toUpperCase() + item.slice(1)}
-        </Text>
-        {isSelected && (
-          <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  const renderGroupItem = ({ item }: { item: Group }) => {
-    const isSelected = formData.group_id === item.id;
-    return (
-      <TouchableOpacity
-        style={[
-          styles.modalItem,
-          isSelected && { backgroundColor: colors.cardSecondary },
-        ]}
-        onPress={() => {
-          setFormData((prev) => ({ ...prev, group_id: item.id }));
-          setShowGroupModal(false);
-        }}
-        activeOpacity={0.7}
-      >
-        <View style={{ flex: 1 }}>
-          <Text
-            style={[
-              styles.modalItemText,
-              isSelected && { color: colors.primary, fontWeight: "600" },
-            ]}
-          >
-            {item.name}
+          <Text style={styles.splitHeaderText}>Split with</Text>
+          <Text style={styles.splitTypeText}>
+            {formData.split_type.charAt(0).toUpperCase() +
+              formData.split_type.slice(1)}
           </Text>
-          {item.description && (
-            <Text
-              style={[
-                styles.modalItemText,
-                {
-                  color: colors.textSecondary,
-                  fontSize: 14,
-                  marginTop: 2,
-                },
-              ]}
-            >
-              {item.description}
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.textSecondary}
+          />
+        </View>
+
+        <View style={styles.splitMembersContainer}>
+          {splits.slice(0, 3).map((split, index) => (
+            <View key={split.user_id} style={styles.splitMemberItem}>
+              {(() => {
+                const memberObj = splitMembers.find(
+                  (m) => m.id === split.user_id,
+                );
+                return (
+                  <UserAvatar
+                    user={memberObj}
+                    size={32}
+                    name={getUserName(split.user_id)}
+                  />
+                );
+              })()}
+              <View style={{ flexDirection: "column", flex: 1 }}>
+                <Text style={styles.splitMemberName}>
+                  {getUserName(split.user_id)}
+                </Text>
+                <Text
+                  style={{
+                    color: colors.primary,
+                    fontWeight: "bold",
+                    fontSize: 14,
+                    marginLeft: spacing.sm,
+                  }}
+                >
+                  {formatCurrency(
+                    split.amount,
+                    selectedGroup?.currency || "INR",
+                  )}
+                </Text>
+              </View>
+              <View style={styles.checkmarkContainer}>
+                <Ionicons name="checkmark" size={16} color="#4CAF50" />
+              </View>
+            </View>
+          ))}
+          {splits.length > 3 && (
+            <Text style={styles.moreMembersText}>
+              +{splits.length - 3} more
             </Text>
           )}
         </View>
-        {isSelected && (
-          <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-        )}
       </TouchableOpacity>
     );
   };
-
-  const getUserName = (userId: string) => {
-    if (userId === user?.id) return "You";
-
-    // First, try to find the user in the selected group's members
-    if (selectedGroup) {
-      const member = selectedGroup.members?.find((m: any) => {
-        // Handle both string (user ID) and object (full user data) formats
-        if (typeof m === "string") {
-          return m === userId;
-        }
-        return (m.id || m._id) === userId;
-      });
-
-      // If we found a member and it's a full user object, return the name
-      if (member && typeof member === "object") {
-        return (
-          (member as any)?.name ||
-          (member as any)?.email ||
-          `User ${userId.slice(-4)}`
-        );
-      }
-    }
-
-    // If we didn't find a full user object in the group, try the global groupMembers state
-    // This contains the full user objects fetched by fetchGroupMembers
-    if (groupMembers && groupMembers.length > 0) {
-      const member = groupMembers.find((m: any) => (m.id || m._id) === userId);
-
-      if (member) {
-        return member.name || member.email || `User ${userId.slice(-4)}`;
-      }
-    }
-
-    // Final fallback
-    return `User ${userId.slice(-4)}`;
-  };
-
-  useEffect(() => {
-    // Update payer amount when total amount changes (for single payer scenario)
-    if (formData.amount && payers.length > 0) {
-      const totalAmount = parseFloat(formData.amount);
-      if (!isNaN(totalAmount) && totalAmount > 0) {
-        // Update the current user's payer amount to match the total
-        const newPayers = payers.map((payer) => ({
-          ...payer,
-          amount: payer.user_id === user?.id ? totalAmount : payer.amount,
-        }));
-        setPayers(newPayers);
-      }
-    }
-  }, [formData.amount, user?.id]);
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
     },
-    content: {
-      padding: spacing.lg,
-    },
-    form: {
-      gap: spacing.lg,
-    },
-    selector: {
-      ...components.input,
+    header: {
       flexDirection: "row",
-      justifyContent: "space-between",
       alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
-    selectorText: {
-      ...typography.body,
+    headerTitle: {
+      ...typography.h3,
       color: colors.text,
+      fontWeight: "600",
     },
-    splitItem: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      backgroundColor: colors.card,
-      borderRadius: borderRadius.md,
+    closeButton: {
+      padding: spacing.sm,
+    },
+    content: {
+      flex: 1,
       padding: spacing.md,
+    },
+    transactionTypeContainer: {
+      flexDirection: "row",
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.full,
+      padding: 4,
+      marginBottom: spacing.xl,
+    },
+    transactionTypeButton: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      borderRadius: borderRadius.full,
+      alignItems: "center",
+    },
+    activeTransactionType: {
+      backgroundColor: "#4CAF50",
+    },
+    transactionTypeText: {
+      ...typography.body,
+      fontWeight: "600",
+    },
+    activeTransactionTypeText: {
+      color: "#FFFFFF",
+    },
+    inactiveTransactionTypeText: {
+      color: colors.textSecondary,
+    },
+    amountContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      padding: spacing.xl,
+      marginBottom: spacing.lg,
+      alignItems: "center",
+    },
+    amountLabel: {
+      ...typography.body,
+      color: colors.textSecondary,
       marginBottom: spacing.sm,
     },
-    splitUser: {
+    amountInputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    currencySymbol: {
+      ...typography.h1,
+      color: colors.text,
+      fontWeight: "300",
+      marginRight: spacing.xs,
+    },
+    amountInput: {
+      ...typography.h1,
+      color: colors.text,
+      fontWeight: "300",
+      flex: 1,
+      textAlign: "center",
+      minWidth: 100,
+    },
+    fieldContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      marginBottom: spacing.md,
+    },
+    fieldRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    fieldRowLast: {
+      borderBottomWidth: 0,
+    },
+    fieldLabel: {
+      ...typography.body,
+      color: colors.textSecondary,
+      width: 100,
+    },
+    fieldValue: {
       ...typography.body,
       color: colors.text,
       flex: 1,
     },
-    splitAmount: {
+    fieldInput: {
       ...typography.body,
-      color: colors.primary,
+      color: colors.text,
+      flex: 1,
+      padding: 0,
+    },
+    paymentMethodContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    paymentMethodLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    paymentMethodIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.cardSecondary,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: spacing.md,
+    },
+    paymentMethodText: {
+      ...typography.h4,
+      color: colors.text,
       fontWeight: "600",
     },
-    splitInput: {
+    expenseToggle: {
+      backgroundColor: "#4CAF50",
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: borderRadius.full,
+    },
+    expenseToggleText: {
+      ...typography.caption,
+      color: "#FFFFFF",
+      fontWeight: "600",
+    },
+    splitPreviewContainer: {
       backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderWidth: 1,
-      borderRadius: borderRadius.sm,
-      padding: spacing.sm,
-      width: 80,
-      textAlign: "center",
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    splitHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: spacing.md,
+    },
+    splitIconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.cardSecondary,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: spacing.sm,
+    },
+    splitHeaderText: {
+      ...typography.body,
       color: colors.text,
+      flex: 1,
     },
-    percentageInputContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.sm,
-    },
-    percentageInput: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderWidth: 1,
-      borderRadius: borderRadius.sm,
-      paddingHorizontal: spacing.sm,
-    },
-    percentageSymbol: {
+    splitTypeText: {
       ...typography.body,
       color: colors.textSecondary,
-      marginLeft: spacing.xs,
+      marginRight: spacing.sm,
     },
-    calculatedAmount: {
-      ...typography.body,
-      color: colors.primary,
-      fontWeight: "600",
-      marginLeft: spacing.sm,
+    splitMembersContainer: {
+      gap: spacing.md,
     },
-    percentageTotal: {
+    splitMemberItem: {
       flexDirection: "row",
-      justifyContent: "space-between",
       alignItems: "center",
-      marginTop: spacing.sm,
-      padding: spacing.md,
-      backgroundColor: colors.cardSecondary,
-      borderRadius: borderRadius.md,
     },
-    percentageTotalText: {
+    splitMemberName: {
       ...typography.body,
-      color: colors.primary,
+      color: colors.text,
+      marginLeft: spacing.sm,
+      flex: 1,
+    },
+    checkmarkContainer: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: "#E8F5E8",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    moreMembersText: {
+      ...typography.body,
+      color: colors.textSecondary,
+      marginLeft: 44,
+    },
+    actionButtonsContainer: {
+      flexDirection: "row",
+      gap: spacing.md,
+      marginTop: spacing.xl,
+    },
+    saveAndAddButton: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderWidth: 2,
+      borderColor: "#4CAF50",
+      borderRadius: borderRadius.lg,
+      paddingVertical: spacing.md,
+      alignItems: "center",
+    },
+    saveAndAddText: {
+      ...typography.body,
+      color: "#4CAF50",
+      fontWeight: "600",
+    },
+    saveButton: {
+      flex: 1,
+      backgroundColor: "#4CAF50",
+      borderRadius: borderRadius.lg,
+      paddingVertical: spacing.md,
+      alignItems: "center",
+    },
+    saveButtonText: {
+      ...typography.body,
+      color: "#FFFFFF",
       fontWeight: "600",
     },
     modalOverlay: {
       flex: 1,
       backgroundColor: "rgba(0, 0, 0, 0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: spacing.lg,
+      justifyContent: "flex-end",
     },
     modalContainer: {
       backgroundColor: colors.surface,
-      borderRadius: borderRadius.lg,
-      width: "90%",
-      maxWidth: 400,
+      borderTopLeftRadius: borderRadius.xl,
+      borderTopRightRadius: borderRadius.xl,
       maxHeight: "80%",
-      ...shadows.medium,
-      elevation: 10,
     },
     modalHeader: {
       flexDirection: "row",
-      justifyContent: "space-between",
       alignItems: "center",
+      justifyContent: "space-between",
       padding: spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: borderRadius.lg,
-      borderTopRightRadius: borderRadius.lg,
     },
     modalTitle: {
       ...typography.h3,
       color: colors.text,
-      flex: 1,
       fontWeight: "600",
     },
     modalCloseButton: {
       padding: spacing.sm,
-      marginLeft: spacing.md,
-      borderRadius: borderRadius.full,
-      backgroundColor: colors.cardSecondary,
-      width: 36,
-      height: 36,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    modalList: {
-      maxHeight: 400,
-    },
-    modalItem: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: spacing.lg,
-      backgroundColor: colors.surface,
-      minHeight: 56,
-    },
-    modalItemText: {
-      ...typography.body,
-      color: colors.text,
-      flex: 1,
-      fontSize: 16,
-    },
-    categorySelector: {
-      ...components.input,
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    selectedCategoryDisplay: {
-      flexDirection: "row",
-      alignItems: "center",
-      flex: 1,
-    },
-    selectedCategoryIcon: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      justifyContent: "center",
-      alignItems: "center",
-      marginRight: spacing.md,
-      ...shadows.small,
     },
     categoryGrid: {
-      maxHeight: 400,
+      padding: spacing.lg,
     },
-    categoryGridContent: {
-      padding: spacing.md,
-    },
-    categoryRow: {
-      justifyContent: "space-between",
-      paddingHorizontal: spacing.sm,
-    },
-    categoryGridItem: {
+    categoryItem: {
       flex: 1,
       aspectRatio: 1,
       margin: spacing.xs,
-      backgroundColor: colors.surface,
       borderRadius: borderRadius.lg,
-      padding: spacing.md,
       alignItems: "center",
       justifyContent: "center",
-      borderWidth: 2,
-      borderColor: "transparent",
-      ...shadows.small,
-      maxWidth: "30%",
+      backgroundColor: colors.cardSecondary,
     },
     selectedCategoryItem: {
-      borderColor: colors.primary,
-      backgroundColor: `${colors.primary}10`,
+      backgroundColor: colors.primary,
     },
-    categoryIconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      justifyContent: "center",
+    categoryIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       alignItems: "center",
-      marginBottom: spacing.sm,
-      ...shadows.small,
+      justifyContent: "center",
+      marginBottom: spacing.xs,
     },
-    categoryName: {
+    categoryText: {
       ...typography.caption,
       color: colors.text,
       textAlign: "center",
-      fontSize: 11,
-      lineHeight: 14,
-      fontWeight: "500",
     },
-    selectedBadge: {
-      position: "absolute",
-      top: spacing.xs,
-      right: spacing.xs,
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      width: 24,
-      height: 24,
-      justifyContent: "center",
-      alignItems: "center",
-      ...shadows.small,
+    selectedCategoryText: {
+      color: "#FFFFFF",
     },
   });
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.form}>
-        <InputGroup
-          label="Description"
-          value={formData.description}
-          onChangeText={(value) =>
-            setFormData((prev) => ({ ...prev, description: value }))
-          }
-          placeholder="What was this expense for?"
-          required
-        />
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      {/* Header */}
+      {/* Floating close (X) icon in top-right */}
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          top: spacing.lg,
+          right: spacing.lg,
+          zIndex: 10,
+          backgroundColor: colors.surface,
+          borderRadius: 20,
+          width: 40,
+          height: 40,
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: "#000",
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
+        }}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="close" size={24} color={colors.text} />
+      </TouchableOpacity>
 
-        <InputGroup
-          label="Amount"
-          value={formData.amount}
-          onChangeText={(value) => {
-            setFormData((prev) => ({ ...prev, amount: value }));
-          }}
-          placeholder="0.00"
-          keyboardType="decimal-pad"
-          required
-        />
-
-        <View style={{ marginBottom: spacing.md }}>
-          <Text
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Amount Input */}
+          <View style={[styles.amountContainer, { marginBottom: spacing.md }]}>
+            <Text style={styles.amountLabel}>Amount spent</Text>
+            <View style={styles.amountInputContainer}>
+              <Text style={styles.currencySymbol}>₹</Text>
+              <TextInput
+                style={styles.amountInput}
+                value={formData.amount}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({ ...prev, amount: value }))
+                }
+                placeholder="0"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="decimal-pad"
+              />
+              <TouchableOpacity>
+                <Ionicons
+                  name="calculator"
+                  size={24}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* Form Fields */}
+          <View
             style={{
-              ...typography.h4,
-              color: colors.text,
-              marginBottom: spacing.xs,
+              backgroundColor: colors.surface,
+              borderRadius: borderRadius.lg,
+              padding: spacing.lg,
+              marginBottom: spacing.md,
             }}
           >
-            Group *
-          </Text>
-          <TouchableOpacity
-            style={styles.selector}
-            onPress={() => setShowGroupModal(true)}
-          >
-            <Text style={styles.selectorText}>
-              {selectedGroup ? selectedGroup.name : "Select a group"}
-            </Text>
-            <Ionicons
-              name="chevron-down"
-              size={20}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ marginBottom: spacing.md }}>
-          <Text
-            style={{
-              ...typography.h4,
-              color: colors.text,
-              marginBottom: spacing.xs,
-            }}
-          >
-            Category
-          </Text>
-          <TouchableOpacity
-            style={styles.categorySelector}
-            onPress={() => setShowCategoryModal(true)}
-          >
-            {(() => {
-              const selectedCategory = EXPENSE_CATEGORIES.find(cat => cat.name === formData.category);
-              return selectedCategory ? (
-                <View style={styles.selectedCategoryDisplay}>
-                  <LinearGradient
-                    colors={selectedCategory.gradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.selectedCategoryIcon}
-                  >
-                    <Ionicons name={selectedCategory.icon as any} size={20} color="#fff" />
-                  </LinearGradient>
-                  <Text style={styles.selectorText}>{selectedCategory.name}</Text>
-                </View>
-              ) : (
-                <Text style={styles.selectorText}>Select Category</Text>
-              );
-            })()}
-            <Ionicons
-              name="chevron-down"
-              size={20}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ marginBottom: spacing.md }}>
-          <Text
-            style={{
-              ...typography.h4,
-              color: colors.text,
-              marginBottom: spacing.xs,
-            }}
-          >
-            Split Type
-          </Text>
-          <TouchableOpacity
-            style={styles.selector}
-            onPress={() => setShowSplitTypeModal(true)}
-          >
-            <Text style={styles.selectorText}>
-              {formData.split_type.charAt(0).toUpperCase() +
-                formData.split_type.slice(1)}
-            </Text>
-            <Ionicons
-              name="chevron-down"
-              size={20}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {splits.length > 0 && (
-          <View style={{ marginBottom: spacing.md }}>
             <Text
               style={{
                 ...typography.h4,
                 color: colors.text,
+                fontWeight: "bold",
                 marginBottom: spacing.xs,
               }}
             >
-              Split Details
+              Description
             </Text>
-            {splits.map((split, index) => (
-              <View key={`${split.user_id}-${index}`} style={styles.splitItem}>
-                <Text style={styles.splitUser}>
-                  {getUserName(split.user_id)}
-                </Text>
-                {formData.split_type === SPLIT_TYPES.EQUAL ? (
-                  <Text style={styles.splitAmount}>
-                    {formatCurrency(split.amount, selectedGroup?.currency || 'INR')}
-                  </Text>
-                ) : formData.split_type === SPLIT_TYPES.PERCENTAGE ? (
-                  <View style={styles.percentageInputContainer}>
-                    <View style={styles.percentageInput}>
-                      <TextInput
-                        style={[styles.splitInput, { color: colors.text }]}
-                        value={split.amount.toString()}
-                        placeholderTextColor={colors.textSecondary}
-                        onChangeText={(value) =>
-                          updateSplitPercentage(
-                            split.user_id,
-                            parseFloat(value) || 0
-                          )
-                        }
-                        keyboardType="decimal-pad"
-                        placeholder="0"
-                      />
-                      <Text style={styles.percentageSymbol}>%</Text>
-                    </View>
-                    {formData.amount && parseFloat(formData.amount) > 0 && (
-                      <Text style={styles.calculatedAmount}>
-                        {formatCurrency(
-                          (split.amount / 100) * parseFloat(formData.amount),
-                          selectedGroup?.currency || 'INR'
-                        )}
-                      </Text>
-                    )}
-                  </View>
-                ) : (
-                  <TextInput
-                    style={[styles.splitInput, { color: colors.text }]}
-                    value={split.amount.toString()}
-                    placeholderTextColor={colors.textSecondary}
-                    onChangeText={(value) =>
-                      updateSplitAmount(split.user_id, parseFloat(value) || 0)
-                    }
-                    keyboardType="decimal-pad"
-                    placeholder="0"
-                  />
-                )}
-              </View>
-            ))}
-            {formData.split_type === SPLIT_TYPES.PERCENTAGE && (
-              <View style={styles.percentageTotal}>
-                <Text style={styles.percentageTotalText}>
-                  Total:{" "}
-                  {splits
-                    .reduce((sum, split) => sum + split.amount, 0)
-                    .toFixed(1)}
-                  %
-                </Text>
-              </View>
-            )}
+            <TextInput
+              style={{
+                ...typography.body,
+                color: colors.text,
+                backgroundColor: colors.cardSecondary,
+                borderRadius: borderRadius.md,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+                fontSize: 16,
+              }}
+              value={formData.description}
+              onChangeText={(value) =>
+                setFormData((prev) => ({ ...prev, description: value }))
+              }
+              placeholder="Enter expense description"
+              placeholderTextColor={colors.textSecondary}
+              maxLength={80}
+            />
           </View>
-        )}
-
-        <InputGroup
-          label="Notes"
-          value={formData.notes}
-          onChangeText={(value) =>
-            setFormData((prev) => ({ ...prev, notes: value }))
-          }
-          placeholder="Add any additional notes"
-          multiline
-          numberOfLines={3}
-        />
-
-        <PrimaryButton
-          title={isLoading ? "Creating..." : "Create Expense"}
-          onPress={handleCreateExpense}
-          loading={isLoading}
-          disabled={!formData.description || !formData.amount || !selectedGroup}
-        />
+          {/* Split Preview */}
+          {renderSplitPreview()}
+          {/* Category Section with horizontal scrollable selector */}
+          <View style={[styles.fieldContainer, { marginBottom: spacing.md }]}>
+            <Text
+              style={{
+                ...typography.h4,
+                color: colors.text,
+                fontWeight: "bold",
+                paddingTop: spacing.sm,
+                paddingBottom: spacing.xs,
+                marginBottom: spacing.xs,
+                marginLeft: spacing.lg,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+            >
+              Category
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                gap: spacing.md,
+              }}
+              style={{ marginBottom: spacing.sm }}
+            >
+              {EXPENSE_CATEGORIES.map((cat) => {
+                const isSelected = formData.category === cat.name;
+                return (
+                  <TouchableOpacity
+                    key={cat.name}
+                    style={{
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: isSelected
+                        ? colors.primary
+                        : colors.cardSecondary,
+                      borderRadius: borderRadius.lg,
+                      paddingVertical: spacing.sm,
+                      paddingHorizontal: spacing.sm,
+                      marginRight: spacing.sm,
+                      borderWidth: isSelected ? 2 : 1,
+                      borderColor: isSelected ? colors.primary : colors.border,
+                      shadowColor: "#000",
+                      shadowOpacity: isSelected ? 0.1 : 0,
+                      shadowRadius: isSelected ? 2 : 0,
+                      minWidth: 70,
+                    }}
+                    activeOpacity={0.85}
+                    onPress={() =>
+                      setFormData((prev) => ({ ...prev, category: cat.name }))
+                    }
+                  >
+                    <LinearGradient
+                      colors={cat.gradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Ionicons name={cat.icon as any} size={20} color="#fff" />
+                    </LinearGradient>
+                    <Text
+                      style={{
+                        color: isSelected ? "#fff" : colors.text,
+                        fontWeight: "500",
+                        fontSize: 14,
+                        textAlign: "center",
+                      }}
+                    >
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </ScrollView>
+        <View
+          style={{
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+            backgroundColor: colors.surface,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              width: "100%",
+              backgroundColor: colors.primary,
+              borderRadius: borderRadius.md,
+              paddingVertical: spacing.md,
+              alignItems: "center",
+              shadowColor: colors.primary,
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 1,
+            }}
+            onPress={handleCreateExpense}
+            activeOpacity={0.85}
+          >
+            <Text
+              style={{
+                ...typography.h4,
+                color: "#fff",
+                fontWeight: "bold",
+                letterSpacing: 0.5,
+              }}
+            >
+              Save
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
+      {/* Category Modal */}
       {/* Modals */}
-      <Modal
-        visible={showCategoryModal}
-        transparent={true}
-        animationType="fade"
-        statusBarTranslucent={true}
-        onRequestClose={() => setShowCategoryModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCategoryModal(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalContainer}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Category</Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setShowCategoryModal(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="close" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={EXPENSE_CATEGORIES}
-              renderItem={renderCategoryItem}
-              keyExtractor={(item) => item.name}
-              style={styles.categoryGrid}
-              numColumns={3}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.categoryGridContent}
-              columnWrapperStyle={styles.categoryRow}
-            />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+      {/* Category modal removed, replaced by horizontal scroll selector */}
 
-      <Modal
-        visible={showSplitTypeModal}
-        transparent={true}
-        animationType="fade"
-        statusBarTranslucent={true}
-        onRequestClose={() => setShowSplitTypeModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowSplitTypeModal(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalContainer}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Split Type</Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setShowSplitTypeModal(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="close" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={Object.values(SPLIT_TYPES)}
-              renderItem={renderSplitTypeItem}
-              keyExtractor={(item) => item}
-              style={styles.modalList}
-              showsVerticalScrollIndicator={false}
-              ItemSeparatorComponent={() => (
-                <View
-                  style={{
-                    height: StyleSheet.hairlineWidth,
-                    backgroundColor: colors.border,
-                  }}
-                />
-              )}
-            />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal
-        visible={showGroupModal}
-        transparent={true}
-        animationType="fade"
-        statusBarTranslucent={true}
-        onRequestClose={() => setShowGroupModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowGroupModal(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalContainer}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Group</Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setShowGroupModal(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="close" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={groups}
-              renderItem={renderGroupItem}
-              keyExtractor={(item) => item.id}
-              style={styles.modalList}
-              showsVerticalScrollIndicator={false}
-              ItemSeparatorComponent={() => (
-                <View
-                  style={{
-                    height: StyleSheet.hairlineWidth,
-                    backgroundColor: colors.border,
-                  }}
-                />
-              )}
-            />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-    </ScrollView>
+      {/* Split Modal */}
+      <ExpenseSplitModal
+        visible={showSplitModal}
+        onClose={() => setShowSplitModal(false)}
+        amount={parseFloat(formData.amount) || 0}
+        currency={selectedGroup?.currency || "INR"}
+        splits={splits}
+        members={splitMembers}
+        splitType={formData.split_type}
+        onSplitsChange={setSplits}
+        onSplitTypeChange={(type) =>
+          setFormData((prev) => ({
+            ...prev,
+            split_type: type as "equal" | "exact" | "percentage",
+          }))
+        }
+        expenseTitle={formData.description || "New Expense"}
+      />
+    </KeyboardAvoidingView>
   );
 }

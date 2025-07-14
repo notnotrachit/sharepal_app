@@ -169,6 +169,8 @@ function GroupsNavigator() {
         component={CreateExpenseScreen}
         options={{
           title: "Add Expense",
+          presentation: "modal",
+          headerShown: false,
           ...TransitionPresets.ModalSlideFromBottomIOS,
         }}
       />
@@ -217,6 +219,8 @@ function ExpensesNavigator() {
         component={CreateExpenseScreen}
         options={{
           title: "Add Expense",
+          presentation: "modal",
+          headerShown: false,
           ...TransitionPresets.ModalSlideFromBottomIOS,
         }}
       />
@@ -444,7 +448,7 @@ function MainNavigator() {
 export default function AppNavigator() {
   const { colors, colorScheme } = useTheme();
   const { isAuthenticated, isInitialized, isLoading } = useSelector(
-    (state: RootState) => state.auth
+    (state: RootState) => state.auth,
   );
 
   // Create custom theme based on current color scheme
@@ -464,17 +468,21 @@ export default function AppNavigator() {
   // Show loading screen while checking authentication status
   if (!isInitialized || isLoading) {
     return (
-      <View style={{ 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        backgroundColor: colors.background 
-      }}>
-        <Text style={{ 
-          fontSize: 16, 
-          color: colors.text,
-          marginTop: 16 
-        }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: colors.background,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 16,
+            color: colors.text,
+            marginTop: 16,
+          }}
+        >
           Loading...
         </Text>
       </View>

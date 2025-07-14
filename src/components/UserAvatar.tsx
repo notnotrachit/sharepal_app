@@ -7,16 +7,20 @@ import { shadows } from "../constants/theme";
 
 interface UserAvatarProps {
   user?: User | null;
-  size?: "small" | "medium" | "large";
+  userId?: string;
+  name?: string;
+  size?: "small" | "medium" | "large" | number;
   showBorder?: boolean;
   fallbackIcon?: keyof typeof Ionicons.glyphMap;
 }
 
-export default function UserAvatar({ 
-  user, 
-  size = "medium", 
+export default function UserAvatar({
+  user,
+  userId,
+  name,
+  size = "medium",
   showBorder = false,
-  fallbackIcon = "person"
+  fallbackIcon = "person",
 }: UserAvatarProps) {
   const { colors } = useTheme();
 
@@ -26,7 +30,15 @@ export default function UserAvatar({
     large: { width: 80, height: 80, borderRadius: 40, iconSize: 32 },
   };
 
-  const config = sizeConfig[size];
+  const config =
+    typeof size === "number"
+      ? {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          iconSize: size * 0.6,
+        }
+      : sizeConfig[size];
 
   const containerStyle = [
     styles.container,
@@ -47,20 +59,32 @@ export default function UserAvatar({
     borderRadius: config.borderRadius,
   };
 
+  // Generate initials from name
+  const getInitials = (displayName: string) => {
+    return displayName
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const displayName = user?.name || name || `User ${userId?.slice(-4) || ""}`;
+  const initials = getInitials(displayName);
+
   return (
     <View style={containerStyle}>
       {user?.profile_pic_url ? (
         <Image
           source={{ uri: user.profile_pic_url }}
           style={imageStyle}
-          onError={() => {
-          }}
+          onError={() => {}}
         />
       ) : (
-        <Ionicons 
-          name={fallbackIcon} 
-          size={config.iconSize} 
-          color={colors.surface} 
+        <Ionicons
+          name={fallbackIcon}
+          size={config.iconSize}
+          color={colors.surface}
         />
       )}
     </View>
