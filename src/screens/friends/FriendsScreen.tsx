@@ -56,7 +56,7 @@ interface Props {
 export default function FriendsScreen({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const { colors, components } = useTheme();
-  const { friends, receivedRequests, sentRequests, isLoading } = useSelector(
+  const { friends, receivedRequests, sentRequests, isLoading, isInitialized } = useSelector(
     (state: RootState) => state.friends
   );
 
@@ -394,16 +394,7 @@ export default function FriendsScreen({ navigation }: Props) {
             />
           }
         />
-        <Card.Content>
-          <View style={styles.statusBadge}>
-            <Ionicons
-              name="checkmark-circle"
-              size={16}
-              color={colors.success}
-            />
-            <Text style={styles.statusText}>Friends</Text>
-          </View>
-        </Card.Content>
+
       </Card>
     );
   };
@@ -492,7 +483,7 @@ export default function FriendsScreen({ navigation }: Props) {
   const renderFriendsTab = () => {
     return (
       <View style={styles.tabPage}>
-        {isLoading && friends.length === 0 ? (
+        {!isInitialized || (isLoading && friends.length === 0) ? (
           <FriendsListSkeleton count={6} />
         ) : friends.length === 0 ? (
           <EmptyState
@@ -510,7 +501,7 @@ export default function FriendsScreen({ navigation }: Props) {
             contentContainerStyle={styles.listContainer}
             refreshControl={
               <RefreshControl
-                refreshing={isLoading}
+                refreshing={isLoading && isInitialized}
                 onRefresh={loadFriendsData}
               />
             }
@@ -524,7 +515,7 @@ export default function FriendsScreen({ navigation }: Props) {
     const validSentRequests = sentRequests.filter((item) => item && item.id);
     return (
       <View style={styles.tabPage}>
-        {isLoading && validSentRequests.length === 0 ? (
+        {!isInitialized || (isLoading && validSentRequests.length === 0) ? (
           <FriendsListSkeleton count={3} />
         ) : validSentRequests.length === 0 ? (
           <EmptyState

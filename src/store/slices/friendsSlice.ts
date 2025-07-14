@@ -7,6 +7,7 @@ interface FriendsState {
   receivedRequests: FriendRequest[];
   sentRequests: FriendRequest[];
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
 }
 
@@ -14,7 +15,8 @@ const initialState: FriendsState = {
   friends: [],
   receivedRequests: [],
   sentRequests: [],
-  isLoading: false,
+  isLoading: true, // Start with loading to prevent flash
+  isInitialized: false, // Track if we've completed initial data fetch
   error: null,
 };
 
@@ -150,11 +152,13 @@ const friendsSlice = createSlice({
       })
       .addCase(fetchFriends.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isInitialized = true;
         state.friends = action.payload;
         state.error = null;
       })
       .addCase(fetchFriends.rejected, (state, action) => {
         state.isLoading = false;
+        state.isInitialized = true;
         state.error = action.payload as string;
       })
       

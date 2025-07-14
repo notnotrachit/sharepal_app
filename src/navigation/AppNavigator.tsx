@@ -1,4 +1,5 @@
 import React from "react";
+import { View, Text } from "react-native";
 import {
   NavigationContainer,
   DefaultTheme,
@@ -442,8 +443,8 @@ function MainNavigator() {
 
 export default function AppNavigator() {
   const { colors, colorScheme } = useTheme();
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
+  const { isAuthenticated, isInitialized, isLoading } = useSelector(
+    (state: RootState) => state.auth
   );
 
   // Create custom theme based on current color scheme
@@ -459,6 +460,26 @@ export default function AppNavigator() {
       notification: colors.primary,
     },
   };
+
+  // Show loading screen while checking authentication status
+  if (!isInitialized || isLoading) {
+    return (
+      <View style={{ 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        backgroundColor: colors.background 
+      }}>
+        <Text style={{ 
+          fontSize: 16, 
+          color: colors.text,
+          marginTop: 16 
+        }}>
+          Loading...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer theme={navigationTheme}>

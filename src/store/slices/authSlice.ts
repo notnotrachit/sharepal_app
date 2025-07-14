@@ -10,13 +10,15 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
 }
 
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Start with loading true to prevent flash
+  isInitialized: false, // Track if we've completed initial auth check
   error: null,
 };
 
@@ -227,16 +229,21 @@ const authSlice = createSlice({
       // Load stored auth
       .addCase(loadStoredAuth.pending, (state) => {
         state.isLoading = true;
+        state.isInitialized = false;
       })
       .addCase(loadStoredAuth.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isInitialized = true;
         if (action.payload) {
           state.user = action.payload;
           state.isAuthenticated = true;
+        } else {
+          state.isAuthenticated = false;
         }
       })
       .addCase(loadStoredAuth.rejected, (state, action) => {
         state.isLoading = false;
+        state.isInitialized = true;
         state.error = action.payload as string;
         state.isAuthenticated = false;
       })

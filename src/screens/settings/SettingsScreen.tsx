@@ -195,8 +195,8 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       backgroundColor: colors.background,
     },
     content: {
-      flex: 1,
       padding: spacing.lg,
+      paddingBottom: spacing.xl * 2, // Extra bottom padding to ensure content isn't cut off
     },
     section: {
       marginBottom: spacing.xl,

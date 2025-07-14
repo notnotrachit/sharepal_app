@@ -15,6 +15,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { AppDispatch, RootState } from "../../store";
 import {
   createExpenseTransaction,
@@ -77,7 +78,7 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
-    category: EXPENSE_CATEGORIES[0],
+    category: EXPENSE_CATEGORIES[0].name,
     split_type: SPLIT_TYPES.EQUAL as string,
     group_id: groupId || "",
     notes: "",
@@ -265,11 +266,15 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       amount: amountPerPerson,
     }));
 
-    // Update payers - set current user as the sole payer for the full amount
-    const newPayers = payers.map((payer) => ({
-      ...payer,
-      amount: payer.user_id === user?.id ? totalAmount : 0,
-    }));
+    let newPayers: Payer[] = [];
+    
+    if (user?.id) {
+      newPayers = [{ user_id: user.id, amount: totalAmount }];
+    } else {
+      if (splits.length > 0) {
+        newPayers = [{ user_id: splits[0].user_id, amount: totalAmount }];
+      }
+    }
 
     setSplits(newSplits);
     setPayers(newPayers);
@@ -320,28 +325,59 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
   const validatePayersAndSplits = () => {
     const totalAmount = parseFloat(formData.amount);
-    const payerTotal = payers.reduce((sum, payer) => sum + payer.amount, 0);
+    let currentPayers = [...payers];
+    
+    if (formData.split_type === SPLIT_TYPES.EQUAL) {
+      if (currentPayers.length === 0 && splits.length > 0) {
+        // Create a payer using the first split user
+        currentPayers = [{ user_id: splits[0].user_id, amount: totalAmount }];
+      } else if (currentPayers.length > 0) {
+        // Update existing payer amounts to match total (fix stale state)
+        currentPayers = currentPayers.map(payer => ({
+          ...payer,
+          amount: totalAmount // For equal split, one person pays the full amount
+        }));
+      }
+    }
+    const payerTotal = currentPayers.reduce((sum, payer) => sum + payer.amount, 0);
 
     // Validate that payer total equals the expense amount
-    if (Math.abs(totalAmount - payerTotal) > 0.01) {
+    const payerDifference = Math.abs(totalAmount - payerTotal);
+    if (payerDifference > 0.01) {
       return false;
+    }
+    console.log('[PASS] Payer validation passed');
+    
+    // Update the actual payers state if we created an emergency payer
+    if (currentPayers !== payers && currentPayers.length > 0) {
+      setPayers(currentPayers);
     }
 
     // Validate splits based on split type
     if (formData.split_type === SPLIT_TYPES.EXACT) {
       const splitTotal = splits.reduce((sum, split) => sum + split.amount, 0);
-      const isValid = Math.abs(totalAmount - splitTotal) < 0.01;
+      const splitDifference = Math.abs(totalAmount - splitTotal);
+      const isValid = splitDifference < 0.01;
+      return isValid;
+    }
+
+    if (formData.split_type === SPLIT_TYPES.EQUAL) {
+      const splitTotal = splits.reduce((sum, split) => sum + split.amount, 0);
+      const splitDifference = Math.abs(totalAmount - splitTotal);
+      // Use a more lenient tolerance for equal splits due to floating point precision
+      const tolerance = 0.02; // 2 cents tolerance
+      const isValid = splitDifference < tolerance;
       return isValid;
     }
 
     if (formData.split_type === SPLIT_TYPES.PERCENTAGE) {
       // For percentage validation, we need to check the original percentages
-      // But first, let's calculate the actual split amounts for submission
       const percentageTotal = splits.reduce((sum, split) => {
         // During percentage input, split.amount stores the percentage
         return sum + split.amount;
       }, 0);
-      const isValid = Math.abs(percentageTotal - 100) < 0.01;
+      const percentageDifference = Math.abs(percentageTotal - 100);
+      const isValid = percentageDifference < 0.01;
       return isValid;
     }
 
@@ -386,18 +422,21 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
         }));
       }
 
+      const expenseData = {
+        group_id: formData.group_id,
+        description: formData.description.trim(),
+        amount: parseFloat(formData.amount),
+        currency: selectedGroup?.currency || "USD",
+        category: formData.category,
+        split_type: formData.split_type as any,
+        payers: payers,
+        splits: finalSplits,
+        notes: formData.notes.trim() || undefined,
+      };
+      
+
       const newExpense = await dispatch(
-        createExpenseTransaction({
-          group_id: formData.group_id,
-          description: formData.description.trim(),
-          amount: parseFloat(formData.amount),
-          currency: selectedGroup?.currency || "USD",
-          category: formData.category,
-          split_type: formData.split_type as any,
-          payers: payers,
-          splits: finalSplits,
-          notes: formData.notes.trim() || undefined,
-        })
+        createExpenseTransaction(expenseData)
       ).unwrap();
 
       // Refresh group transactions
@@ -405,34 +444,47 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
 
       navigation.goBack();
     } catch (error: any) {
-      Alert.alert("Error", error);
+      Alert.alert("Error", error.message || error.toString() || "Unknown error occurred");
     }
   };
 
-  const renderCategoryItem = ({ item }: { item: string }) => {
-    const isSelected = formData.category === item;
+  const renderCategoryItem = ({ item }: { item: any }) => {
+    const isSelected = formData.category === item.name;
     return (
       <TouchableOpacity
         style={[
-          styles.modalItem,
-          isSelected && { backgroundColor: colors.cardSecondary },
+          styles.categoryGridItem,
+          isSelected && styles.selectedCategoryItem,
         ]}
         onPress={() => {
-          setFormData((prev) => ({ ...prev, category: item }));
+          setFormData((prev) => ({ ...prev, category: item.name }));
           setShowCategoryModal(false);
         }}
         activeOpacity={0.7}
       >
+        <LinearGradient
+          colors={item.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[
+            styles.categoryIconContainer,
+            isSelected && styles.selectedCategoryIcon,
+          ]}
+        >
+          <Ionicons name={item.icon as any} size={24} color="#fff" />
+        </LinearGradient>
         <Text
           style={[
-            styles.modalItemText,
+            styles.categoryName,
             isSelected && { color: colors.primary, fontWeight: "600" },
           ]}
         >
-          {item}
+          {item.name}
         </Text>
         {isSelected && (
-          <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+          <View style={styles.selectedBadge}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+          </View>
         )}
       </TouchableOpacity>
     );
@@ -731,6 +783,83 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
       flex: 1,
       fontSize: 16,
     },
+    categorySelector: {
+      ...components.input,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    selectedCategoryDisplay: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    selectedCategoryIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: spacing.md,
+      ...shadows.small,
+    },
+    categoryGrid: {
+      maxHeight: 400,
+    },
+    categoryGridContent: {
+      padding: spacing.md,
+    },
+    categoryRow: {
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.sm,
+    },
+    categoryGridItem: {
+      flex: 1,
+      aspectRatio: 1,
+      margin: spacing.xs,
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: "transparent",
+      ...shadows.small,
+      maxWidth: "30%",
+    },
+    selectedCategoryItem: {
+      borderColor: colors.primary,
+      backgroundColor: `${colors.primary}10`,
+    },
+    categoryIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: spacing.sm,
+      ...shadows.small,
+    },
+    categoryName: {
+      ...typography.caption,
+      color: colors.text,
+      textAlign: "center",
+      fontSize: 11,
+      lineHeight: 14,
+      fontWeight: "500",
+    },
+    selectedBadge: {
+      position: "absolute",
+      top: spacing.xs,
+      right: spacing.xs,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      width: 24,
+      height: 24,
+      justifyContent: "center",
+      alignItems: "center",
+      ...shadows.small,
+    },
   });
 
   return (
@@ -793,10 +922,27 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
             Category
           </Text>
           <TouchableOpacity
-            style={styles.selector}
+            style={styles.categorySelector}
             onPress={() => setShowCategoryModal(true)}
           >
-            <Text style={styles.selectorText}>{formData.category}</Text>
+            {(() => {
+              const selectedCategory = EXPENSE_CATEGORIES.find(cat => cat.name === formData.category);
+              return selectedCategory ? (
+                <View style={styles.selectedCategoryDisplay}>
+                  <LinearGradient
+                    colors={selectedCategory.gradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.selectedCategoryIcon}
+                  >
+                    <Ionicons name={selectedCategory.icon as any} size={20} color="#fff" />
+                  </LinearGradient>
+                  <Text style={styles.selectorText}>{selectedCategory.name}</Text>
+                </View>
+              ) : (
+                <Text style={styles.selectorText}>Select Category</Text>
+              );
+            })()}
             <Ionicons
               name="chevron-down"
               size={20}
@@ -956,17 +1102,12 @@ export default function CreateExpenseScreen({ navigation, route }: Props) {
             <FlatList
               data={EXPENSE_CATEGORIES}
               renderItem={renderCategoryItem}
-              keyExtractor={(item) => item}
-              style={styles.modalList}
+              keyExtractor={(item) => item.name}
+              style={styles.categoryGrid}
+              numColumns={3}
               showsVerticalScrollIndicator={false}
-              ItemSeparatorComponent={() => (
-                <View
-                  style={{
-                    height: StyleSheet.hairlineWidth,
-                    backgroundColor: colors.border,
-                  }}
-                />
-              )}
+              contentContainerStyle={styles.categoryGridContent}
+              columnWrapperStyle={styles.categoryRow}
             />
           </TouchableOpacity>
         </TouchableOpacity>

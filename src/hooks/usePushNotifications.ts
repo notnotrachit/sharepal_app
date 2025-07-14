@@ -149,37 +149,27 @@ export function usePushNotifications() {
 
   useEffect(() => {
     if (Platform.OS !== 'android') {
-      console.log('UnifiedPush: Skipping setup - not Android platform');
+      // console.log('UnifiedPush: Skipping setup - not Android platform');
       return;
     }
 
-    console.log('UnifiedPush: Starting notification setup', { 
-      isDev: __DEV__,
-      isAuthenticated,
-      isLoading,
-      hasUserId: !!userId,
-      userId: userId || 'undefined'
-    });
+
 
     // Don't proceed if auth is still loading or if we don't have a user ID yet
     if (isLoading) {
-      console.log('UnifiedPush: Auth still loading, waiting...');
       return;
     }
 
     if (!isAuthenticated) {
-      console.log('UnifiedPush: User not authenticated, checking if we need to unregister');
       
       // If user was previously authenticated and now is not, unregister
       const handleLogout = async () => {
         const storedEndpoint = await secureStorage.getItem(STORAGE_KEYS.PUSH_ENDPOINT);
         if (storedEndpoint) {
-          console.log('UnifiedPush: Found stored endpoint, unregistering from backend');
           try {
             await ExpoUnifiedPush.unregisterDevice();
             await secureStorage.removeItem(STORAGE_KEYS.PUSH_ENDPOINT);
             await secureStorage.removeItem(STORAGE_KEYS.PUSH_KEYS);
-            console.log('UnifiedPush: Successfully unregistered after logout');
           } catch (error) {
             console.error('UnifiedPush: Failed to unregister after logout:', error);
           }
@@ -219,7 +209,6 @@ export function usePushNotifications() {
       if (distributors.length > 0) {
         const preferredDistributor = distributors.find(d => d.isInternal) || distributors[0];
         saveDistributor(preferredDistributor.id);
-        console.log('UnifiedPush: Auto-selected distributor:', preferredDistributor.name);
       } else {
         console.warn('UnifiedPush: No distributors available');
         return;
@@ -227,18 +216,12 @@ export function usePushNotifications() {
     }
     
     if (userId && SERVER_VAPID_KEY) {
-      console.log('UnifiedPush: All requirements met, proceeding with registration', {
-        userId,
-        hasVapidKey: !!SERVER_VAPID_KEY,
-        vapidKeyPreview: SERVER_VAPID_KEY?.substring(0, 20) + '...'
-      });
 
       checkNotificationPermissions().then(async (granted) => {
         // Clean up any old Expo tokens but keep UnifiedPush data
         notificationCleanup({ deleteExpo: true, deleteUP: false });
         
         if (granted) {
-          console.log('UnifiedPush: Permissions granted, registering device', { userId, isDev: __DEV__ });
           await registerDevice(SERVER_VAPID_KEY, userId);
         } else {
           console.error('UnifiedPush: Notification permissions not granted');
@@ -261,24 +244,9 @@ export function usePushNotifications() {
       return;
     }
 
-    console.log('UnifiedPush: Setting up message listeners', { 
-      isDev: __DEV__,
-      isAuthenticated,
-      hasUserId: !!userId,
-      userId: userId || 'undefined',
-      isLoading
-    });
-
     // Set up message listeners regardless of auth state to catch all events
     // but only process registration messages when authenticated and user data is available
     const unsubscribe = subscribeDistributorMessages(async (message) => {
-      console.log('UnifiedPush: RAW distributor message received', { 
-        action: message.action, 
-        data: message.data,
-        isAuthenticated,
-        hasUserId: !!userId,
-        isLoading
-      });
 
       // For registration events, we need both authentication and user data
       if (message.action === 'registered' || message.action === 'unregistered') {
@@ -301,36 +269,17 @@ export function usePushNotifications() {
           return;
         }
 
-        console.log('UnifiedPush: Processing authenticated message', { action: message.action });
-
         if (message.action === 'registered') {
-          console.log('UnifiedPush: REGISTERED! User', message.data.instance, 'with url', message.data.url);
-          console.log('UnifiedPush: Registration data details', { 
-            url: message.data.url,
-            auth: message.data.auth ? 'present' : 'missing',
-            pubKey: message.data.pubKey ? 'present' : 'missing',
-            instance: message.data.instance
-          });
           
           const storedEndpoint = await secureStorage.getItem(STORAGE_KEYS.PUSH_ENDPOINT);
-          console.log('UnifiedPush: Stored endpoint check', { 
-            storedEndpoint, 
-            newEndpoint: message.data.url,
-            shouldUpdate: !storedEndpoint || storedEndpoint !== message.data.url
-          });
           
           // Only register if this is a new endpoint or we don't have one stored
           if (!storedEndpoint || storedEndpoint !== message.data.url) {
-            console.log('UnifiedPush: Sending registration to backend...');
             await registerUnifiedPush(authToken, message.data);
-            console.log('UnifiedPush: Backend registration completed!');
-          } else {
-            console.log('UnifiedPush: Registration data unchanged, skipping backend update');
           }
         }
         
         if (message.action === 'unregistered') {
-          console.log('UnifiedPush: Unregistered user', message.data.instance);
           const storedEndpoint = await secureStorage.getItem(STORAGE_KEYS.PUSH_ENDPOINT);
           if (storedEndpoint) {
             const upData = { url: storedEndpoint, auth: '', pubKey: '', instance: message.data.instance };
@@ -347,7 +296,6 @@ export function usePushNotifications() {
         }
         
         if (message.action === 'message') {
-          console.log('UnifiedPush: Received push message', message);
           // Handle the incoming push message
           await handleIncomingMessage(message.data);
         }
@@ -357,7 +305,6 @@ export function usePushNotifications() {
     });
 
     return () => {
-      console.log('UnifiedPush: Cleaning up message listeners');
       unsubscribe?.();
     };
   }, [isAuthenticated, userId, isLoading]);
@@ -372,22 +319,13 @@ export function usePushNotifications() {
     manualRegister: async () => {
       if (Platform.OS !== 'android') return false;
       if (!userId || !SERVER_VAPID_KEY) {
-        console.error('UnifiedPush: Manual register failed - missing userId or VAPID key', {
-          hasUserId: !!userId,
-          hasVapidKey: !!SERVER_VAPID_KEY,
-          isAuthenticated,
-          isLoading,
-          userId: userId || 'undefined'
-        });
         return false;
       }
       
       try {
-        console.log('UnifiedPush: Manual registration triggered');
         await registerDevice(SERVER_VAPID_KEY, userId);
         return true;
       } catch (error) {
-        console.error('UnifiedPush: Manual registration failed', error);
         return false;
       }
     },
