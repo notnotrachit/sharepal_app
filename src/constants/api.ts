@@ -1,6 +1,6 @@
 // API Constants for Sharepal App
 
-export const API_BASE_URL = 'https://8080.rachitkhurana.tech/v1';
+export const API_BASE_URL = 'https://sharepal.rachitkhurana.tech/v1';
 
 export const API_ENDPOINTS = {
   // Auth
@@ -62,18 +62,78 @@ export const STORAGE_KEYS = {
 };
 
 export const EXPENSE_CATEGORIES = [
-  'Food & Dining',
-  'Transportation',
-  'Shopping',
-  'Entertainment',
-  'Bills & Utilities',
-  'Home',
-  'Health & Fitness',
-  'Travel',
-  'Education',
-  'Personal Care',
-  'Gifts & Donations',
-  'Other',
+  {
+    name: 'Food & Dining',
+    icon: 'restaurant',
+    color: '#FF6B6B',
+    gradient: ['#FF6B6B', '#FF8E8E']
+  },
+  {
+    name: 'Transportation',
+    icon: 'car',
+    color: '#4ECDC4',
+    gradient: ['#4ECDC4', '#6EDDD6']
+  },
+  {
+    name: 'Shopping',
+    icon: 'bag',
+    color: '#45B7D1',
+    gradient: ['#45B7D1', '#67C3DB']
+  },
+  {
+    name: 'Entertainment',
+    icon: 'game-controller',
+    color: '#FFA07A',
+    gradient: ['#FFA07A', '#FFB399']
+  },
+  {
+    name: 'Bills & Utilities',
+    icon: 'receipt',
+    color: '#98D8C8',
+    gradient: ['#98D8C8', '#B0E0D3']
+  },
+  {
+    name: 'Home',
+    icon: 'home',
+    color: '#F7DC6F',
+    gradient: ['#F7DC6F', '#F9E79F']
+  },
+  {
+    name: 'Health & Fitness',
+    icon: 'fitness',
+    color: '#BB8FCE',
+    gradient: ['#BB8FCE', '#C8A2C8']
+  },
+  {
+    name: 'Travel',
+    icon: 'airplane',
+    color: '#85C1E9',
+    gradient: ['#85C1E9', '#A3D5F1']
+  },
+  {
+    name: 'Education',
+    icon: 'school',
+    color: '#FF9F43',
+    gradient: ['#FF9F43', '#FFA726']
+  },
+  {
+    name: 'Personal Care',
+    icon: 'person',
+    color: '#6C5CE7',
+    gradient: ['#6C5CE7', '#A29BFE']
+  },
+  {
+    name: 'Gifts & Donations',
+    icon: 'gift',
+    color: '#FD79A8',
+    gradient: ['#FD79A8', '#FDCB6E']
+  },
+  {
+    name: 'Other',
+    icon: 'ellipsis-horizontal',
+    color: '#74B9FF',
+    gradient: ['#74B9FF', '#0984E3']
+  },
 ];
 
 export const SPLIT_TYPES = {
