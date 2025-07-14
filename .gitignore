@@ -43,6 +43,6 @@ GoogleService-Info.plist
 *.apk
 *.aab
 android/app/debug.keystore
-android/*
+# android/*
 # hot-updater
 .hot-updater/output
