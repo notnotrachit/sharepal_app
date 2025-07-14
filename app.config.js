@@ -32,7 +32,9 @@ export default ({ config }) => ({
       eas: {
         projectId: "af2b596c-1013-4062-adff-7d7d6d16f324",
       },
-      EXPO_PUBLIC_SERVER_VAPID_KEY: process.env.EXPO_PUBLIC_SERVER_VAPID_KEY || "BNbN3OiAQo7FYQVqvzDoHiUQVuLkdOcmvp4xDP05v6twLWGRBXvdkLM6EgIahtR5WOhHXfpQUjSrOBmKikhHVrI",
+      EXPO_PUBLIC_SERVER_VAPID_KEY:
+        process.env.EXPO_PUBLIC_SERVER_VAPID_KEY ||
+        "BNbN3OiAQo7FYQVqvzDoHiUQVuLkdOcmvp4xDP05v6twLWGRBXvdkLM6EgIahtR5WOhHXfpQUjSrOBmKikhHVrI",
     },
     runtimeVersion: {
       policy: "appVersion",
@@ -40,6 +42,13 @@ export default ({ config }) => ({
     updates: {
       url: "https://u.expo.dev/af2b596c-1013-4062-adff-7d7d6d16f324",
     },
-    plugins: [],
+    plugins: [
+      [
+        "@hot-updater/react-native",
+        {
+          channel: "production",
+        },
+      ],
+    ],
   },
 });

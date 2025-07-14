@@ -44,3 +44,5 @@ GoogleService-Info.plist
 *.aab
 android/app/debug.keystore
 android/*
+# hot-updater
+.hot-updater/output
