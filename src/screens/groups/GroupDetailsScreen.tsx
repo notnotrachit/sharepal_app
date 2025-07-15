@@ -539,16 +539,16 @@ export default function GroupDetailsScreen({ navigation, route }: Props) {
     },
   });
 
-  // Clear transaction state when screen is focused to avoid stale data
+  // Clear navigation state when screen is focused, but preserve transaction data
   useFocusEffect(
     useCallback(() => {
-      // Clear any stale transaction or navigation state
-      dispatch(clearCurrentTransaction());
+      // Only clear navigation state, not transaction data
+      // This allows transaction details to persist when switching tabs
       dispatch(clearNavigationState());
 
       return () => {
-        // Cleanup when leaving the screen
-        dispatch(clearCurrentTransaction());
+        // Only clear navigation state on blur, preserve transaction for tab navigation
+        dispatch(clearNavigationState());
       };
     }, [])
   );

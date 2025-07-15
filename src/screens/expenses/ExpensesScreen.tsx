@@ -227,10 +227,11 @@ export default function ExpensesScreen({ navigation }: Props) {
   });
 
 
-  // Clear stale state when returning to expenses list
+  // Clear navigation state when returning to expenses list, preserve transaction data
   useFocusEffect(
     useCallback(() => {
-      dispatch(clearCurrentTransaction());
+      // Only clear navigation state, not transaction data
+      // This allows transaction details to persist when switching tabs
       dispatch(clearNavigationState());
 
       return () => {

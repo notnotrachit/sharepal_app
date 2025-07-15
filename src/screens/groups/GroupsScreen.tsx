@@ -182,11 +182,11 @@ export default function GroupsScreen({ navigation }: Props) {
     },
   });
 
-  // Focus effect to clear stale state when returning to groups list
+  // Focus effect to clear navigation state when returning to groups list
   useFocusEffect(
     useCallback(() => {
-      // Clear any stale group-specific state when returning to groups list
-      dispatch(clearCurrentTransaction());
+      // Only clear navigation state, not transaction data
+      // This allows transaction details to persist when switching tabs
       dispatch(clearNavigationState());
 
       return () => {

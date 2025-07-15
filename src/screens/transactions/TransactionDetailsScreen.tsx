@@ -1,6 +1,12 @@
-import React, { useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
+import React, { useEffect, useCallback, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -13,25 +19,24 @@ import {
   clearCurrentTransaction,
   clearNavigationState,
 } from "../../store/slices/groupsSlice";
-import { GroupsStackParamList } from "../../navigation/AppNavigator";
+import { GroupsStackParamList, ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
+import Card from "../../components/Card";
+import SecondaryButton from "../../components/SecondaryButton";
+import AnimatedScreen from "../../components/AnimatedScreen";
 import TransactionDetailsSkeleton from "../../components/skeletons/TransactionDetailsSkeleton";
-import {
-  spacing,
-  borderRadius,
-  typography,
-  shadows,
-} from "../../constants/theme";
+import UserAvatar from "../../components/UserAvatar";
+import { spacing, borderRadius, typography } from "../../constants/theme";
+import { EXPENSE_CATEGORIES } from "../../constants/api";
 
-type TransactionDetailsScreenNavigationProp = StackNavigationProp<
-  GroupsStackParamList,
-  "TransactionDetails"
->;
-type TransactionDetailsScreenRouteProp = RouteProp<
-  GroupsStackParamList,
-  "TransactionDetails"
->;
+type TransactionDetailsScreenNavigationProp = 
+  | StackNavigationProp<GroupsStackParamList, "TransactionDetails">
+  | StackNavigationProp<ExpensesStackParamList, "ExpenseDetails">;
+
+type TransactionDetailsScreenRouteProp = 
+  | RouteProp<GroupsStackParamList, "TransactionDetails">
+  | RouteProp<ExpensesStackParamList, "ExpenseDetails">;
 
 interface Props {
   navigation: TransactionDetailsScreenNavigationProp;
@@ -39,224 +44,238 @@ interface Props {
 }
 
 export default function TransactionDetailsScreen({ navigation, route }: Props) {
-  const { transactionId } = route.params;
+  // Handle both transactionId and expenseId params
+  const transactionId = (route.params as any).transactionId || (route.params as any).expenseId;
   const dispatch = useDispatch<AppDispatch>();
-  const { colors, components } = useTheme();
-  const { currentTransaction, isLoading, currentGroup } = useSelector(
+  const { colors } = useTheme();
+  const { currentTransaction, isLoading, error, currentGroup, groupMembers } = useSelector(
     (state: RootState) => state.groups
   );
   const { user } = useSelector((state: RootState) => state.auth);
 
+  const [cachedTransaction, setCachedTransaction] = useState<any>(null);
+
+  const transaction = useMemo(() => {
+    if (
+      currentTransaction?._id === transactionId ||
+      (currentTransaction as any)?.id === transactionId
+    ) {
+      setCachedTransaction(currentTransaction);
+      return currentTransaction;
+    }
+    
+    if (
+      cachedTransaction?._id === transactionId ||
+      (cachedTransaction as any)?.id === transactionId
+    ) {
+      return cachedTransaction;
+    }
+    
+    return null;
+  }, [currentTransaction, cachedTransaction, transactionId]);
+
+  // Helper function to get user name
+  const getUserName = useCallback((userId: string) => {
+    if (!userId) return "Unknown User";
+    if (userId === user?.id) return "You";
+
+    // First check transaction data for user names
+    if (transaction) {
+      // Check participants array
+      if (transaction.participants) {
+        const participant = transaction.participants.find(
+          (p: any) => p.user_id === userId
+        );
+        if (participant?.user_name) return participant.user_name;
+      }
+
+      // Check splits array if it exists
+      if ((transaction as any).splits) {
+        const split = (transaction as any).splits.find(
+          (s: any) => s.user_id === userId
+        );
+        if (split?.user_name) return split.user_name;
+      }
+
+      // Check payers array if it exists
+      if ((transaction as any).payers) {
+        const payer = (transaction as any).payers.find(
+          (p: any) => p.user_id === userId
+        );
+        if (payer?.user_name) return payer.user_name;
+      }
+    }
+
+    // Fallback to group members
+    if (groupMembers) {
+      const member = groupMembers.find((m: any) => m.id === userId || m.user_id === userId);
+      return member?.name || member?.user_name || member?.email?.split("@")[0] || "Unknown User";
+    }
+
+    return "Unknown User";
+  }, [user?.id, transaction, groupMembers]);
+
+  // Memoized participants processing for expenses
+  const participants = useMemo(() => {
+    if (!transaction || transaction.type !== "expense") return [];
+
+    const combined = new Map();
+
+    function addUser(u: any) {
+      if (!combined.has(u.user_id)) {
+        combined.set(u.user_id, {
+          id: u.user_id,
+          name: u.user_name || getUserName(u.user_id),
+          avatar: u.profile_pic_url,
+          paid: 0,
+          share: 0,
+        });
+      }
+    }
+
+    (transaction as any).payers?.forEach(addUser);
+    (transaction as any).splits?.forEach(addUser);
+
+    (transaction as any).payers?.forEach((p: any) => {
+      combined.get(p.user_id).paid = p.amount;
+    });
+
+    (transaction as any).splits?.forEach((s: any) => {
+      combined.get(s.user_id).share = s.amount;
+    });
+
+    return Array.from(combined.values());
+  }, [transaction, getUserName]);
+
   const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
+    contentContainer: { 
+      padding: spacing.lg, 
+      paddingBottom: spacing.xl 
     },
-    content: {
-      padding: spacing.lg,
+    header: { 
+      marginBottom: spacing.lg, 
+      alignItems: "center" 
     },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: colors.background,
-    },
-    loadingText: {
-      ...typography.body,
-      color: colors.text,
-      textAlign: "center",
-    },
-    header: {
-      ...components.card,
-      marginBottom: spacing.lg,
-    },
-    title: {
+    description: {
       ...typography.h2,
       color: colors.text,
+      textAlign: "center",
       marginBottom: spacing.sm,
     },
     amount: {
-      ...typography.h3,
+      ...typography.h1,
       color: colors.primary,
-      fontWeight: "700",
       marginBottom: spacing.sm,
     },
-    typeBadge: {
-      alignSelf: "flex-start",
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.xs,
-      borderRadius: borderRadius.md,
-    },
-    expenseTypeBadge: {
-      backgroundColor: `${colors.primary}25`,
-    },
-    settlementTypeBadge: {
-      backgroundColor: `${colors.secondary}25`,
-    },
-    typeText: {
-      ...typography.caption,
-      fontWeight: "600",
-    },
-    expenseTypeText: {
-      color: colors.primary,
-    },
-    settlementTypeText: {
-      color: colors.secondary,
-    },
-    section: {
-      ...components.card,
-      marginBottom: spacing.lg,
-    },
-    sectionTitle: {
-      ...typography.h4,
-      color: colors.text,
-      marginBottom: spacing.md,
-    },
-    infoRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: spacing.sm,
-    },
-    infoLabel: {
-      ...typography.body,
-      color: colors.textSecondary,
-    },
-    infoValue: {
-      ...typography.body,
-      color: colors.text,
-      fontWeight: "500",
+    date: { 
+      ...typography.body, 
+      color: colors.textSecondary 
     },
     detailRow: {
       flexDirection: "row",
       justifyContent: "space-between",
-      marginBottom: spacing.sm,
-    },
-    detailLabel: {
-      ...typography.body,
-      color: colors.textSecondary,
-    },
-    detailValue: {
-      ...typography.body,
-      color: colors.text,
-      fontWeight: "500",
-    },
-    participantItem: {
-      flexDirection: "row",
-      justifyContent: "space-between",
       alignItems: "center",
-      paddingVertical: spacing.sm,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      paddingVertical: spacing.md,
+    },
+    detailLabel: { 
+      ...typography.body, 
+      color: colors.textSecondary 
+    },
+    detailValue: { 
+      ...typography.body, 
+      color: colors.text, 
+      fontWeight: "500" 
+    },
+    notes: { 
+      ...typography.body, 
+      color: colors.text, 
+      lineHeight: 22 
+    },
+    actions: { 
+      flexDirection: "row", 
+      gap: spacing.md, 
+      marginTop: spacing.xl 
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.lg,
+    },
+    errorText: { 
+      ...typography.h3, 
+      color: colors.error, 
+      textAlign: "center" 
+    },
+    participantCard: { 
+      marginTop: spacing.lg 
+    },
+    participantRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: spacing.md,
+    },
+    participantInfo: { 
+      marginLeft: spacing.md, 
+      flex: 1 
     },
     participantName: {
       ...typography.body,
       color: colors.text,
-      flex: 1,
+      fontWeight: "500",
     },
-    participantAmount: {
+    participantDetail: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    balanceContainer: { 
+      alignItems: "flex-end" 
+    },
+    balanceAmount: {
       ...typography.body,
       fontWeight: "600",
     },
-    actionButtonContainer: {
-      flexDirection: "row",
-      justifyContent: "space-around",
-      marginTop: spacing.lg,
+    balanceLabel: { 
+      ...typography.caption, 
+      color: colors.textSecondary 
     },
-    actionButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      borderRadius: borderRadius.lg,
-      minWidth: 120,
-      justifyContent: "center",
-    },
-    editButton: {
-      ...components.button.primary,
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: spacing.sm,
-    },
-    deleteButton: {
-      ...components.button.primary,
-      backgroundColor: colors.error,
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: spacing.sm,
-    },
-    actionButtonText: {
-      color: colors.surface,
-      ...typography.button,
-      marginLeft: spacing.xs,
-    },
-    notes: {
-      ...typography.body,
-      color: colors.text,
-      fontStyle: "italic",
-    },
-    shareContainer: {
-      alignItems: "center",
-      marginVertical: spacing.lg,
-    },
-    shareAmount: {
-      ...typography.h3,
-      color: colors.primary,
-      fontWeight: "700",
-    },
-    shareLabel: {
-      ...typography.body,
-      color: colors.textSecondary,
-      marginTop: spacing.xs,
-    },
-    splitRow: {
+    settlementRow: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      paddingVertical: spacing.sm,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      paddingVertical: spacing.md,
     },
-    splitUser: {
+    settlementLabel: {
+      ...typography.body,
+      color: colors.textSecondary,
+    },
+    settlementValue: {
       ...typography.body,
       color: colors.text,
+      fontWeight: "500",
     },
-    splitAmount: {
-      ...typography.body,
-      color: colors.text,
-      fontWeight: "600",
-    },
-    actions: {
+    categoryContainer: {
       flexDirection: "row",
-      gap: spacing.md,
-      paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.lg,
-      marginTop: spacing.lg,
+      alignItems: "center",
+      gap: spacing.sm,
     },
-    editButtonText: {
-      ...typography.button,
-      color: colors.surface,
-      fontWeight: "600",
-    },
-    deleteButtonText: {
-      ...typography.button,
-      color: colors.surface,
-      fontWeight: "600",
+    categoryIcon: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      justifyContent: "center",
+      alignItems: "center",
     },
   });
 
-  // Enhanced focus effect for better state management
+  // Focus effect - only handle navigation state
   useFocusEffect(
     useCallback(() => {
       // Clear any stale navigation state when screen is focused
       dispatch(clearNavigationState());
 
+      // Don't clear transaction on blur - preserve it for tab navigation
       return () => {
-        // Clear transaction when leaving the screen
-        dispatch(clearCurrentTransaction());
         dispatch(clearNavigationState());
       };
     }, [])
@@ -271,20 +290,18 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
     ) {
       dispatch(clearCurrentTransaction());
     }
-    // Fetch the transaction
+    // Always fetch the transaction to ensure we have the data
     dispatch(fetchTransaction(transactionId));
   }, [transactionId]);
 
-  useEffect(() => {
-    // Cleanup function to clear transaction when component unmounts
-    return () => {
-      dispatch(clearCurrentTransaction());
-    };
-  }, []);
+
+
+  // Note: Removed cleanup effect to preserve transaction data during tab navigation
+  // Transaction will be cleared when navigating to a different transaction or when needed
 
   const handleDeleteTransaction = () => {
     const transactionType =
-      currentTransaction?.type === "expense" ? "expense" : "settlement";
+      transaction?.type === "expense" ? "expense" : "settlement";
     Alert.alert(
       `Delete ${
         transactionType.charAt(0).toUpperCase() + transactionType.slice(1)
@@ -300,7 +317,7 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
               await dispatch(deleteTransaction(transactionId)).unwrap();
               navigation.goBack();
             } catch (error: any) {
-              Alert.alert("Error", error);
+              Alert.alert("Error", error.message || "Failed to delete transaction");
             }
           },
         },
@@ -309,147 +326,86 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
   };
 
 
-  const getUserName = (userId: string) => {
-    if (userId === user?.id) return "You";
 
-    // First check transaction data for user names
-    if (currentTransaction) {
-      // Check participants array
-      if (currentTransaction.participants) {
-        const participant = currentTransaction.participants.find(
-          (p: any) => p.user_id === userId
-        );
-        if (participant?.user_name) return participant.user_name;
-      }
-
-      // Check splits array if it exists
-      if ((currentTransaction as any).splits) {
-        const split = (currentTransaction as any).splits.find(
-          (s: any) => s.user_id === userId
-        );
-        if (split?.user_name) return split.user_name;
-      }
-
-      // Check payers array if it exists
-      if ((currentTransaction as any).payers) {
-        const payer = (currentTransaction as any).payers.find(
-          (p: any) => p.user_id === userId
-        );
-        if (payer?.user_name) return payer.user_name;
-      }
-    }
-
-    // Fallback to group members
-    if (currentGroup) {
-      const member = currentGroup.members?.find((m) => m.id === userId);
-      return member?.name || "Unknown User";
-    }
-
-    return "Unknown User";
+  // Helper function to get category icon and color
+  const getCategoryInfo = (categoryName: string) => {
+    const category = EXPENSE_CATEGORIES.find(
+      (cat) => cat.name.toLowerCase() === categoryName.toLowerCase()
+    );
+    return category || EXPENSE_CATEGORIES.find((cat) => cat.name === "Other");
   };
 
-  const getUserShare = () => {
-    if (!currentTransaction || !user) return 0;
+  // Helper function to render participants for expenses
+  const renderParticipant = (p: any) => {
+    const isYou = p.id === user?.id;
+    const name = isYou ? "You" : p.name;
 
-    // For expenses, check splits array first (cleaner representation)
-    if (currentTransaction.type === "expense") {
-      // Try splits array first
-      if ((currentTransaction as any).splits) {
-        const userSplit = (currentTransaction as any).splits.find(
-          (split: any) => split.user_id === user.id
-        );
-        if (userSplit) return userSplit.amount || 0;
-      }
-
-      // Fallback to participants array
-      if (currentTransaction.participants) {
-        const userParticipant = currentTransaction.participants.find(
-          (participant: any) =>
-            participant.user_id === user.id &&
-            (participant.share_type === "split" ||
-              participant.share_type === "both")
-        );
-        return Math.abs(userParticipant?.amount || 0);
-      }
-    }
-
-    // For settlements, the amount is what the user pays/receives
-    if (currentTransaction.type === "settlement") {
-      if (currentTransaction.payer_id === user.id) {
-        return currentTransaction.amount; // User pays this amount
-      }
-      if (currentTransaction.payee_id === user.id) {
-        return -currentTransaction.amount; // User receives this amount
-      }
-    }
-
-    return 0;
+    return (
+      <View style={styles.participantRow} key={p.id}>
+        <UserAvatar
+          userId={p.id}
+          user={{ profile_pic_url: p.avatar }}
+          size={40}
+        />
+        <View style={styles.participantInfo}>
+          <Text style={styles.participantName}>{name}</Text>
+          <Text style={styles.participantDetail}>
+            Paid: {formatCurrency(p.paid, transaction?.currency || "USD")}
+          </Text>
+        </View>
+        <View style={styles.balanceContainer}>
+          <Text style={[styles.balanceAmount, { color: colors.text }]}>
+            {formatCurrency(p.share, transaction?.currency || "USD")}
+          </Text>
+        </View>
+      </View>
+    );
   };
 
-  const getUserPaidAmount = () => {
-    if (!currentTransaction || !user) return 0;
+  // Helper function to render settlement participants
+  const renderSettlementParticipants = () => {
+    if (!transaction || transaction.type !== "settlement") return null;
 
-    // For expenses, check payers array first (cleaner representation)
-    if (currentTransaction.type === "expense") {
-      // Try payers array first
-      if ((currentTransaction as any).payers) {
-        const userPayer = (currentTransaction as any).payers.find(
-          (payer: any) => payer.user_id === user.id
-        );
-        if (userPayer) return userPayer.amount || 0;
-      }
-
-      // Fallback to participants array
-      if (currentTransaction.participants) {
-        const userParticipant = currentTransaction.participants.find(
-          (participant: any) =>
-            participant.user_id === user.id &&
-            (participant.share_type === "paid" ||
-              participant.share_type === "both")
-        );
-        return userParticipant?.amount || 0;
-      }
-    }
-
-    return 0;
+    return (
+      <Card>
+        <Card.Header title="Settlement Details" />
+        <Card.Content>
+          <View style={styles.settlementRow}>
+            <Text style={styles.settlementLabel}>From</Text>
+            <Text style={styles.settlementValue}>
+              {getUserName(transaction.payer_id || "")}
+            </Text>
+          </View>
+          <View style={styles.settlementRow}>
+            <Text style={styles.settlementLabel}>To</Text>
+            <Text style={styles.settlementValue}>
+              {getUserName(transaction.payee_id || "")}
+            </Text>
+          </View>
+          <View style={styles.settlementRow}>
+            <Text style={styles.settlementLabel}>Method</Text>
+            <Text style={styles.settlementValue}>
+              {transaction.settlement_method || "Not specified"}
+            </Text>
+          </View>
+        </Card.Content>
+      </Card>
+    );
   };
 
-  if (isLoading) {
+  if (isLoading && !transaction) return <TransactionDetailsSkeleton />;
+  if (error && !transaction) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+      <AnimatedScreen style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </AnimatedScreen>
     );
   }
-
-  if (!currentTransaction) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>Transaction not found</Text>
-      </View>
-    );
-  }
-
-  // Check if we have the right transaction (handle both _id and id fields)
-  const transactionMatches =
-    currentTransaction._id === transactionId ||
-    (currentTransaction as any).id === transactionId;
-
-  if (!transactionMatches) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading transaction...</Text>
-      </View>
-    );
-  }
-
-  const transaction = currentTransaction;
-
   if (!transaction) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Transaction not found</Text>
-      </View>
+      <AnimatedScreen style={styles.errorContainer}>
+        <Text style={styles.errorText}>Transaction not found.</Text>
+      </AnimatedScreen>
     );
   }
 
@@ -457,181 +413,107 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
   const isSettlement = transaction.type === "settlement";
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          {transaction.description || "No description"}
-        </Text>
-        <Text style={styles.amount}>
-          {formatCurrency(
-            transaction.amount || 0,
-            transaction.currency || "USD"
-          )}
-        </Text>
-        <View
-          style={[
-            styles.typeBadge,
-            isExpense ? styles.expenseTypeBadge : styles.settlementTypeBadge,
-          ]}
-        >
-          <Text
-            style={[
-              styles.typeText,
-              isExpense ? styles.expenseTypeText : styles.settlementTypeText,
-            ]}
-          >
-            {isExpense ? "EXPENSE" : "SETTLEMENT"}
+    <AnimatedScreen>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <View style={styles.header}>
+          <Text style={styles.description}>
+            {transaction.description || "No description"}
+          </Text>
+          <Text style={styles.amount}>
+            {formatCurrency(transaction.amount, transaction.currency)}
+          </Text>
+          <Text style={styles.date}>
+            {new Date(transaction.created_at).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </Text>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Details</Text>
-        {isExpense && (
-          <>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Category</Text>
-              <Text style={styles.detailValue}>
-                {transaction.category || "General"}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Split Type</Text>
-              <Text style={styles.detailValue}>
-                {transaction.split_type
-                  ? transaction.split_type.charAt(0).toUpperCase() +
-                    transaction.split_type.slice(1)
-                  : "Equal"}
-              </Text>
-            </View>
-          </>
+        <Card>
+          <Card.Header title="Details" />
+          <Card.Content>
+            {isExpense && (
+              <>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Category</Text>
+                  <View style={styles.categoryContainer}>
+                    {(() => {
+                      const categoryInfo = getCategoryInfo(transaction.category || "General");
+                      return (
+                        <>
+                          <View style={[styles.categoryIcon, { backgroundColor: categoryInfo?.color }]}>
+                            <Ionicons 
+                              name={categoryInfo?.icon as any} 
+                              size={14} 
+                              color="white" 
+                            />
+                          </View>
+                          <Text style={styles.detailValue}>
+                            {transaction.category || "General"}
+                          </Text>
+                        </>
+                      );
+                    })()}
+                  </View>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Split Type</Text>
+                  <Text style={styles.detailValue}>
+                    {transaction.split_type
+                      ? transaction.split_type.charAt(0).toUpperCase() +
+                        transaction.split_type.slice(1)
+                      : "Equal"}
+                  </Text>
+                </View>
+              </>
+            )}
+            {isSettlement && (
+              <>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Type</Text>
+                  <Text style={styles.detailValue}>Settlement</Text>
+                </View>
+              </>
+            )}
+          </Card.Content>
+        </Card>
+
+        {transaction.notes && (
+          <Card>
+            <Card.Header title="Notes" />
+            <Card.Content>
+              <Text style={styles.notes}>{transaction.notes}</Text>
+            </Card.Content>
+          </Card>
         )}
-        {isSettlement && (
-          <>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>From</Text>
-              <Text style={styles.detailValue}>
-                {getUserName(transaction.payer_id || "")}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>To</Text>
-              <Text style={styles.detailValue}>
-                {getUserName(transaction.payee_id || "")}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Method</Text>
-              <Text style={styles.detailValue}>
-                {transaction.settlement_method || "Not specified"}
-              </Text>
-            </View>
-          </>
+
+        {isExpense && participants.length > 0 && (
+          <Card style={styles.participantCard}>
+            <Card.Header title="Participants" />
+            <Card.Content>{participants.map(renderParticipant)}</Card.Content>
+          </Card>
         )}
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Date</Text>
-          <Text style={styles.detailValue}>
-            {transaction.created_at
-              ? new Date(transaction.created_at).toLocaleDateString()
-              : "Unknown"}
-          </Text>
+
+        {isSettlement && renderSettlementParticipants()}
+
+        <View style={styles.actions}>
+          <SecondaryButton
+            title="Edit"
+            icon="pencil"
+            onPress={() => {}}
+            style={{ flex: 1 }}
+          />
+          <SecondaryButton
+            title="Delete"
+            icon="trash"
+            onPress={handleDeleteTransaction}
+            variant="error"
+            style={{ flex: 1 }}
+          />
         </View>
-      </View>
-
-      {transaction.notes && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notes</Text>
-          <Text style={styles.notes}>{transaction.notes}</Text>
-        </View>
-      )}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          Your {isExpense ? "Share" : "Amount"}
-        </Text>
-        <View style={styles.shareContainer}>
-          <Text style={styles.shareAmount}>
-            {formatCurrency(
-              Math.abs(getUserShare()),
-              transaction.currency || "USD"
-            )}
-          </Text>
-          <Text style={styles.shareLabel}>
-            {isExpense
-              ? `You ${getUserPaidAmount() > 0 ? "paid" : "owe"}`
-              : getUserShare() > 0
-              ? "You paid"
-              : getUserShare() < 0
-              ? "You received"
-              : "Not involved"}
-          </Text>
-        </View>
-      </View>
-
-      {isExpense && (
-        <>
-          {/* Payers Section */}
-          {(transaction as any).payers &&
-            (transaction as any).payers.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Who Paid</Text>
-                {(transaction as any).payers.map(
-                  (payer: any, index: number) => (
-                    <View key={index} style={styles.splitRow}>
-                      <Text style={styles.splitUser}>
-                        {getUserName(payer.user_id)}
-                      </Text>
-                      <Text style={styles.splitAmount}>
-                        {formatCurrency(
-                          payer.amount || 0,
-                          transaction.currency || "USD"
-                        )}
-                      </Text>
-                    </View>
-                  )
-                )}
-              </View>
-            )}
-
-          {/* Splits Section */}
-          {(transaction as any).splits &&
-            (transaction as any).splits.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Split Breakdown</Text>
-                {(transaction as any).splits.map(
-                  (split: any, index: number) => (
-                    <View key={index} style={styles.splitRow}>
-                      <Text style={styles.splitUser}>
-                        {getUserName(split.user_id)}
-                      </Text>
-                      <Text style={styles.splitAmount}>
-                        {formatCurrency(
-                          split.amount || 0,
-                          transaction.currency || "USD"
-                        )}
-                      </Text>
-                    </View>
-                  )
-                )}
-              </View>
-            )}
-        </>
-      )}
-
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.editButton}>
-          <Ionicons name="pencil" size={20} color={colors.surface} />
-          <Text style={styles.editButtonText}>Edit</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={handleDeleteTransaction}
-        >
-          <Ionicons name="trash" size={20} color={colors.surface} />
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </AnimatedScreen>
   );
 }
