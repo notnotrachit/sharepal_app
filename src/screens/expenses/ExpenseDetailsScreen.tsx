@@ -1,6 +1,12 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
+import React, { useEffect, useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -13,16 +19,13 @@ import {
 import { ExpensesStackParamList } from "../../navigation/AppNavigator";
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
-import LoadingState from "../../components/LoadingState";
 import Card from "../../components/Card";
-import PrimaryButton from "../../components/PrimaryButton";
 import SecondaryButton from "../../components/SecondaryButton";
-import {
-  spacing,
-  borderRadius,
-  typography,
-  shadows,
-} from "../../constants/theme";
+import { spacing, borderRadius, typography } from "../../constants/theme";
+import AnimatedScreen from "../../components/AnimatedScreen";
+import TransactionDetailsSkeleton from "../../components/skeletons/TransactionDetailsSkeleton";
+import UserAvatar from "../../components/UserAvatar";
+import { Ionicons } from "@expo/vector-icons";
 
 type ExpenseDetailsScreenNavigationProp = StackNavigationProp<
   ExpensesStackParamList,
@@ -41,126 +44,59 @@ interface Props {
 export default function ExpenseDetailsScreen({ navigation, route }: Props) {
   const { expenseId } = route.params;
   const dispatch = useDispatch<AppDispatch>();
-  const { colors, components } = useTheme();
-  const { currentTransaction, isLoading } = useSelector(
-    (state: RootState) => state.groups
+  const { colors } = useTheme();
+  const { currentTransaction, isLoading, error } = useSelector(
+    (state: RootState) => state.groups,
   );
   const { user } = useSelector((state: RootState) => state.auth);
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    content: {
-      padding: spacing.lg,
-    },
-    header: {
-      backgroundColor: colors.surface,
-      borderRadius: borderRadius.lg,
-      padding: spacing.xl,
-      marginBottom: spacing.lg,
-      alignItems: "center",
-      ...shadows.medium,
-    },
-    title: {
-      ...typography.h2,
-      color: colors.text,
-      marginBottom: spacing.sm,
-      textAlign: "center",
-    },
-    amount: {
-      ...typography.h1,
-      color: colors.primary,
-    },
-    detailRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingVertical: spacing.sm,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    detailLabel: {
-      ...typography.body,
-      color: colors.textSecondary,
-    },
-    detailValue: {
-      ...typography.body,
-      color: colors.text,
-      fontWeight: "500",
-    },
-    notes: {
-      ...typography.body,
-      color: colors.textSecondary,
-      lineHeight: 24,
-    },
-    shareContainer: {
-      alignItems: "center",
-      padding: spacing.lg,
-      backgroundColor: colors.cardSecondary,
-      borderRadius: borderRadius.md,
-    },
-    shareAmount: {
-      ...typography.h2,
-      color: colors.primary,
-      marginBottom: spacing.xs,
-    },
-    shareLabel: {
-      ...typography.body,
-      color: colors.textSecondary,
-    },
-    splitRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingVertical: spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    splitUser: {
-      ...typography.body,
-      color: colors.text,
-      flex: 1,
-    },
-    splitAmount: {
-      ...typography.body,
-      color: colors.primary,
-      fontWeight: "600",
-    },
-    actions: {
-      flexDirection: "row",
-      gap: spacing.md,
-      marginTop: spacing.xl,
-    },
-    noSplitsText: {
-      ...typography.body,
-      color: colors.textSecondary,
-      fontStyle: "italic",
-      textAlign: "center",
-      padding: spacing.lg,
-    },
-  });
-
   useEffect(() => {
-    // Only clear if we have a different transaction loaded
-    if (
-      currentTransaction &&
-      currentTransaction._id !== expenseId &&
-      (currentTransaction as any).id !== expenseId
-    ) {
-      dispatch(clearCurrentTransaction());
-    }
-    // Fetch the transaction
     dispatch(fetchTransaction(expenseId));
-  }, [expenseId]);
-
-  useEffect(() => {
-    // Cleanup function to clear transaction when component unmounts
     return () => {
       dispatch(clearCurrentTransaction());
     };
-  }, []);
+  }, [dispatch, expenseId]);
+
+  const expense = useMemo(() => {
+    if (
+      currentTransaction?._id === expenseId ||
+      (currentTransaction as any)?.id === expenseId
+    ) {
+      return currentTransaction;
+    }
+    return null;
+  }, [currentTransaction, expenseId]);
+
+  const participants = useMemo(() => {
+    if (!expense) return [];
+
+    const combined = new Map();
+
+    function addUser(u: any) {
+      if (!combined.has(u.user_id)) {
+        combined.set(u.user_id, {
+          id: u.user_id,
+          name: u.user_name,
+          avatar: u.profile_pic_url,
+          paid: 0,
+          share: 0,
+        });
+      }
+    }
+
+    (expense as any).payers?.forEach(addUser);
+    (expense as any).splits?.forEach(addUser);
+
+    (expense as any).payers?.forEach((p: any) => {
+      combined.get(p.user_id).paid = p.amount;
+    });
+
+    (expense as any).splits?.forEach((s: any) => {
+      combined.get(s.user_id).share = s.amount;
+    });
+
+    return Array.from(combined.values());
+  }, [expense]);
 
   const handleDeleteExpense = () => {
     Alert.alert(
@@ -175,232 +111,175 @@ export default function ExpenseDetailsScreen({ navigation, route }: Props) {
             try {
               await dispatch(deleteTransaction(expenseId)).unwrap();
               navigation.goBack();
-            } catch (error: any) {
-              Alert.alert("Error", error);
+            } catch (e: any) {
+              Alert.alert("Error", e.message || "Failed to delete expense.");
             }
           },
         },
-      ]
+      ],
     );
   };
 
+  const styles = StyleSheet.create({
+    contentContainer: { padding: spacing.lg, paddingBottom: spacing.xl },
+    header: { marginBottom: spacing.lg, alignItems: "center" },
+    description: {
+      ...typography.h2,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: spacing.sm,
+    },
+    amount: {
+      ...typography.h1,
+      color: colors.primary,
+      marginBottom: spacing.sm,
+    },
+    date: { ...typography.body, color: colors.textSecondary },
+    detailRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: spacing.md,
+    },
+    detailLabel: { ...typography.body, color: colors.textSecondary },
+    detailValue: { ...typography.body, color: colors.text, fontWeight: "500" },
+    notes: { ...typography.body, color: colors.text, lineHeight: 22 },
+    actions: { flexDirection: "row", gap: spacing.md, marginTop: spacing.xl },
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.lg,
+    },
+    errorText: { ...typography.h3, color: colors.error, textAlign: "center" },
+    participantCard: { marginTop: spacing.lg },
+    participantRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: spacing.md,
+    },
+    participantInfo: { marginLeft: spacing.md, flex: 1 },
+    participantName: {
+      ...typography.body,
+      color: colors.text,
+      fontWeight: "500",
+    },
+    participantDetail: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    balanceContainer: { alignItems: "flex-end" },
+    balanceAmount: {
+      ...typography.body,
+      fontWeight: "600",
+    },
+    balanceLabel: { ...typography.caption, color: colors.textSecondary },
+  });
 
-  if (isLoading) {
-    return <LoadingState message="Loading expense details..." />;
+  if (isLoading && !expense) return <TransactionDetailsSkeleton />;
+  if (error && !expense) {
+    return (
+      <AnimatedScreen style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </AnimatedScreen>
+    );
   }
-
-  if (!currentTransaction) {
-    return <LoadingState message="Transaction not found" />;
-  }
-
-  // Check if we have the right transaction (handle both _id and id fields)
-  const transactionMatches =
-    currentTransaction._id === expenseId ||
-    (currentTransaction as any).id === expenseId;
-
-  if (!transactionMatches) {
-    return <LoadingState message="Loading transaction..." />;
-  }
-
-  // Use the transaction directly since it's already in the correct format
-  const expense = currentTransaction;
-
   if (!expense) {
-    return <LoadingState message="Transaction not found" />;
+    return (
+      <AnimatedScreen style={styles.errorContainer}>
+        <Text style={styles.errorText}>Transaction not found.</Text>
+      </AnimatedScreen>
+    );
   }
 
-  const getUserShare = () => {
-    if (!expense || !user) return 0;
+  const renderParticipant = (p: any) => {
+    const isYou = p.id === user?.id;
+    const name = isYou ? "You" : p.name;
 
-    // Try splits array first (cleaner representation)
-    if ((expense as any).splits) {
-      const userSplit = (expense as any).splits.find(
-        (split: any) => split.user_id === user.id
-      );
-      if (userSplit) return userSplit.amount || 0;
-    }
-
-    // Fallback to participants array
-    if (expense.participants) {
-      const userParticipant = expense.participants.find(
-        (participant) => participant.user_id === user.id
-      );
-      return Math.abs(userParticipant?.amount || 0);
-    }
-
-    return 0;
-  };
-
-  const getUserPaidAmount = () => {
-    if (!expense || !user) return 0;
-
-    // Try payers array first (cleaner representation)
-    if ((expense as any).payers) {
-      const userPayer = (expense as any).payers.find(
-        (payer: any) => payer.user_id === user.id
-      );
-      if (userPayer) return userPayer.amount || 0;
-    }
-
-    // Fallback to participants array
-    if (expense.participants) {
-      const userParticipant = expense.participants.find(
-        (participant) => participant.user_id === user.id
-      );
-      // If amount is positive, they paid; if negative, they owe
-      const amount = userParticipant?.amount || 0;
-      return amount > 0 ? amount : 0;
-    }
-
-    return 0;
+    return (
+      <View style={styles.participantRow} key={p.id}>
+        <UserAvatar
+          userId={p.id}
+          user={{ profile_pic_url: p.avatar }}
+          size={40}
+        />
+        <View style={styles.participantInfo}>
+          <Text style={styles.participantName}>{name}</Text>
+          <Text style={styles.participantDetail}>
+            Paid: {formatCurrency(p.paid, expense.currency)}
+          </Text>
+        </View>
+        <View style={styles.balanceContainer}>
+          <Text style={[styles.balanceAmount, { color: colors.text }]}>
+            {formatCurrency(p.share, expense.currency)}
+          </Text>
+          {/* <Text style={styles.balanceLabel}>Share</Text> */}
+        </View>
+      </View>
+    );
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          {expense.description || "No description"}
-        </Text>
-        <Text style={styles.amount}>
-          {formatCurrency(expense.amount || 0, expense.currency || "USD")}
-        </Text>
-      </View>
+    <AnimatedScreen>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <View style={styles.header}>
+          <Text style={styles.description}>{expense.description}</Text>
+          <Text style={styles.amount}>
+            {formatCurrency(expense.amount, expense.currency)}
+          </Text>
+          <Text style={styles.date}>
+            {new Date(expense.created_at).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </Text>
+        </View>
 
-      <Card>
-        <Card.Header title="Details" />
-        <Card.Content>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Category</Text>
-            <Text style={styles.detailValue}>
-              {expense.category || "Unknown"}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Split Type</Text>
-            <Text style={styles.detailValue}>
-              {expense.split_type
-                ? expense.split_type.charAt(0).toUpperCase() +
-                  expense.split_type.slice(1)
-                : "Unknown"}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Date</Text>
-            <Text style={styles.detailValue}>
-              {expense.created_at
-                ? new Date(expense.created_at).toLocaleDateString()
-                : "Unknown"}
-            </Text>
-          </View>
-        </Card.Content>
-      </Card>
-
-      {expense.notes && (
         <Card>
-          <Card.Header title="Notes" />
+          <Card.Header title="Details" />
           <Card.Content>
-            <Text style={styles.notes}>{expense.notes}</Text>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Category</Text>
+              <Text style={styles.detailValue}>{expense.category}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Split Type</Text>
+              <Text style={styles.detailValue}>{expense.split_type}</Text>
+            </View>
           </Card.Content>
         </Card>
-      )}
 
-      <Card>
-        <Card.Header title="Your Share" />
-        <Card.Content>
-          <View style={styles.shareContainer}>
-            <Text style={styles.shareAmount}>
-              {formatCurrency(getUserShare(), expense.currency || "USD")}
-            </Text>
-            <Text style={styles.shareLabel}>
-              You {getUserPaidAmount() > 0 ? "paid" : "owe"}
-            </Text>
-          </View>
-        </Card.Content>
-      </Card>
+        {expense.notes && (
+          <Card>
+            <Card.Header title="Notes" />
+            <Card.Content>
+              <Text style={styles.notes}>{expense.notes}</Text>
+            </Card.Content>
+          </Card>
+        )}
 
-      <Card>
-        <Card.Header title="Who Paid" />
-        <Card.Content>
-          {(expense as any).payers && (expense as any).payers.length > 0 ? (
-            (expense as any).payers.map((payer: any, index: number) => (
-              <View key={index} style={styles.splitRow}>
-                <Text style={styles.splitUser}>
-                  {payer.user_id === user?.id
-                    ? "You"
-                    : payer.user_name || `User ${payer.user_id.slice(-4)}`}
-                </Text>
-                <Text style={styles.splitAmount}>
-                  {formatCurrency(payer.amount || 0, expense.currency || "USD")}
-                </Text>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noSplitsText}>
-              No payer information available
-            </Text>
-          )}
-        </Card.Content>
-      </Card>
+        <Card style={styles.participantCard}>
+          <Card.Header title="Participants" />
+          <Card.Content>{participants.map(renderParticipant)}</Card.Content>
+        </Card>
 
-      <Card>
-        <Card.Header title="Split Breakdown" />
-        <Card.Content>
-          {(expense as any).splits && (expense as any).splits.length > 0 ? (
-            (expense as any).splits.map((split: any, index: number) => (
-              <View key={index} style={styles.splitRow}>
-                <Text style={styles.splitUser}>
-                  {split.user_id === user?.id
-                    ? "You"
-                    : split.user_name || `User ${split.user_id.slice(-4)}`}
-                </Text>
-                <Text style={styles.splitAmount}>
-                  {formatCurrency(split.amount || 0, expense.currency || "USD")}
-                </Text>
-              </View>
-            ))
-          ) : expense.participants && expense.participants.length > 0 ? (
-            expense.participants.map((participant, index: number) => (
-              <View key={index} style={styles.splitRow}>
-                <Text style={styles.splitUser}>
-                  {participant.user_id === user?.id
-                    ? "You"
-                    : (participant as any).user_name ||
-                      `User ${participant.user_id.slice(-4)}`}
-                </Text>
-                <Text style={styles.splitAmount}>
-                  {formatCurrency(
-                    Math.abs(participant.amount || 0),
-                    expense.currency || "USD"
-                  )}
-                </Text>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noSplitsText}>
-              No split information available
-            </Text>
-          )}
-        </Card.Content>
-      </Card>
-
-      <View style={styles.actions}>
-        <SecondaryButton
-          title="Edit"
-          icon="pencil"
-          onPress={() => {
-            // Navigate to edit screen
-          }}
-          style={{ flex: 1 }}
-        />
-
-        <SecondaryButton
-          title="Delete"
-          icon="trash"
-          onPress={handleDeleteExpense}
-          variant="error"
-          style={{ flex: 1 }}
-        />
-      </View>
-    </ScrollView>
+        <View style={styles.actions}>
+          <SecondaryButton
+            title="Edit"
+            icon="pencil"
+            onPress={() => {}}
+            style={{ flex: 1 }}
+          />
+          <SecondaryButton
+            title="Delete"
+            icon="trash"
+            onPress={handleDeleteExpense}
+            variant="error"
+            style={{ flex: 1 }}
+          />
+        </View>
+      </ScrollView>
+    </AnimatedScreen>
   );
 }
