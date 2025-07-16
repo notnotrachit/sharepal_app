@@ -27,7 +27,8 @@ export default ({ config }) => ({
     },
     web: {
       favicon: "./assets/favicon.png",
-      bundler: "webpack"
+      output: "single",
+      bundler: "metro"
     },
     extra: {
       eas: {
