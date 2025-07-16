@@ -9,8 +9,21 @@ import { ThemeProvider } from "./src/contexts/ThemeContext";
 import { GlobalOverlayProvider } from "./src/components/PortalLongPressMenu";
 import { backgroundNotificationHandler } from "./src/services/backgroundNotificationHandler";
 import { usePushNotifications } from "./src/hooks/usePushNotifications";
-import { HotUpdater, getUpdateSource } from "@hot-updater/react-native";
-import { View, Text } from "react-native";
+import { View, Text, Platform } from "react-native";
+
+// Platform-specific hot updater imports
+let HotUpdater: any = null;
+let getUpdateSource: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    const hotUpdater = require("@hot-updater/react-native");
+    HotUpdater = hotUpdater.HotUpdater;
+    getUpdateSource = hotUpdater.getUpdateSource;
+  } catch (error) {
+    console.warn('@hot-updater/react-native not available on this platform');
+  }
+}
 
 // Component to handle push notifications after auth is initialized
 function PushNotificationHandler() {
@@ -45,7 +58,8 @@ function App() {
   );
 }
 
-export default HotUpdater.wrap({
+// Export with or without HotUpdater based on platform
+export default Platform.OS === 'web' || !HotUpdater ? App : HotUpdater.wrap({
   source: getUpdateSource(
     "https://hot-updater.dilutewater.workers.dev/api/check-update",
     {

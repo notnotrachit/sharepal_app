@@ -1,4 +1,15 @@
-import * as Haptics from 'expo-haptics';
+import { Platform } from 'react-native';
+
+// Platform-specific haptics
+let Haptics: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    Haptics = require('expo-haptics');
+  } catch (error) {
+    console.warn('expo-haptics not available on this platform');
+  }
+}
 
 /**
  * Haptic feedback utility for enhanced user interactions
@@ -11,7 +22,9 @@ export const hapticFeedback = {
    */
   light: () => {
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (Haptics && Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
     } catch (error) {
       // Haptics not supported on device
     }
@@ -23,7 +36,9 @@ export const hapticFeedback = {
    */
   medium: () => {
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (Haptics && Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
     } catch (error) {
       // Haptics not supported on device
     }
@@ -35,7 +50,9 @@ export const hapticFeedback = {
    */
   heavy: () => {
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      if (Haptics && Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      }
     } catch (error) {
       // Haptics not supported on device
     }
@@ -47,7 +64,9 @@ export const hapticFeedback = {
    */
   success: () => {
     try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (Haptics && Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
     } catch (error) {
       // Haptics not supported on device
     }
@@ -59,7 +78,9 @@ export const hapticFeedback = {
    */
   warning: () => {
     try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      if (Haptics && Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      }
     } catch (error) {
       // Haptics not supported on device
     }
@@ -71,7 +92,9 @@ export const hapticFeedback = {
    */
   error: () => {
     try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      if (Haptics && Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
     } catch (error) {
       // Haptics not supported on device
     }
@@ -83,7 +106,9 @@ export const hapticFeedback = {
    */
   selection: () => {
     try {
-      Haptics.selectionAsync();
+      if (Haptics && Platform.OS !== 'web') {
+        Haptics.selectionAsync();
+      }
     } catch (error) {
       // Haptics not supported on device
     }

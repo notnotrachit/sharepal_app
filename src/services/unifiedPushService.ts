@@ -1,9 +1,22 @@
-import ExpoUnifiedPush, {
-  checkPermissions,
-  requestPermissions,
-  showLocalNotification,
-} from 'expo-unified-push';
 import { Platform } from 'react-native';
+
+// Platform-specific unified push imports
+let ExpoUnifiedPush: any = null;
+let checkPermissions: any = null;
+let requestPermissions: any = null;
+let showLocalNotification: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    const unifiedPush = require('expo-unified-push');
+    ExpoUnifiedPush = unifiedPush.default;
+    checkPermissions = unifiedPush.checkPermissions;
+    requestPermissions = unifiedPush.requestPermissions;
+    showLocalNotification = unifiedPush.showLocalNotification;
+  } catch (error) {
+    console.warn('expo-unified-push not available on this platform');
+  }
+}
 
 class UnifiedPushService {
   constructor() {
@@ -12,7 +25,7 @@ class UnifiedPushService {
 
   public async checkPermissionStatus(): Promise<boolean> {
     try {
-      if (Platform.OS !== 'android') {
+      if (Platform.OS !== 'android' || !checkPermissions) {
         return false;
       }
       const hasPermission = await checkPermissions();
@@ -25,7 +38,7 @@ class UnifiedPushService {
 
   public async requestUserPermission(): Promise<boolean> {
     try {
-      if (Platform.OS !== 'android') {
+      if (Platform.OS !== 'android' || !checkPermissions || !requestPermissions) {
         console.log('UnifiedPush is only supported on Android');
         return false;
       }
@@ -51,6 +64,11 @@ class UnifiedPushService {
 
   public async sendTestNotification() {
     try {
+      if (Platform.OS !== 'android' || !checkPermissions || !requestPermissions || !showLocalNotification) {
+        console.log('Test notification not supported on this platform');
+        return;
+      }
+
       console.log('=== Sending Test Notification ===');
       
       // Check permissions first
@@ -83,7 +101,7 @@ class UnifiedPushService {
   }
 
   public getAvailableDistributors() {
-    if (Platform.OS !== 'android') {
+    if (Platform.OS !== 'android' || !ExpoUnifiedPush) {
       return [];
     }
     const distributors = ExpoUnifiedPush.getDistributors();
@@ -92,7 +110,7 @@ class UnifiedPushService {
   }
 
   public getSavedDistributor() {
-    if (Platform.OS !== 'android') {
+    if (Platform.OS !== 'android' || !ExpoUnifiedPush) {
       return null;
     }
     const saved = ExpoUnifiedPush.getSavedDistributor();
@@ -101,7 +119,7 @@ class UnifiedPushService {
   }
 
   public saveDistributor(distributorId: string | null) {
-    if (Platform.OS !== 'android') {
+    if (Platform.OS !== 'android' || !ExpoUnifiedPush) {
       return;
     }
     console.log('Saving distributor:', distributorId);
@@ -117,8 +135,8 @@ class UnifiedPushService {
 
   public async unregisterDevice() {
     try {
-      if (Platform.OS !== 'android') {
-        console.log('Unregister skipped - not Android platform');
+      if (Platform.OS !== 'android' || !ExpoUnifiedPush) {
+        console.log('Unregister skipped - not Android platform or module not available');
         return;
       }
 

@@ -12,8 +12,20 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
+import { Platform } from "react-native";
+
+// Platform-specific image picker imports
+let ImagePicker: any = null;
+let ImageManipulator: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    ImagePicker = require("expo-image-picker");
+    ImageManipulator = require("expo-image-manipulator");
+  } catch (error) {
+    console.warn('Image picker modules not available on this platform');
+  }
+}
 import { AppDispatch, RootState } from "../../store";
 import { getCurrentUser, setUser } from "../../store/slices/authSlice";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -256,6 +268,14 @@ export default function EditProfileScreen({ navigation }: Props) {
   };
 
   const requestPermissions = async () => {
+    if (Platform.OS === 'web' || !ImagePicker) {
+      Alert.alert(
+        "Not Supported",
+        "Image picker is not supported on this platform."
+      );
+      return false;
+    }
+    
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
@@ -268,6 +288,10 @@ export default function EditProfileScreen({ navigation }: Props) {
   };
 
   const processImage = async (uri: string): Promise<string> => {
+    if (Platform.OS === 'web' || !ImageManipulator) {
+      throw new Error("Image processing not supported on this platform");
+    }
+    
     try {
       // Get image info to check size
       const imageInfo = await ImageManipulator.manipulateAsync(
@@ -333,6 +357,14 @@ export default function EditProfileScreen({ navigation }: Props) {
   // Removed the complex XMLHttpRequest method since simple fetch works perfectly
 
   const handleImagePicker = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        "Not Supported",
+        "Image picker is not available on web. Please use the mobile app to change your profile picture."
+      );
+      return;
+    }
+    
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
@@ -354,6 +386,11 @@ export default function EditProfileScreen({ navigation }: Props) {
   };
 
   const pickImage = async (source: "camera" | "gallery") => {
+    if (Platform.OS === 'web' || !ImagePicker) {
+      Alert.alert("Not Supported", "Image picker is not supported on this platform.");
+      return;
+    }
+    
     try {
       setIsUploadingImage(true);
 

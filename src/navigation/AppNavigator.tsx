@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Platform, TouchableOpacity } from "react-native";
+import { Text } from "react-native";
 import {
   NavigationContainer,
   DefaultTheme,
@@ -23,9 +24,10 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { RootState } from "../store";
-import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
+import { getFocusedRouteNameFromRoute, useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../contexts/ThemeContext";
 import CustomDrawerContent from "../components/CustomDrawerContent";
+import WebDrawer from "../components/WebDrawer";
 import AnimatedTabIcon from "../components/AnimatedTabIcon";
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
@@ -381,6 +383,212 @@ function MainTabNavigator() {
 function MainNavigator() {
   const { colors } = useTheme();
 
+  // For web, use stack navigation with custom drawer overlay
+  if (Platform.OS === 'web') {
+    const WebStack = createStackNavigator();
+    
+    // Create a wrapper component that includes the WebDrawer
+    const ScreenWithDrawer = ({ children }: { children: React.ReactNode }) => (
+      <WebDrawer>
+        {children}
+      </WebDrawer>
+    );
+
+    // Create a special wrapper for MainTabs that includes drawer functionality
+    const MainTabsWrapper = ({ navigation, route }: any) => {
+      const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+
+      const toggleDrawer = () => {
+        console.log('Drawer button clicked on MainTabs');
+        setIsDrawerOpen(!isDrawerOpen);
+      };
+
+      const closeDrawer = () => {
+        setIsDrawerOpen(false);
+      };
+
+      // Get the header title - fixed to show "Home"
+      const getHeaderTitle = () => {
+        return "Home";
+      };
+
+      // Enhanced navigation for MainTabs drawer
+      const enhancedNavigation = {
+        ...navigation,
+        closeDrawer,
+        openDrawer: toggleDrawer,
+        toggleDrawer,
+        navigate: (screenName: string, params?: any) => {
+          console.log('MainTabs navigate called:', screenName, params);
+          closeDrawer();
+          navigation.navigate(screenName, params);
+        },
+      };
+
+      // Mock drawer props for CustomDrawerContent
+      const drawerProps = {
+        navigation: enhancedNavigation,
+        state: {
+          index: 0,
+          routes: [
+            { name: 'MainTabs', key: 'MainTabs' },
+            { name: 'Profile', key: 'Profile' },
+            { name: 'EditProfile', key: 'EditProfile' },
+            { name: 'Settings', key: 'Settings' },
+          ],
+        },
+        descriptors: {},
+      };
+
+      return (
+        <View style={{ flex: 1 }}>
+          {/* Overlay */}
+          {isDrawerOpen && (
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: 999,
+              }}
+              onPress={closeDrawer}
+              activeOpacity={1}
+            />
+          )}
+
+          {/* Drawer */}
+          <View 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: 280,
+              backgroundColor: colors.background,
+              zIndex: 1000,
+              transform: [{ translateX: isDrawerOpen ? 0 : -280 }],
+              borderRightWidth: 1,
+              borderRightColor: colors.border,
+              ...(Platform.OS === 'web' && {
+                transition: 'transform 0.3s ease-in-out',
+              })
+            }}
+          >
+            <CustomDrawerContent {...drawerProps} />
+          </View>
+
+          {/* Header with drawer button */}
+          <View style={{
+            height: 60,
+            backgroundColor: colors.surface,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+            zIndex: 1,
+          }}>
+            <TouchableOpacity 
+              style={{ 
+                padding: 8, 
+                marginRight: 16,
+                backgroundColor: isDrawerOpen ? colors.primaryLight : 'transparent',
+                borderRadius: 4,
+              }}
+              onPress={toggleDrawer}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name={isDrawerOpen ? "close" : "menu"} 
+                size={24} 
+                color={colors.text} 
+              />
+            </TouchableOpacity>
+            <View style={{ flex: 1, alignItems: 'flex-start', marginLeft: 8 }}>
+              <Text style={{ 
+                fontSize: 18, 
+                fontWeight: '600', 
+                color: colors.text 
+              }}>
+                {getHeaderTitle()}
+              </Text>
+            </View>
+          </View>
+          
+          {/* MainTabNavigator */}
+          <View style={{ flex: 1 }}>
+            <MainTabNavigator />
+          </View>
+        </View>
+      );
+    };
+
+    const MainTabsWithDrawer = ({ navigation, route }: any) => (
+      Platform.OS === 'web' ? 
+        <MainTabsWrapper navigation={navigation} route={route} /> : 
+        <MainTabNavigator />
+    );
+
+    const ProfileWithDrawer = ({ navigation, route }: any) => (
+      Platform.OS === 'web' ? (
+        <WebDrawer title="Profile">
+          <ProfileScreen navigation={navigation} route={route} />
+        </WebDrawer>
+      ) : (
+        <ProfileScreen navigation={navigation} route={route} />
+      )
+    );
+
+    const EditProfileWithDrawer = ({ navigation, route }: any) => (
+      Platform.OS === 'web' ? (
+        <WebDrawer title="Edit Profile">
+          <EditProfileScreen navigation={navigation} route={route} />
+        </WebDrawer>
+      ) : (
+        <EditProfileScreen navigation={navigation} route={route} />
+      )
+    );
+
+    const SettingsWithDrawer = ({ navigation, route }: any) => (
+      Platform.OS === 'web' ? (
+        <WebDrawer title="Settings">
+          <SettingsScreen navigation={navigation} route={route} />
+        </WebDrawer>
+      ) : (
+        <SettingsScreen navigation={navigation} route={route} />
+      )
+    );
+    
+    return (
+      <WebStack.Navigator
+        screenOptions={{
+          headerShown: false, // We'll use custom header with menu button
+        }}
+      >
+        <WebStack.Screen
+          name="MainTabs"
+          component={MainTabsWithDrawer}
+        />
+        <WebStack.Screen
+          name="Profile"
+          component={ProfileWithDrawer}
+        />
+        <WebStack.Screen
+          name="EditProfile"
+          component={EditProfileWithDrawer}
+        />
+        <WebStack.Screen
+          name="Settings"
+          component={SettingsWithDrawer}
+        />
+      </WebStack.Navigator>
+    );
+  }
+
+  // Mobile drawer navigation
   return (
     <MainDrawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -399,7 +607,9 @@ function MainNavigator() {
         drawerActiveBackgroundColor: colors.primaryLight,
         drawerActiveTintColor: colors.primary,
         drawerInactiveTintColor: colors.textSecondary,
+        drawerType: 'front', // Changed to 'front' so drawer overlays content
       }}
+      initialRouteName="MainTabs"
     >
       <MainDrawer.Screen
         name="MainTabs"
@@ -489,11 +699,15 @@ export default function AppNavigator() {
     );
   }
 
+  const MainNavigatorWithDrawer = (props: any) => {
+    return <MainNavigator />;
+  };
+
   return (
     <NavigationContainer theme={navigationTheme}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <RootStack.Screen name="Main" component={MainNavigator} />
+          <RootStack.Screen name="Main" component={MainNavigatorWithDrawer} />
         ) : (
           <RootStack.Screen name="Auth" component={AuthNavigator} />
         )}

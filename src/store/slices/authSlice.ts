@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Platform } from 'react-native';
-import { signUpWithGoogle } from 'react-native-credentials-manager';
+import { signUpWithGoogle } from '../../utils/credentialsManager';
 import { apiService } from '../../services/api';
 import { User, LoginRequest, RegisterRequest, AuthResponse } from '../../types/api';
 import { STORAGE_KEYS } from '../../constants/api';

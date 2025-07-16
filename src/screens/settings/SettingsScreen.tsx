@@ -11,7 +11,16 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Constants from "expo-constants";
+// Platform-specific constants import
+let Constants: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    Constants = require("expo-constants").default;
+  } catch (error) {
+    console.warn('expo-constants not available on this platform');
+  }
+}
 import { useTheme } from "../../contexts/ThemeContext";
 import { notificationService } from "../../services/notificationService";
 import { unifiedPushService } from "../../services/unifiedPushService";
@@ -512,7 +521,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         <Text style={styles.sectionTitle}>About</Text>
         <View style={styles.aboutSection}>
           <Text style={styles.appName}>SharePal</Text>
-          <Text style={styles.appVersion}>Version {Constants.expoConfig?.version || '1.0.0'}</Text>
+          <Text style={styles.appVersion}>Version {Constants?.expoConfig?.version || '1.0.0'}</Text>
           <Text style={styles.appDescription}>
             Split expenses with friends and family easily. 
             Track shared costs, settle debts, and manage group finances all in one place.

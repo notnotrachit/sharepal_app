@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { Platform } from 'react-native';
 import { API_BASE_URL, API_ENDPOINTS, STORAGE_KEYS } from '../constants/api';
 import { ApiResponse } from '../types/api';
 import { secureStorage } from '../utils/secureStorage';
@@ -24,7 +25,17 @@ class ApiService {
       async (config) => {
         const token = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
         if (token) {
-          config.headers['Bearer-Token'] = token;
+          // Debug logging for web
+          if (Platform.OS === 'web') {
+            console.log('Web: Adding Authorization header with token:', token.substring(0, 20) + '...');
+            config.headers['Authorization'] = `Bearer ${token}`;
+            // Also try the original header as fallback
+            config.headers['Bearer-Token'] = token;
+          } else {
+            config.headers['Bearer-Token'] = token;
+          }
+        } else {
+          console.log('No token found in storage for platform:', Platform.OS);
         }
         return config;
       },
@@ -44,7 +55,15 @@ class ApiService {
             const originalRequest = error.config;
             const token = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
             if (token) {
-              originalRequest.headers['Bearer-Token'] = token;
+              // Use standard Authorization header for web compatibility
+              if (Platform.OS === 'web') {
+                console.log('Web: Retrying with Authorization header');
+                originalRequest.headers['Authorization'] = `Bearer ${token}`;
+                // Also try the original header as fallback
+                originalRequest.headers['Bearer-Token'] = token;
+              } else {
+                originalRequest.headers['Bearer-Token'] = token;
+              }
             }
             return this.api(originalRequest);
           } catch (refreshError) {

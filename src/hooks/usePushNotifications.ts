@@ -1,14 +1,36 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Platform } from 'react-native';
-import ExpoUnifiedPush, {
-  checkPermissions,
-  requestPermissions,
-  subscribeDistributorMessages,
-  RegisteredPayload,
-  showLocalNotification,
-} from 'expo-unified-push';
-import Constants from 'expo-constants';
+
+// Platform-specific push notifications
+let ExpoUnifiedPush: any = null;
+let checkPermissions: any = null;
+let requestPermissions: any = null;
+let subscribeDistributorMessages: any = null;
+let showLocalNotification: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    const unifiedPush = require('expo-unified-push');
+    ExpoUnifiedPush = unifiedPush.default;
+    checkPermissions = unifiedPush.checkPermissions;
+    requestPermissions = unifiedPush.requestPermissions;
+    subscribeDistributorMessages = unifiedPush.subscribeDistributorMessages;
+    showLocalNotification = unifiedPush.showLocalNotification;
+  } catch (error) {
+    console.warn('expo-unified-push not available on this platform');
+  }
+}
+// Platform-specific constants import
+let Constants: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    Constants = require('expo-constants').default;
+  } catch (error) {
+    console.warn('expo-constants not available on this platform');
+  }
+}
 import { RootState } from '../store';
 import { apiService } from '../services/api';
 import { secureStorage } from '../utils/secureStorage';
@@ -145,11 +167,11 @@ export function usePushNotifications() {
   const isLoading = auth.isLoading;
   
   const userId = auth.user?.user?.id || auth.user?.id || auth.user?._id || auth.user?.user?._id ;
-  const SERVER_VAPID_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_SERVER_VAPID_KEY;
+  const SERVER_VAPID_KEY = Constants?.expoConfig?.extra?.EXPO_PUBLIC_SERVER_VAPID_KEY;
 
   useEffect(() => {
-    if (Platform.OS !== 'android') {
-      // console.log('UnifiedPush: Skipping setup - not Android platform');
+    if (Platform.OS !== 'android' || !ExpoUnifiedPush) {
+      // console.log('UnifiedPush: Skipping setup - not Android platform or module not available');
       return;
     }
 
@@ -240,7 +262,7 @@ export function usePushNotifications() {
   }, [SERVER_VAPID_KEY, userId, isAuthenticated, isLoading]);
 
   useEffect(() => {
-    if (Platform.OS !== 'android') {
+    if (Platform.OS !== 'android' || !ExpoUnifiedPush) {
       return;
     }
 

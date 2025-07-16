@@ -46,3 +46,4 @@ android/app/debug.keystore
 # android/*
 # hot-updater
 .hot-updater/output
+.kiro/*
