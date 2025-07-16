@@ -9,7 +9,9 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~5.0.4",
     "@expo/vector-icons": "^14.1.0",
+    "@expo/webpack-config": "^19.0.1",
     "@hot-updater/react-native": "^0.19.9",
     "@react-navigation/bottom-tabs": "^7.3.15",
     "@react-navigation/drawer": "^7.4.4",
@@ -29,6 +31,7 @@
     "expo-system-ui": "^5.0.9",
     "expo-unified-push": "^0.4.0",
     "react": "19.0.0",
+    "react-dom": "19.0.0",
     "react-hook-form": "^7.58.1",
     "react-native": "0.79.3",
     "react-native-credentials-manager": "^0.6.2",
@@ -38,10 +41,8 @@
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-vector-icons": "^10.2.0",
-    "react-redux": "^9.2.0",
-    "react-dom": "19.0.0",
     "react-native-web": "^0.20.0",
-    "@expo/metro-runtime": "~5.0.4"
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

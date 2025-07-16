@@ -27,6 +27,7 @@ export default ({ config }) => ({
     },
     web: {
       favicon: "./assets/favicon.png",
+      bundler: "webpack"
     },
     extra: {
       eas: {
